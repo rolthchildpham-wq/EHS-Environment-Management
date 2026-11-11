@@ -231,3 +231,5 @@ export function mountOperations(database,actor,actorRole,onUpdate){
  };
  paint();report();
 }
+
+export function unmountOperations(){db=null;user=null;role=null;refreshFn=null;pending=[];operations=[];selected=0;lastWarning=[];if(el('opsMount'))el('opsMount').innerHTML='';if(el('opsReport'))el('opsReport').innerHTML='';}
