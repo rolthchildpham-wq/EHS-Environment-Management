@@ -146,7 +146,7 @@ service cloud.firestore {
 )
       && request.resource.data.kind in [
         'waste','water_in','water_out','stock_in','stock_out',
-        'water_cost_month','waste_finance_month','monthly_reference'
+        'stock_opening','water_cost_month','waste_finance_month','monthly_reference','waste_detail_reference','scrap_detail_reference'
       ]
       && request.resource.data.quantity is number
       && request.resource.data.quantity >= 0
