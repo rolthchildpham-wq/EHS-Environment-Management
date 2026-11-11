@@ -118,7 +118,7 @@ service cloud.firestore {
       && request.resource.data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
       && request.resource.data.kind in [
         'waste','water_in','water_out','stock_in','stock_out','stock_opening',
-        'water_cost_month','waste_finance_month','monthly_reference',
+        'water_cost_month','water_cost_reference','waste_finance_month','monthly_reference',
         'waste_detail_reference','scrap_detail_reference'
       ]
       && request.resource.data.quantity is number
