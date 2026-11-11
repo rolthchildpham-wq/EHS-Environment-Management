@@ -40,3 +40,17 @@ Dashboard rác/nước/vật tư; lọc thời gian và đối chiếu kỳ; b�
 - `firebase.json` contains an `/api/**` rewrite to the `api` Cloud Function; that endpoint will fail until Functions is deployed separately.
 - Do not create a public GitHub repository if source code or internal operational logic is confidential.
 - No automatic PR preview is enabled in this starter because a secure preview workflow requires separate environment-specific secrets and permissions. Production auto-deployment from `main` is configured.
+
+## Spark mode (2026-11-11)
+
+The **web dashboard now runs without Cloud Functions or Blaze**. Hosted on Firebase Hosting; Firebase Authentication (Google) and Firestore are used for data. AI OCR is deliberately **disabled**; no client-side Gemini API key is used.
+
+**Photo evidence:** an editor transcribes one row from an image, saves a `reviews/{id}` document with status `pending`. Only an administrator may change it to `approved` or `rejected`. Security Rules restrict changes to the status and audit fields. Approved rows are included in charts and reports directly from `reviews` rather than duplicated into `records`. Images are previewed locally and **not uploaded**.
+
+**Database rules are not yet confirmed deployed.** Open [Cloud Firestore > Rules](https://console.firebase.google.com/project/ehs-environment-management/firestore/rules), paste the entire current [firestore.rules](https://github.com/rolthchildpham-wq/EHS-Environment-Management/blob/main/firestore.rules), then click **Publish** using the Firebase project owner account. This is necessary if the GitHub service account still lacks Service Usage / Firestore Rules deployment permissions (last observed HTTP 403).
+
+**First user:** enable Google sign-in in Firebase Authentication, sign in to the website once, and manually create `members/<your-authentication-uid>` with `role: "admin"` from the Firestore Console. Do not make public self-registration for admins.
+
+**GitHub Actions:** changes to `public/**` automatically deploy Hosting on `main` after JavaScript syntax validation. Firestore rules have a **separate manual** Actions workflow and are never automatically loosened by a UI update. The optional Cloud Functions source under `functions/` is historical only and is not deployed in Spark mode.
+
+**Current limits:** imports expect normalized Excel headers; the dashboard fetches at most 5,000 direct rows and 1,000 review rows per refresh; there is no actual AI OCR, file upload to Storage, or server-side PDF generator. Auth and rules must be activated for multiuser use. Spark remains subject to Firebase quotas.
