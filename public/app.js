@@ -1,26 +1,25 @@
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js';
 import {getAuth,GoogleAuthProvider,signInWithPopup,onAuthStateChanged,signOut} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js';
-import {getFirestore,collection,doc,getDoc,addDoc,getDocs,query,limit,serverTimestamp} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
-import {getFunctions,httpsCallable} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-functions.js';
+import {getFirestore,collection,doc,getDoc,addDoc,getDocs,query,limit,serverTimestamp,updateDoc} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
 const el=id=>document.getElementById(id);
 const fmt=v=>Number(v||0).toLocaleString('vi-VN',{maximumFractionDigits:2});
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const names={waste:'Rác thải',water_in:'Nước vào',water_out:'Nước ra',stock_in:'Nhập vật tư',stock_out:'Xuất vật tư',cost:'Chi phí',revenue:'Doanh thu'};
 const labels={dashboard:'Tổng quan',records:'Nhật ký',finance:'Tài chính',map:'Bản đồ',import:'Nhập liệu & AI',reports:'Báo cáo',admin:'Quản trị'};
-let data=[],pending=[],user=null,role=null,db=null,auth=null,fn=null,charts={};
+let data=[],pending=[],reviewData=[],user=null,role=null,db=null,auth=null,charts={};
 const notice=s=>el('notice').textContent=s;
 const date=x=>String(x||'').slice(0,10);
 const norm=x=>({date:date(x.date),kind:x.kind,value:Number(x.value),unit:String(x.unit||''),name:String(x.name||''),note:String(x.note||''),source:String(x.source||'excel')});
 const valid=x=>/^\d{4}-\d{2}-\d{2}$/.test(x.date)&&Object.hasOwn(names,x.kind)&&Number.isFinite(x.value)&&x.value>=0;
 const sum=(a,k)=>a.filter(x=>x.kind===k).reduce((s,x)=>s+x.value,0);
-const current=()=>data.filter(x=>x.date>=el('from').value&&x.date<=el('to').value);
+const current=()=>[...data,...reviewData].filter(x=>x.date>=el('from').value&&x.date<=el('to').value);
 function previous(){
  const a=new Date(el('from').value+'T00:00:00Z'),b=new Date(el('to').value+'T00:00:00Z');
  if(isNaN(a)||isNaN(b))return [];
  if(el('comparison').value==='yoy'){a.setUTCFullYear(a.getUTCFullYear()-1);b.setUTCFullYear(b.getUTCFullYear()-1)}
  else {const n=Math.round((b-a)/86400000)+1;b.setTime(a.getTime()-86400000);a.setTime(b.getTime()-(n-1)*86400000)}
  const x=a.toISOString().slice(0,10),y=b.toISOString().slice(0,10);
- return data.filter(r=>r.date>=x&&r.date<=y);
+ return [...data,...reviewData].filter(r=>r.date>=x&&r.date<=y);
 }
 function stat(title,v,unit,p){return '<div class="stat"><div class="muted">'+esc(title)+'</div><strong>'+fmt(v)+' <small>'+esc(unit)+'</small></strong><span class="muted">'+(p?fmt((v-p)/p*100)+'% so kỳ trước':'Chưa đủ dữ liệu so sánh')+'</span></div>'}
 function monthly(r,k){const n=Array(12).fill(0);r.filter(x=>x.kind===k).forEach(x=>{const m=Number(x.date.slice(5,7));if(m>=1&&m<=12)n[m-1]+=x.value});return n}
@@ -60,14 +59,31 @@ async function reload(){
  if(!db||!role)return;
  const snap=await getDocs(query(collection(db,'records'),limit(5000)));
  data=snap.docs.map(d=>norm(d.data())).filter(valid);
- render();notice('Đã tải '+data.length+' bản ghi từ Firestore (tối đa 5000).');await reviews();
+ await reviews();render();notice('Đã tải '+data.length+' bản ghi gốc và '+reviewData.length+' chứng từ đã duyệt. Tối đa 5000 bản ghi gốc.');
 }
 async function reviews(){
  if(!db||!role)return;
- const snap=await getDocs(query(collection(db,'reviews'),limit(100)));
- el('reviews').innerHTML=snap.docs.map(d=>'<tr><td>'+esc(d.id)+'</td><td>'+esc(d.data().status)+'</td><td>'+Number(d.data().entries?.length||0)+'</td><td>'+(d.data().status==='pending'&&role==='admin'?'<button data-review="'+esc(d.id)+'">Phê duyệt</button>':'')+'</td></tr>').join('');
- document.querySelectorAll('[data-review]').forEach(b=>b.onclick=async()=>{if(!confirm('Duyệt chứng từ và ghi dữ liệu?'))return;try{await httpsCallable(fn,'approveReview')({id:b.dataset.review});await reload()}catch(e){alert(e.message)}});
+ const snap=await getDocs(query(collection(db,'reviews'),limit(1000)));
+ reviewData=snap.docs.filter(d=>d.data().status==='approved').map(d=>norm(d.data())).filter(valid);
+ el('reviews').innerHTML=snap.docs.map(d=>{
+  const x=d.data();
+  return '<tr><td>'+esc(d.id)+'</td><td>'+esc(x.status)+'</td><td>1</td><td>'+(
+   x.status==='pending'&&role==='admin'
+   ?'<button data-review="'+esc(d.id)+'" data-status="approved">Phê duyệt</button> <button data-review="'+esc(d.id)+'" data-status="rejected">Từ chối</button>'
+   :'')+'</td></tr>';
+ }).join('');
+ document.querySelectorAll('[data-review]').forEach(b=>b.onclick=async()=>{
+  if(!user||role!=='admin'||!confirm((b.dataset.status==='approved'?'Phê duyệt':'Từ chối')+' chứng từ này?'))return;
+  b.disabled=true;
+  try {
+   await updateDoc(doc(db,'reviews',b.dataset.review),{
+    status:b.dataset.status,reviewedBy:user.uid,reviewedAt:serverTimestamp()
+   });
+   await reload();
+  }catch(e){alert('Không thể phê duyệt: '+e.message);b.disabled=false}
+ });
 }
+
 el('tabs').innerHTML=Object.entries(labels).map(([id,title],i)=>'<button data-tab="'+id+'" class="'+(i===0?'active':'')+'">'+title+'</button>').join('');
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{document.querySelectorAll('section').forEach(s=>s.classList.toggle('active',s.id===b.dataset.tab));document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b))});
 el('refresh').onclick=render;el('kind').onchange=render;el('exportExcel').onclick=()=>xlsxExport('EHS_du_lieu.xlsx');el('reportExcel').onclick=()=>xlsxExport('EHS_bao_cao.xlsx');
@@ -76,10 +92,45 @@ el('reportPpt').onclick=()=>{if(!window.pptxgen)return alert('Không tải đư�
 el('mapFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const reader=new FileReader();reader.onload=()=>{el('mapCanvas').style.background='center/contain no-repeat url('+JSON.stringify(reader.result)+')'};reader.readAsDataURL(f)};
 el('parseExcel').onclick=async()=>{const f=el('excelFile').files[0];if(!f)return alert('Chọn file Excel');try{if(!window.XLSX)throw Error('Không tải được XLSX');const book=XLSX.read(await f.arrayBuffer(),{type:'array',cellDates:true});pending=book.SheetNames.flatMap(n=>parseSheet(XLSX.utils.sheet_to_json(book.Sheets[n],{defval:null})));preview();el('importStatus').textContent='Đọc được '+pending.length+' dòng hợp lệ. Chỉ hỗ trợ định dạng cột chuẩn.'}catch(e){el('importStatus').textContent=e.message}};
 el('saveImport').onclick=async()=>{if(!pending.length)return alert('Chưa có dữ liệu');if(!db||!user||!['admin','editor'].includes(role))return alert('Bạn cần quyền editor/admin');if(!confirm('Lưu '+pending.length+' dòng?'))return;try{for(const x of pending)await addDoc(collection(db,'records'),{...x,createdBy:user.uid,createdAt:serverTimestamp()});pending=[];preview();await reload()}catch(e){alert(e.message)}};
-el('aiRead').onclick=async()=>{const file=el('evidenceFile').files[0];if(!file)return alert('Chọn ảnh');if(!fn||!['admin','editor'].includes(role))return alert('Cần Firebase và quyền editor/admin');el('aiStatus').textContent='AI đang đọc ảnh...';try{const b64=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result).split(',')[1]);r.onerror=reject;r.readAsDataURL(file)});const result=(await httpsCallable(fn,'readEvidence')({imageBase64:b64,mimeType:file.type,kind:el('evidenceKind').value})).data;pending=(result.entries||[]).map(x=>norm({...x,date:result.date,source:'ai'})).filter(valid);preview();el('aiStatus').textContent='AI nhận diện '+pending.length+' dòng. Cảnh báo: '+(result.warnings||[]).join('; ');if(pending.length){await addDoc(collection(db,'reviews'),{entries:pending,status:'pending',createdBy:user.uid,createdAt:serverTimestamp(),warnings:result.warnings||[]});await reviews();notice('Đã tạo yêu cầu phê duyệt. Chỉ khi duyệt mới ghi records.')}}catch(e){el('aiStatus').textContent='Lỗi AI: '+e.message}};
+el('aiRead').disabled=true;
+el('aiRead').textContent='AI cần backend riêng';
+el('aiStatus').textContent='Spark: chưa hỗ trợ AI tự động. Vui lòng nhập thủ công số liệu từ ảnh để quản trị viên kiểm duyệt.';
+el('submitEvidence').onclick=async()=>{
+ if(!user||!['admin','editor'].includes(role))return alert('Cần đăng nhập và quyền editor/admin.');
+ const x=norm({
+   date:el('evidenceDate').value,
+   kind:el('evidenceField').value,
+   value:el('evidenceValue').value,
+   unit:el('evidenceUnit').value,
+   name:el('evidenceName').value,
+   note:el('evidenceNote').value,
+   source:'manual_photo'
+ });
+ if(!valid(x)||!el('evidenceValue').value.trim())return alert('Kiểm tra lại ngày, loại và số lượng.');
+ if(!confirm('Gửi bản ghi từ ảnh để quản trị viên phê duyệt?'))return;
+ try{
+  await addDoc(collection(db,'reviews'),{
+   ...x,status:'pending',createdBy:user.uid,createdAt:serverTimestamp()
+  });
+  el('aiStatus').textContent='Đã tạo phiếu chờ phê duyệt; dữ liệu chưa được tính vào báo cáo.';
+  await reviews();
+ }catch(e){alert('Lỗi tạo phiếu duyệt: '+e.message)}
+};
+const localEvidence=el('evidenceFile');
+localEvidence.onchange=()=>{
+ const file=localEvidence.files?.[0];
+ if(!file)return;
+ if(!file.type.startsWith('image/'))return alert('Chỉ chọn ảnh');
+ const view=el('evidencePreview');
+ if(view.dataset.url)URL.revokeObjectURL(view.dataset.url);
+ view.dataset.url=URL.createObjectURL(file);
+ view.src=view.dataset.url;
+ view.classList.remove('hide');
+};
+
 el('login').onclick=()=>auth&&signInWithPopup(auth,new GoogleAuthProvider()).catch(e=>alert(e.message));
 el('logout').onclick=()=>auth&&signOut(auth);
 if(window.EHS_FIREBASE_CONFIG){
- const app=initializeApp(window.EHS_FIREBASE_CONFIG);auth=getAuth(app);db=getFirestore(app);fn=getFunctions(app);
- onAuthStateChanged(auth,async u=>{user=u;role=null;el('login').classList.toggle('hide',!!u);el('logout').classList.toggle('hide',!u);if(!u){el('mode').textContent='Chưa đăng nhập';data=[];render();return}try{const snap=await getDoc(doc(db,'members',u.uid));role=snap.exists()?snap.data().role:null;el('mode').textContent=u.email+' · '+(role||'chưa cấp quyền');if(role)await reload();else notice('Chưa được cấp quyền; tạo members/'+u.uid+' trong Firestore Console.')}catch(e){notice(e.message)}});
+ const app=initializeApp(window.EHS_FIREBASE_CONFIG);auth=getAuth(app);db=getFirestore(app);
+ onAuthStateChanged(auth,async u=>{user=u;role=null;el('login').classList.toggle('hide',!!u);el('logout').classList.toggle('hide',!u);if(!u){el('mode').textContent='Chưa đăng nhập';data=[];reviewData=[];render();return}try{const snap=await getDoc(doc(db,'members',u.uid));role=snap.exists()?snap.data().role:null;el('mode').textContent=u.email+' · '+(role||'chưa cấp quyền');if(role)await reload();else notice('Chưa được cấp quyền; tạo members/'+u.uid+' trong Firestore Console.')}catch(e){notice(e.message)}});
 }else{el('mode').textContent='Chưa cấu hình Firebase';el('login').classList.add('hide');render();notice('Chưa kết nối Firebase Web App. Thêm cấu hình từ Project settings để kích hoạt.')}
