@@ -1,61 +1,131 @@
 rules_version = '2';
 service cloud.firestore {
-  match /databases/{database}/documents {
-    function signed() { return request.auth != null; }
-    function userDoc() { return /databases/$(database)/documents/members/$(request.auth.uid); }
-    function member() { return signed() && exists(userDoc()); }
-    function role() { return get(userDoc()).data.role; }
-    function editor() { return member() && role() in ['admin', 'editor']; }
-    function admin() { return member() && role() == 'admin'; }
-    function validKind(k) { return k in ['waste','water_in','water_out','stock_in','stock_out','cost','revenue']; }
-    function validEntry(d) {
-      return d.keys().hasAll(['date','kind','value','unit','name','note','source','createdBy','createdAt'])
-        && d.date is string && d.date.matches('^\\d{4}-\\d{2}-\\d{2}$')
-        && validKind(d.kind)
-        && d.value is number && d.value >= 0
-        && d.unit is string && d.unit.size() <= 32
-        && d.name is string && d.name.size() <= 200
-        && d.note is string && d.note.size() <= 2000
-        && d.source is string && d.source.size() <= 32
-        && d.createdBy == request.auth.uid
-        && d.createdAt == request.time;
-    }
-
-    match /members/{uid} {
-      allow get: if member() && (uid == request.auth.uid || admin());
-      allow list: if admin();
-      allow create, update, delete: if admin();
-    }
-
-    match /records/{id} {
-      allow read: if member();
-      allow create: if editor()
-        && request.resource.data.keys().hasOnly(['date','kind','value','unit','name','note','source','createdBy','createdAt'])
-        && validEntry(request.resource.data);
-      // No overwrite or deletion: append-only environmental measurements.
-      allow update, delete: if false;
-    }
-
-    match /reviews/{id} {
-      allow read: if member();
-      // One record per review keeps approvals atomic on Spark without Cloud Functions.
-      allow create: if editor()
-        && request.resource.data.keys().hasOnly(['date','kind','value','unit','name','note','source','createdBy','createdAt','status'])
-        && request.resource.data.status == 'pending'
-        && validEntry(request.resource.data);
-      allow update: if admin()
-        && resource.data.status == 'pending'
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','reviewedBy','reviewedAt'])
-        && request.resource.data.status in ['approved','rejected']
-        && request.resource.data.reviewedBy == request.auth.uid
-        && request.resource.data.reviewedAt == request.time;
-      allow delete: if false;
-    }
-
-    match /settings/{id} {
-      allow read: if member();
-      allow write: if admin();
-    }
-    match /{document=**} { allow read, write: if false; }
+ match /databases/{database}/documents {
+  function signed() { return request.auth != null; }
+  function memberPath() { return /databases/$(database)/documents/members/$(request.auth.uid); }
+  function activeMember() {
+    return signed() && exists(memberPath()) &&
+      get(memberPath()).data.get('active', true) == true;
   }
+  function role() { return get(memberPath()).data.role; }
+  function admin() { return activeMember() && role() == 'admin'; }
+  function editor() { return activeMember() && role() in ['admin','editor']; }
+  function validRole(r) { return r in ['admin','editor','viewer']; }
+  function validKind(k) { return k in ['waste','water_in','water_out','stock_in','stock_out','cost','revenue']; }
+  function validEntry(d) {
+    return d.keys().hasAll(['date','kind','value','unit','name','note','source','createdBy','createdAt'])
+      && d.date is string && d.date.matches('^\\d{4}-\\d{2}-\\d{2}$')
+      && validKind(d.kind)
+      && d.value is number && d.value >= 0
+      && d.unit is string && d.unit.size() <= 32
+      && d.name is string && d.name.size() <= 200
+      && d.note is string && d.note.size() <= 2000
+      && d.source is string && d.source.size() <= 32
+      && d.createdBy == request.auth.uid
+      && d.createdAt == request.time;
+  }
+  function hasAudit(target, id) {
+    return id is string
+      && existsAfter(/databases/$(database)/documents/member_audit/$(id))
+      && getAfter(/databases/$(database)/documents/member_audit/$(id)).data.target == target
+      && getAfter(/databases/$(database)/documents/member_audit/$(id)).data.actorUid == request.auth.uid
+      && getAfter(/databases/$(database)/documents/member_audit/$(id)).data.occurredAt == request.time;
+  }
+
+  match /members/{uid} {
+    allow get: if signed() && (request.auth.uid == uid || admin());
+    allow list: if admin();
+    // A signed-in invitee may activate only their own UID and only an active email invitation.
+    allow create: if signed() && request.auth.uid == uid
+      && request.auth.token.email_verified == true
+      && request.resource.data.keys().hasOnly(['email','role','active','inviteEmail','createdAt','acceptedAt'])
+      && request.resource.data.email == request.auth.token.email
+      && request.resource.data.inviteEmail == request.auth.token.email
+      && request.resource.data.active == true
+      && request.resource.data.createdAt == request.time
+      && request.resource.data.acceptedAt == request.time
+      && exists(/databases/$(database)/documents/invites/$(request.auth.token.email))
+      && get(/databases/$(database)/documents/invites/$(request.auth.token.email)).data.active == true
+      && request.resource.data.role ==
+         get(/databases/$(database)/documents/invites/$(request.auth.token.email)).data.role;
+    allow update: if admin()
+      && uid != request.auth.uid
+      && resource.data.role is string
+      && request.resource.data.diff(resource.data).affectedKeys()
+           .hasOnly(['role','active','updatedAt','lastAuditId'])
+      && validRole(request.resource.data.role)
+      && request.resource.data.active is bool
+      && request.resource.data.updatedAt == request.time
+      && request.resource.data.lastAuditId is string
+      && request.resource.data.lastAuditId != resource.data.get('lastAuditId','')
+      && hasAudit('members/'+uid,request.resource.data.lastAuditId);
+    allow delete: if false;
+  }
+
+  match /invites/{email} {
+    allow get: if admin() || (signed() && request.auth.token.email_verified == true
+                             && request.auth.token.email == email);
+    allow list: if admin();
+    allow create: if admin()
+      && request.resource.data.keys().hasOnly(['email','role','active','createdAt','updatedAt','createdBy','lastAuditId'])
+      && request.resource.data.email == email
+      && validRole(request.resource.data.role)
+      && request.resource.data.active == true
+      && request.resource.data.createdBy == request.auth.uid
+      && request.resource.data.createdAt == request.time
+      && request.resource.data.updatedAt == request.time
+      && hasAudit('invites/'+email,request.resource.data.lastAuditId);
+    allow update: if admin()
+      && request.resource.data.diff(resource.data).affectedKeys()
+           .hasOnly(['role','active','updatedAt','lastAuditId'])
+      && request.resource.data.email == email
+      && validRole(request.resource.data.role)
+      && request.resource.data.active is bool
+      && request.resource.data.updatedAt == request.time
+      && request.resource.data.lastAuditId != resource.data.lastAuditId
+      && hasAudit('invites/'+email,request.resource.data.lastAuditId);
+    allow delete: if false;
+  }
+
+  match /member_audit/{id} {
+    allow read: if admin();
+    allow create: if admin()
+      && request.resource.data.keys().hasOnly(['target','action','actorUid','occurredAt','details'])
+      && request.resource.data.actorUid == request.auth.uid
+      && request.resource.data.occurredAt == request.time
+      && request.resource.data.target is string
+      && request.resource.data.target.matches('^(members|invites)/[^/]+$')
+      && request.resource.data.action in ['invite','role_change','disable','enable','invite_revoke','invite_enable']
+      && request.resource.data.details is string
+      && request.resource.data.details.size() <= 800;
+    allow update, delete: if false;
+  }
+
+  match /records/{id} {
+    allow read: if activeMember();
+    allow create: if editor()
+      && request.resource.data.keys().hasOnly(['date','kind','value','unit','name','note','source','createdBy','createdAt'])
+      && validEntry(request.resource.data);
+    allow update, delete: if false;
+  }
+  match /reviews/{id} {
+    allow read: if activeMember();
+    allow create: if editor()
+      && request.resource.data.keys().hasOnly(['date','kind','value','unit','name','note','source','createdBy','createdAt','status'])
+      && request.resource.data.status == 'pending'
+      && validEntry(request.resource.data);
+    allow update: if admin()
+      && resource.data.status == 'pending'
+      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','reviewedBy','reviewedAt'])
+      && request.resource.data.status in ['approved','rejected']
+      && request.resource.data.reviewedBy == request.auth.uid
+      && request.resource.data.reviewedAt == request.time;
+    allow delete: if false;
+  }
+  match /settings/{id} {
+    allow read: if activeMember();
+    allow write: if admin();
+  }
+  match /{document=**} { allow read, write: if false; }
+ }
 }
