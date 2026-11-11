@@ -38,6 +38,7 @@ jobs:
           node --check public/member-admin.js
           node --check public/ehs-operations.js
           node --check public/ehs-excel-adapters.js
+          node --check public/ehs-ocr.js
       - name: Install Firebase CLI
         run: npm install -g firebase-tools@14
       - name: Deploy Hosting only
