@@ -219,21 +219,29 @@ export async function loadOperations(){
  }catch(e){notify('Không tải được dữ liệu nghiệp vụ: '+e.message);return []}
 }
 export function getOperationalRecords(){
- const fullMonths=new Set(operations.filter(x=>x.kind==='water_cost_month'&&x.group==='water_cost_full').map(x=>x.date.slice(0,7)));
- const mapped=[];
+ const calc=reconcile(operations,'1900-01-01','2100-12-31');
+ const master=new Set(operations.filter(x=>x.kind==='monthly_master')
+   .map(x=>x.date.slice(0,7)+'/'+x.name));
+ const records=[];
  for(const x of operations){
-  let kind=x.kind,name=x.name||'';
-  if(kind==='water_cost_month'){
-   if(fullMonths.has(x.date.slice(0,7))&&x.group!=='water_cost_full')continue;
-   kind='cost';name='water_cost';
-  }else if(kind==='waste_finance_month'){
-   if(x.name==='scrap_revenue'){kind='revenue';name='scrap_revenue'}
-   else if(x.name==='industrial_cost'||x.name==='hazardous_cost'){kind='cost';name=x.name}
-   else continue;
-  }else if(!['waste','water_in','water_out','stock_in','stock_out'].includes(kind))continue;
-  mapped.push({date:x.date,kind,value:x.quantity,unit:x.unit,name,note:x.note||'',source:'operations'});
+  if(!['waste','water_in','water_out','stock_in','stock_out'].includes(x.kind))continue;
+  // For dashboard monthly totals prefer management A.TK over daily A.2 when provided.
+  if(['water_in','water_out'].includes(x.kind)&&master.has(x.date.slice(0,7)+'/'+x.kind))continue;
+  records.push({date:x.date,kind:x.kind,value:x.quantity,unit:x.unit,name:x.name||'',note:x.note||'',source:'operations'});
  }
- return mapped;
+ for(const x of calc.months){
+  const date=x.month+'-01';
+  for(const kind of ['water_in','water_out']){
+   if(master.has(x.month+'/'+kind))records.push({date,kind,value:x[kind==='water_in'?'waterIn':'waterOut'],unit:'m³',
+    name:kind==='water_in'?'Nước xử lý (A.TK)':'Nước xả (A.TK)',note:'Giá trị tháng chính thức từ A.TK',source:'monthly_master'});
+  }
+  for(const [label,value] of [['water_cost',x.waterCost],['green_cost',x.greenCost],['waste_cost',x.wasteCost]]){
+   if(value!==null&&value!==undefined)records.push({date,kind:'cost',value,unit:'VND',name:label,note:'Tổng chính thức từ sheet báo cáo',source:'reconciled'});
+  }
+  if(x.revenue!==null)records.push({date,kind:'revenue',value:x.revenue,unit:'VND',
+    name:'scrap_revenue',note:'Doanh thu phế liệu A.TK',source:'reconciled'});
+ }
+ return records;
 }
 export function mountOperations(database,actor,actorRole,onUpdate){
  db=database;user=actor;role=actorRole;refreshFn=onUpdate;
