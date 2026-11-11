@@ -1,0 +1,9 @@
+.env
+.env.*
+!.env.example
+node_modules/
+.firebase/
+*.log
+*service-account*.json
+firebase-debug.log
+public/sample-data.json
