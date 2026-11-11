@@ -63,6 +63,8 @@ export function parseWorkbook(book,fileName,reportYear){
     add(items,'water_in',d,treated,{...source,sourceRow:i+1,unit:'m³',meter:meterIn,previous:previousIn,note:str(r[7])});
     add(items,'water_out',d,discharged,{...source,sourceRow:i+1,unit:'m³',meter:meterOut,previous:previousOut,note:str(r[7])});
     if((Number.isFinite(meterIn)&&Number.isFinite(previousIn)&&meterIn<previousIn)||(Number.isFinite(meterOut)&&Number.isFinite(previousOut)&&meterOut<previousOut))warnings.push(sheetName+' dòng '+(i+1)+': đồng hồ nhỏ hơn lần trước, cần kiểm tra.');
+    if(Number.isFinite(meterIn)&&Number.isFinite(previousIn)&&Number.isFinite(treated)&&Math.abs(treated-(meterIn-previousIn))>0.001)warnings.push(sheetName+' dòng '+(i+1)+': lượng xử lý khác hiệu số đồng hồ.');
+    if(Number.isFinite(meterOut)&&Number.isFinite(previousOut)&&Number.isFinite(discharged)&&Math.abs(discharged-(meterOut-previousOut))>0.001)warnings.push(sheetName+' dòng '+(i+1)+': lượng xả khác hiệu số đồng hồ.');
    });
   }else if(type==='stock_opening'){
    // Inventory sheet 收发存 uses row 4 headers and initial balance for 2025 in column F.
