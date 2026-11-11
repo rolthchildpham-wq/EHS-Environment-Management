@@ -156,7 +156,9 @@ const month=x=>String(x.date||'').slice(0,7);
 function report(){
  const from=el('from')?.value||'2000-01-01',to=el('to')?.value||'2099-12-31',rows=operations.filter(x=>x.date>=from&&x.date<=to);
  const monthGroups={};
+ const fullCostMonths=new Set(rows.filter(r=>r.kind==='water_cost_month'&&r.group==='water_cost_full').map(month));
  for(const r of rows){
+  if(!['waste','water_in','water_out','stock_in','stock_out','water_cost_month','waste_finance_month'].includes(r.kind))continue;
   const m=month(r);if(!monthGroups[m])monthGroups[m]={month:m,waste:0,in:0,out:0,stockIn:0,stockOut:0,waterCost:0,industrialCost:0,hazardousCost:0,industrialKg:0,hazardousKg:0,scrapRevenue:0};
   const p=monthGroups[m];
   if(r.kind==='waste')p.waste+=Number(r.quantity);
@@ -164,7 +166,7 @@ function report(){
   if(r.kind==='water_out')p.out+=Number(r.quantity);
   if(r.kind==='stock_in')p.stockIn++;
   if(r.kind==='stock_out')p.stockOut++;
-  if(r.kind==='water_cost_month')p.waterCost+=Number(r.quantity);
+  if(r.kind==='water_cost_month'&&(!fullCostMonths.has(m)||r.group==='water_cost_full'))p.waterCost+=Number(r.quantity);
   if(r.kind==='waste_finance_month'){
    if(r.name==='industrial_cost')p.industrialCost+=Number(r.quantity);
    if(r.name==='industrial_waste_kg')p.industrialKg+=Number(r.quantity);
@@ -224,6 +226,7 @@ export function mountOperations(database,actor,actorRole,onUpdate){
   '<div class="scroll"><table><thead><tr><th>Bỏ</th><th>Nguồn</th><th>Ngày</th><th>Nghiệp vụ</th><th>Tên</th><th>Số lượng</th><th>Đơn vị</th><th>Mã</th><th>Kiểm tra</th></tr></thead><tbody id="opsPreviewRows"></tbody></table></div>'+
   '<div class="controls" style="margin-top:12px"><button id="opsPrev">100 dòng trước</button><button id="opsNext">100 dòng tiếp</button><button class="primary" id="opsSave">Lưu hàng loạt vào Firestore</button></div>'+
   '<p class="notice" id="opsMessage" role="status" aria-live="polite">Chưa có file Excel nào được đọc.</p><dialog id="opsEditor" aria-label="Sửa dòng Excel"></dialog></div>';
+ if(el('opsOcrMount'))el('opsOcrMount').remove();
  host.insertAdjacentHTML('afterend','<div id="opsOcrMount"></div>');
  mountOCR();
  const reportHost=el('opsReport');
