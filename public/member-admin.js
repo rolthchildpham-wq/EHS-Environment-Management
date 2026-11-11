@@ -33,6 +33,9 @@ async function commitChange(target,changes,action,details,create=false){
 }
 async function updateMember(id,change,action,description){
  if(id===state.user.uid)return msg('Không được tự đổi hoặc khóa tài khoản Admin của mình.');
+ const existing=state.members.find(x=>x.id===id)?.data;
+ if(!existing)return msg('Không tìm thấy thành viên.');
+ if(existing.active===undefined)change={active:true,...change};
  try{await commitChange('members/'+id,change,action,description);msg('Đã lưu thay đổi thành viên.')}
  catch(e){msg('Lỗi: '+e.message);await loadMembers()}
 }
@@ -102,7 +105,7 @@ export function mountMemberAdmin(db,user,role){
  if(!user||role!=='admin'){root.innerHTML='';state.user=null;return}
  state.db=db;state.user=user;
  root.innerHTML='<div class="panel" style="margin-top:18px">'+
-  '<h2>Quản lý nhân viên · Spark</h2><p class="muted">Mời qua email. Nhân viên tự đăng nhập Google để kích hoạt. Khóa quyền sẽ chặn dữ liệu Firestore.</p>'+
+  '<h2>Quản lý nhân viên · Spark</h2><p class="muted">Mời qua email. Nhân viên tự đăng nhập Google để kích hoạt. Khóa quyền sẽ chặn dữ liệu Firestore. Đổi quyền lời mời chỉ áp dụng trước lần đăng nhập đầu tiên; với thành viên đã có tài khoản, đổi quyền ở bảng Thành viên.</p>'+
   '<div class="controls"><label>Email nhân viên<input id="memberEmail" type="email" autocomplete="email" placeholder="nhanvien@congty.com" style="min-width:240px"></label>'+
   '<label>Vai trò<select id="memberDefaultRole"><option value="editor" selected>Editor – nhập dữ liệu</option><option value="viewer">Viewer – chỉ xem</option><option value="admin">Admin – quản trị</option></select></label>'+
   '<button class="primary" id="memberInviteButton">Thêm nhân viên</button><button id="membersReload">Làm mới</button></div>'+
