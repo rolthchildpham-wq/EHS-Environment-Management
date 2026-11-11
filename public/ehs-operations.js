@@ -240,7 +240,7 @@ export function mountOperations(database,actor,actorRole,onUpdate){
  const host=el('opsMount');
  if(!host)return;
  host.innerHTML='<div class="panel"><h2>Nhập tay & nhập Excel theo cấu trúc gốc</h2>'+
-  '<p class="muted">Nhận diện A.1, A.2, 入库, 出库, A.3 phụ chi phí và báo cáo thu chi rác. Dữ liệu Excel được kiểm tra trước khi ghi. Chọn năm báo cáo đúng với nội dung các sheet tổng hợp.</p>'+
+  '<p class="muted">Nhận diện A.1, A.2, 入库, 出库, A.TK, A.3 chi phí nước thải, C chi phí cây xanh và báo cáo thu chi rác. Dữ liệu Excel được kiểm tra trước khi ghi. Chọn năm báo cáo đúng với nội dung các sheet tổng hợp.</p>'+
   '<div class="controls"><label>File Excel gốc<input id="opsFile" type="file" accept=".xlsx,.xls"></label>'+
   '<label>Năm cho sheet báo cáo tháng<input id="opsYear" type="number" min="2015" max="2100" value="2026"></label>'+
   '<button id="opsParse">Đọc và kiểm tra Excel</button></div>'+
@@ -287,12 +287,47 @@ export function mountOperations(database,actor,actorRole,onUpdate){
  if(el('opsExportMonth'))el('opsExportMonth').onclick=()=>{
   if(!window.XLSX)return notify('Không có thư viện Excel.');
   const wb=window.XLSX.utils.book_new();
-  const tables=[['opsMonthlyRows','Bao cao thang'],['opsYearRows','Tong hop nam'],['opsInventoryRows','Nhap xuat ton'],['opsReferenceRows','Tham chieu goc']];
-  for(const [id,name] of tables){const table=el(id).closest('table'),array=[...table.rows].map(row=>[...row.cells].map(c=>c.textContent));window.XLSX.utils.book_append_sheet(wb,window.XLSX.utils.aoa_to_sheet(array),name)}
-  const cols=['date','kind','code','name','nameZh','group','quantity','unit','meter','previous','spec','worker','price','amount','note','sourceFile','sourceSheet','sourceRow'];
-  const raw=[cols,...operations.map(r=>cols.map(k=>r[k]??''))];
-  window.XLSX.utils.book_append_sheet(wb,window.XLSX.utils.aoa_to_sheet(raw),'Du lieu chi tiet');
-  window.XLSX.writeFile(wb,'EHS_bao_cao_quan_tri.xlsx');
+  const add=(rows,name)=>window.XLSX.utils.book_append_sheet(wb,window.XLSX.utils.json_to_sheet(rows),name);
+  const m=lastFinancial?.months||[];
+  add(m.map(x=>({
+   'Tháng':x.month,'Rác A.1 (kg)':x.wasteKg,
+   'Nước xử lý (m³)':x.waterIn,'Nước xả (m³)':x.waterOut,
+   'Rác CN (kg)':x.industrialKg,'Rác NH (kg)':x.hazardousKg,
+   'Chi phí CN (VND)':x.industrialCost,'Chi phí SH (VND)':x.domesticCost,
+   'Chi phí NH (VND)':x.hazardousCost,'Tổng chi phí rác (VND)':x.wasteCost,
+   'Doanh thu phế liệu (VND)':x.revenue,'Chi phí A.3 (VND)':x.waterCost,
+   'Chi phí nước (VND/m³)':x.costWaterPerM3,'Chi phí cây xanh C (VND)':x.greenCost,
+   'Chi phí rác (VND/kg)':x.costWastePerKg,
+   'Nguồn chi phí nước':x.waterSource,'Nguồn chi phí rác':x.wasteSource
+  })),'Tong hop thang');
+  const ymap=new Map();
+  for(const x of m){
+   const y=x.month.slice(0,4);
+   if(!ymap.has(y))ymap.set(y,{Nam:Number(y),Nuoc_xa_m3:0,Rac_A1_kg:0,CP_nuoc_VND:0,CP_cay_xanh_VND:0,CP_rac_VND:0,Doanh_thu_phe_lieu_VND:0});
+   const d=ymap.get(y);d.Nuoc_xa_m3+=x.waterOut||0;d.Rac_A1_kg+=x.wasteKg||0;
+   d.CP_nuoc_VND+=x.waterCost||0;d.CP_cay_xanh_VND+=x.greenCost||0;
+   d.CP_rac_VND+=x.wasteCost||0;d.Doanh_thu_phe_lieu_VND+=x.revenue||0;
+  }
+  add([...ymap.values()],'Tong hop nam');
+  const detail=(kind)=>operations.filter(x=>x.kind===kind).map(x=>({
+   'Tháng':x.date.slice(0,7),'Hạng mục':x.name,'Số tiền VND':x.quantity,
+   'Đơn giá VND':x.price,'Nguồn':x.sourceSheet,'Dòng Excel':x.sourceRow,
+   'File gốc':x.sourceFile,'Ghi chú':x.note
+  }));
+  add(detail('water_cost_month'),'Chi tiet A3');
+  add(detail('green_cost_detail'),'Chi tiet Cay Xanh C');
+  add((lastFinancial?.issues||[]).map(x=>({'Tháng':x.month,'Nhóm':x.type,
+    'Tổng chuẩn':x.actual,'Tổng chi tiết':x.detail,'Chênh lệch':x.difference})),'Doi chieu chenhlech');
+  add(operations.filter(x=>x.kind==='monthly_master').map(x=>({
+   'Tháng':x.date.slice(0,7),'Chỉ tiêu':x.name,'Giá trị':x.quantity,
+   'Đơn vị':x.unit,'Ô nguồn':x.note,'File gốc':x.sourceFile
+  })),'A TK Goc');
+  add(operations.filter(x=>['stock_in','stock_out','stock_opening'].includes(x.kind))
+    .map(x=>({'Ngày':x.date,'Loại':x.kind,'Mã':x.code,'Tên':x.name,
+      'Số lượng':x.quantity,'ĐVT':x.unit,'Đơn giá':x.price,'Thành tiền':x.amount,
+      'File':x.sourceFile,'Sheet':x.sourceSheet,'Dòng':x.sourceRow
+    })),'Nhap Xuat Ton');
+  window.XLSX.writeFile(wb,'EHS_Bao_Cao_Doi_Chieu_A_TK_A3_C.xlsx');
  };
  paint();report();
 }
