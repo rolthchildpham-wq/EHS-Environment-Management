@@ -98,14 +98,21 @@ async function save(){
   for(let i=0;i<pending.length;i+=250){
    const chunk=pending.slice(i,i+250),batch=writeBatch(db);
    let chunkCount=0;
-   for(const r of chunk){
-    const ref=r.sourceFile==='Nhập tay'?doc(collection(db,'operations')):doc(db,'operations',await stableId(r));
-    if(r.sourceFile!=='Nhập tay'){
-     const existing=await getDoc(ref);
-     if(existing.exists()){duplicates++;continue}
-    }
-    batch.set(ref,recordToDb(r,importId));chunkCount++;
+   const refs=await Promise.all(chunk.map(async r=>
+    r.sourceFile==='Nhập tay'?doc(collection(db,'operations')):doc(db,'operations',await stableId(r))
+   ));
+   // Resolve duplicate IDs concurrently in small groups, not one network round-trip per row.
+   const exists=new Array(chunk.length).fill(false);
+   for(let j=0;j<chunk.length;j+=25){
+    const checks=await Promise.all(chunk.slice(j,j+25).map((r,k)=>
+     r.sourceFile==='Nhập tay'?Promise.resolve(false):getDoc(refs[j+k]).then(d=>d.exists())
+    ));
+    checks.forEach((value,k)=>{exists[j+k]=value});
    }
+   chunk.forEach((r,j)=>{
+    if(exists[j]){duplicates++;return}
+    batch.set(refs[j],recordToDb(r,importId));chunkCount++;
+   });
    if(chunkCount){await batch.commit();saved+=chunkCount}
    notify('Đã lưu '+saved+'/'+pending.length+' dòng; bỏ qua '+duplicates+' dòng đã tồn tại.');
   }
