@@ -4,7 +4,7 @@ import {parseWorkbook,asDay,validateOperation} from './ehs-excel-adapters.js';
 const el=id=>document.getElementById(id);
 const safe=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money=x=>Number(x||0).toLocaleString('vi-VN',{maximumFractionDigits:2});
-const kinds={waste:'Rác thải (A.1)',water_in:'Nước xử lý (A.2)',water_out:'Nước xả (A.2)',stock_in:'Nhập kho (入库)',stock_out:'Xuất kho (出库)',stock_opening:'Tồn đầu kỳ (收发存)',water_cost_month:'Chi phí XLNT tháng (A.3)',waste_finance_month:'Thu chi rác tháng',monthly_reference:'Tham chiếu báo cáo tháng',waste_detail_reference:'Chi tiết rác tham chiếu',scrap_detail_reference:'Phế liệu tham chiếu'};
+const kinds={waste:'Rác thải (A.1)',water_in:'Nước xử lý (A.2)',water_out:'Nước xả (A.2)',stock_in:'Nhập kho (入库)',stock_out:'Xuất kho (出库)',stock_opening:'Tồn đầu kỳ (收发存)',water_cost_month:'Chi phí XLNT tháng (A.3)',water_cost_reference:'Chi phí phụ biểu tham chiếu',waste_finance_month:'Thu chi rác tháng',monthly_reference:'Tham chiếu báo cáo tháng',waste_detail_reference:'Chi tiết rác tham chiếu',scrap_detail_reference:'Phế liệu tham chiếu'};
 let db=null,user=null,role=null,pending=[],operations=[],refreshFn=null,lastWarning=[],lastFound=[],selected=0;
 const notify=s=>{if(el('opsMessage'))el('opsMessage').textContent=s};
 const fields=[
@@ -169,7 +169,7 @@ function report(){
   [x.code,x.name,x.unit,money(x.opening),money(x.in),money(x.out),money(x.qty),money(x.amount)].map(v=>'<td>'+safe(v)+'</td>').join('')+'</tr>').join('');
  const yrs={};for(const x of out){const y=x.month.slice(0,4);if(!yrs[y])yrs[y]={y,waste:0,water:0,waterCost:0,wasteCost:0,wasteKg:0,revenue:0};const k=yrs[y];k.waste+=x.waste;k.water+=x.out;k.waterCost+=x.waterCost;k.wasteCost+=x.industrialCost+x.hazardousCost;k.wasteKg+=x.industrialKg+x.hazardousKg;k.revenue+=x.scrapRevenue}
  el('opsYearRows').innerHTML=Object.values(yrs).sort((a,b)=>a.y.localeCompare(b.y)).map(x=>'<tr>'+[x.y,money(x.waste),money(x.water),money(x.waterCost),x.water&&x.waterCost?money(x.waterCost/x.water):'—',money(x.wasteCost),x.wasteKg?money(x.wasteCost/x.wasteKg):'—',money(x.revenue)].map(v=>'<td>'+safe(v)+'</td>').join('')+'</tr>').join('');
- el('opsReferenceRows').innerHTML=operations.filter(x=>['waste_detail_reference','scrap_detail_reference','monthly_reference'].includes(x.kind)).slice(0,500).map(x=>'<tr>'+[x.sourceSheet,x.date,x.name,x.code,money(x.quantity),x.unit,money(x.amount),x.note].map(v=>'<td>'+safe(v)+'</td>').join('')+'</tr>').join('');
+ el('opsReferenceRows').innerHTML=operations.filter(x=>['water_cost_reference','waste_detail_reference','scrap_detail_reference','monthly_reference'].includes(x.kind)).slice(0,500).map(x=>'<tr>'+[x.sourceSheet,x.date,x.name,x.code,money(x.quantity),x.unit,money(x.amount),x.note].map(v=>'<td>'+safe(v)+'</td>').join('')+'</tr>').join('');
  el('opsDataCount').textContent='Đã đọc '+operations.length+' bản ghi nghiệp vụ (giới hạn hiển thị tối đa 5.000 dòng; cần tải theo kỳ nếu dữ liệu nhiều năm).';
 }
 export async function loadOperations(){
