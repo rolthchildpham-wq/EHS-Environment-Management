@@ -1,7 +1,7 @@
-import {mountOCR} from './ehs-ocr.js';
+import {mountOCR} from './ehs-ocr.js?v=20261111b';
 import {collection,doc,getDoc,getDocs,query,limit,orderBy,writeBatch,serverTimestamp}
 from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
-import {parseWorkbook,asDay,validateOperation} from './ehs-excel-adapters.js';
+import {parseWorkbook,asDay,validateOperation} from './ehs-excel-adapters.js?v=20261111b';
 const el=id=>document.getElementById(id);
 const safe=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money=x=>Number(x||0).toLocaleString('vi-VN',{maximumFractionDigits:2});
