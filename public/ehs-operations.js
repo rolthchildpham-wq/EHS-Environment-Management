@@ -6,7 +6,7 @@ import {parseWorkbook,asDay,validateOperation} from './ehs-excel-adapters.js?v=2
 const el=id=>document.getElementById(id);
 const safe=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money=x=>Number(x||0).toLocaleString('vi-VN',{maximumFractionDigits:2});
-const kinds={waste:'Rác thải (A.1)',water_in:'Nước xử lý (A.2)',water_out:'Nước xả (A.2)',stock_in:'Nhập kho (入库)',stock_out:'Xuất kho (出库)',stock_opening:'Tồn đầu kỳ (收发存)',water_cost_month:'Chi phí XLNT tháng (A.3)',water_cost_reference:'Chi phí phụ biểu tham chiếu',waste_finance_month:'Thu chi rác tháng',monthly_reference:'Tham chiếu báo cáo tháng',waste_detail_reference:'Chi tiết rác tham chiếu',scrap_detail_reference:'Phế liệu tham chiếu'};
+const kinds={waste:'Rác thải (A.1)',water_in:'Nước xử lý (A.2)',water_out:'Nước xả (A.2)',stock_in:'Nhập kho (入库)',stock_out:'Xuất kho (出库)',stock_opening:'Tồn đầu kỳ (收发存)',water_cost_month:'Chi tiết chi phí XLNT (A.3)',water_cost_total:'Tổng chi phí XLNT (A.3)',green_cost_detail:'Chi tiết cây xanh (C)',green_cost_total:'Tổng chi phí cây xanh (C)',water_cost_reference:'Chi phí phụ biểu tham chiếu',waste_finance_month:'Thu chi rác tháng',monthly_reference:'Tham chiếu báo cáo tháng',waste_detail_reference:'Chi tiết rác tham chiếu',scrap_detail_reference:'Phế liệu tham chiếu'};
 let db=null,user=null,role=null,pending=[],operations=[],refreshFn=null,lastWarning=[],lastFound=[],selected=0,lastFinancial=null;
 const notify=s=>{if(el('opsMessage'))el('opsMessage').textContent=s};
 const fields=[
@@ -26,7 +26,10 @@ function manualModel(){
    stock_in:['date','kind','code','name','spec','quantity','unit','worker','price','amount','note'],
    stock_opening:['date','kind','code','name','spec','quantity','unit','note'],
    stock_out:['date','kind','code','name','spec','quantity','unit','worker','note'],
-   water_cost_month:['date','kind','name','quantity','unit','note'],
+   water_cost_month:['date','kind','name','quantity','unit','price','note'],
+   water_cost_total:['date','kind','quantity','unit','note'],
+   green_cost_detail:['date','kind','name','quantity','unit','price','note'],
+   green_cost_total:['date','kind','quantity','unit','note'],
    waste_finance_month:['date','kind','name','quantity','unit','note']
   };return map[kind]?.includes(name);
  });
@@ -36,7 +39,7 @@ function manualModel(){
     (k==='date'?'value="'+new Date().toISOString().slice(0,10)+'"':'')+' placeholder="'+safe(label)+'"></label>';
  }).join('');
  const unit=el('opsManualFields').querySelector('[data-op-field="unit"]');
- if(unit)unit.value=kind==='waste'?'kg':kind.startsWith('water_')&&kind!=='water_cost_month'?'m³':kind.endsWith('_month')?'VND':'';
+ if(unit)unit.value=kind==='waste'?'kg':kind.startsWith('water_')&&kind!=='water_cost_month'?'m³':(['water_cost_month','water_cost_total','green_cost_detail','green_cost_total','waste_finance_month'].includes(kind))?'VND':'';
 }
 function formRecord(){
  const kind=el('opsKind').value,obj={kind,quantity:NaN,sourceFile:'Nhập tay',sourceSheet:'Manual',sourceRow:Date.now(),year:0};
