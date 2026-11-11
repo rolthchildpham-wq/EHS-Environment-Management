@@ -64,3 +64,21 @@ Firestore collections: `invites/{email}`, `members/{uid}`, `member_audit/{auditI
 **Bắt buộc trước khi sử dụng:** chủ dự án vào Firebase Console → Firestore → Rules, dán nguyên văn file `firestore.rules` mới nhất và chọn **Publish**. GitHub Hosting Action chỉ triển khai giao diện, không triển khai Rules. Bản deploy Rules qua service account hiện từng gặp lỗi quyền API 403 nên cần kiểm tra Publish thực tế.
 
 Nếu chưa có admin đầu tiên, hãy tạo thủ công `members/{UID}` trong Firestore Console, field `role: 'admin'`. Kích hoạt Google Authentication trong Firebase Console. Sau khi publish rules, test lần lượt: invite → đăng nhập bằng email mời → đổi quyền → khóa quyền → kiểm tra Firestore từ client bị chặn → mở lại quyền. Nếu quản trị viên được tạo thủ công không có trường `active`, hệ thống coi là hoạt động theo mặc định.
+
+
+## Nhập Excel EHS thực tế (2026-11-11)
+
+Giao diện **Nhập liệu & Excel → Nhập tay & nhập Excel theo cấu trúc gốc** nhận các sheet sau mà không yêu cầu đổi tên cột:
+
+- `A.1 Xử lý rác thải`: ngày, tên tiếng Việt/Trung, lượng rác kg.
+- `A.2 Xử lý nước thải`: ngày, chỉ số đồng hồ xử lý/xả hiện tại và trước đó, m³ xử lý và m³ xả thực tế; không cộng tổng chỉ số tích lũy.
+- `入库`, `出库`: mã hàng, quy cách, đơn vị, số lượng, nhân viên, đơn giá và giá trị nhập.
+- `收发存`: tồn đầu kỳ 2025 từ cột F, tính tồn cuối theo mã và đơn vị.
+- `A.3 Chi Phí Nước Thải`: toàn bộ chi phí chi tiết theo tháng (hóa chất, điện, nước, bùn...). Sheet `A.3 Phụ Biểu` chỉ dùng để đối chiếu khi có sheet chính, không cộng hai lần.
+- `A.TK Rác_XLNT ...`, `Bảng thu chi hàng tháng`, `RÁC NH_CN&SH`, `PL _廢品`: tổng hợp tham chiếu và số liệu tài chính; các bảng lũy kế/đối chiếu không cộng trùng với A.1.
+
+Nhập từng dòng bằng biểu mẫu nghiệp vụ cũng hỗ trợ đầy đủ khi không có Excel. Excel được đọc **trong trình duyệt**, xem trước 100 dòng/trang, sửa ngày, số lượng, mã, số tiền và trường chi tiết trước khi lưu. Dữ liệu gốc ghi vào `operations/{id}`; lô ghi tối đa 250 dòng, các lần nhập trùng cùng file/sheet/dòng sẽ bị bỏ qua. Bản ghi nghiệp vụ không được cập nhật hoặc xóa trực tiếp bởi client theo Rules. Cần thiết kế bút toán điều chỉnh cho quy trình sửa số liệu sau khi đã lưu.
+
+Báo cáo: thống kê theo tháng, năm, chi phí/m³, chi phí/kg, doanh thu phế liệu, tồn kho, tham chiếu nguyên bản, xuất Excel nhiều sheet và in PDF từ trình duyệt. Các chỉ số chỉ chính xác trong phạm vi dữ liệu đã nhập; năm trên sheet báo cáo tổng hợp phải chọn thủ công trước khi đọc file.
+
+**Quan trọng:** Chủ Firebase Project phải vào Firestore → Rules, xuất bản lại [file `firestore.rules`](firestore.rules) mới nhất để cấp quyền `operations`; GitHub Actions hiện chỉ triển khai Hosting do service account từng thiếu quyền triển khai Rules. Giới hạn tải hiện tại 5.000 bản ghi nghiệp vụ/mỗi lượt, chưa có phân trang toàn bộ lịch sử nhiều năm. Chưa nhận dạng AI chữ viết tay trên bản Spark; ảnh được nhập thủ công và duyệt riêng.
