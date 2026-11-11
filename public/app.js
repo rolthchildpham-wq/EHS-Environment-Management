@@ -65,7 +65,7 @@ async function reload(){
 async function reviews(){
  if(!db||!role)return;
  const snap=await getDocs(query(collection(db,'reviews'),limit(100)));
- el('reviews').innerHTML=snap.docs.map(d=>'<tr><td>'+esc(d.id)+'</td><td>'+esc(d.data().status)+'</td><td>'+Number(d.data().entries?.length||0)+'</td><td>'+(d.data().status==='pending'&&['admin','editor'].includes(role)?'<button data-review="'+esc(d.id)+'">Phê duyệt</button>':'')+'</td></tr>').join('');
+ el('reviews').innerHTML=snap.docs.map(d=>'<tr><td>'+esc(d.id)+'</td><td>'+esc(d.data().status)+'</td><td>'+Number(d.data().entries?.length||0)+'</td><td>'+(d.data().status==='pending'&&role==='admin'?'<button data-review="'+esc(d.id)+'">Phê duyệt</button>':'')+'</td></tr>').join('');
  document.querySelectorAll('[data-review]').forEach(b=>b.onclick=async()=>{if(!confirm('Duyệt chứng từ và ghi dữ liệu?'))return;try{await httpsCallable(fn,'approveReview')({id:b.dataset.review});await reload()}catch(e){alert(e.message)}});
 }
 el('tabs').innerHTML=Object.entries(labels).map(([id,title],i)=>'<button data-tab="'+id+'" class="'+(i===0?'active':'')+'">'+title+'</button>').join('');
