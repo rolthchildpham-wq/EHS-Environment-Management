@@ -54,17 +54,38 @@ function validate(r){
  if((r.kind==='water_in'||r.kind==='water_out')&&r.meter!=null&&r.previous!=null&&Number(r.meter)<Number(r.previous))return 'Chỉ số đồng hồ hiện tại nhỏ hơn lần trước';
  return '';
 }
+function editRow(index){
+ const record=pending[index];if(!record)return;
+ const keys=['date','name','code','nameZh','group','quantity','unit','spec','worker','meter','previous','price','amount','note'];
+ const labels={date:'Ngày',name:'Tên',code:'Mã vật tư',nameZh:'Tên tiếng Trung',group:'Phân loại',quantity:'Số lượng',unit:'Đơn vị',spec:'Quy cách',worker:'Người thực hiện',meter:'Chỉ số hiện tại',previous:'Chỉ số trước',price:'Đơn giá',amount:'Thành tiền',note:'Ghi chú'};
+ const modal=el('opsEditor');
+ modal.innerHTML='<div style="max-width:760px;max-height:80vh;overflow:auto"><h3>Sửa dòng '+(index+1)+'</h3><div class="controls">'+
+  keys.map(k=>'<label>'+safe(labels[k])+'<input data-edit-field="'+k+'" type="'+(k==='date'?'date':['quantity','meter','previous','price','amount'].includes(k)?'number':'text')+'" '+(['quantity','meter','previous','price','amount'].includes(k)?'step="any" ':'')+'value="'+safe(record[k]??'')+'"></label>').join('')+
+  '</div><div class="controls"><button id="opsEditCancel">Hủy</button><button id="opsEditSave" class="primary">Cập nhật</button></div></div>';
+ modal.showModal();
+ el('opsEditCancel').onclick=()=>modal.close();
+ el('opsEditSave').onclick=()=>{
+  modal.querySelectorAll('[data-edit-field]').forEach(input=>{
+   const k=input.dataset.editField;
+   record[k]=['quantity','meter','previous','price','amount'].includes(k)?
+    (input.value.trim()===''?null:Number(input.value)):input.value.trim();
+  });
+  modal.close();paint();
+ };
+}
+
 function paint(){
  const sub=pending.slice(selected,selected+100);
  el('opsPreviewRows').innerHTML=sub.map((x,i)=>{
   const ix=i+selected,err=validate(x);
-  return '<tr><td><button data-remove="'+ix+'" title="Bỏ dòng">×</button></td>'+
+  return '<tr><td><button data-edit="'+ix+'" title="Sửa chi tiết">Sửa</button> <button data-remove="'+ix+'" title="Bỏ dòng">×</button></td>'+
    '<td>'+safe(x.sourceSheet||'Nhập tay')+' #'+safe(x.sourceRow||'')+'</td>'+
    '<td><input aria-label="Ngày dòng '+(ix+1)+'" type="date" data-row-date="'+ix+'" value="'+safe(x.date)+'"></td>'+
    '<td>'+safe(kinds[x.kind]||x.kind)+'</td><td>'+safe(x.name||x.code||'')+'</td>'+
    '<td><input aria-label="Số lượng dòng '+(ix+1)+'" type="number" min="0" step="any" data-row-qty="'+ix+'" value="'+safe(x.quantity)+'"></td>'+
    '<td>'+safe(x.unit)+'</td><td>'+safe(x.code||'')+'</td><td>'+safe(err||'Hợp lệ')+'</td></tr>';
  }).join('');
+ for(const b of el('opsPreviewRows').querySelectorAll('[data-edit]'))b.onclick=()=>editRow(Number(b.dataset.edit));
  for(const b of el('opsPreviewRows').querySelectorAll('[data-remove]'))b.onclick=()=>{pending.splice(Number(b.dataset.remove),1);selected=Math.min(selected,Math.max(0,pending.length-100));paint()};
  for(const x of el('opsPreviewRows').querySelectorAll('[data-row-date]'))x.onchange=()=>{pending[Number(x.dataset.rowDate)].date=x.value;paint()};
  for(const x of el('opsPreviewRows').querySelectorAll('[data-row-qty]'))x.onchange=()=>{pending[Number(x.dataset.rowQty)].quantity=Number(x.value);paint()};
@@ -201,7 +222,7 @@ export function mountOperations(database,actor,actorRole,onUpdate){
   '<p id="opsPreviewCount"></p><div id="opsWarnings" class="notice"></div>'+
   '<div class="scroll"><table><thead><tr><th>Bỏ</th><th>Nguồn</th><th>Ngày</th><th>Nghiệp vụ</th><th>Tên</th><th>Số lượng</th><th>Đơn vị</th><th>Mã</th><th>Kiểm tra</th></tr></thead><tbody id="opsPreviewRows"></tbody></table></div>'+
   '<div class="controls" style="margin-top:12px"><button id="opsPrev">100 dòng trước</button><button id="opsNext">100 dòng tiếp</button><button class="primary" id="opsSave">Lưu hàng loạt vào Firestore</button></div>'+
-  '<p class="notice" id="opsMessage" role="status" aria-live="polite">Chưa có file Excel nào được đọc.</p></div>';
+  '<p class="notice" id="opsMessage" role="status" aria-live="polite">Chưa có file Excel nào được đọc.</p><dialog id="opsEditor" aria-label="Sửa dòng Excel"></dialog></div>';
  const reportHost=el('opsReport');
  if(reportHost)reportHost.innerHTML='<div class="panel" style="margin-top:18px"><h2>Báo cáo nghiệp vụ từ file Excel</h2>'+
   '<p class="muted">Tổng hợp từ các dòng đã lưu. Chi phí xử lý nước thải chỉ sử dụng sheet A.3 phụ, không cộng trùng với giá trị nhập kho. Tồn kho tính từ giao dịch nhập/xuất, chưa cộng số dư đầu kỳ của sheet 收发存.</p><p id="opsDataCount"></p>'+
