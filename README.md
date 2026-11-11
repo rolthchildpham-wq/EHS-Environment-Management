@@ -1,0 +1,42 @@
+# EHS Environment V2 — Firebase Hosting + Firestore + AI
+
+## Chức năng
+Dashboard rác/nước/vật tư; lọc thời gian và đối chiếu kỳ; bảng tài chính; sơ đồ nhà máy minh họa; nhập Excel chuẩn; AI đọc ảnh qua Cloud Function Gemini; duyệt trước khi ghi; xuất Excel/PDF (in)/PowerPoint; Auth và phân quyền.
+
+## Triển khai
+1. Tạo Firebase project (bật Billing nếu dùng Cloud Functions/AI). Bật Authentication > Google, Firestore, Storage và Hosting.
+2. Cài Node.js 22 và Firebase CLI: `npm install -g firebase-tools`.
+3. `firebase login` và `firebase use --add` trong thư mục này.
+4. Firebase Console > Project settings > Your apps > Web app: sao chép cấu hình vào `public/firebase-config.js`, thay `null` bằng object config. Đây là config công khai, không phải secret.
+5. `cd functions && npm install && cd ..`
+6. `firebase functions:secrets:set GEMINI_API_KEY` (nhập khóa Gemini API, KHÔNG đưa vào client).
+7. `firebase deploy --only firestore:rules,firestore:indexes,storage,functions,hosting`.
+8. Đăng nhập Google một lần, lấy UID từ Firebase Authentication, vào Firestore tạo tài liệu `members/{UID}` với trường `role: "admin"` (bootstrap thủ công qua Firebase Console). Chỉ sau đó app mới tải dữ liệu riêng.
+9. Tạo tài khoản editor/viewer bằng Firebase Auth rồi tạo `members/{UID}` với `role` tương ứng trong Console. Không cho người dùng tự cấp quyền.
+
+## Lưu ý
+- Chưa deploy vì chưa có quyền truy cập dự án Firebase của bạn.
+- Dữ liệu từ các tệp Excel được đưa vào `public/sample-data.json` CHỈ để demo khi chưa cấu hình Firebase. **Không được deploy file này nếu chứa dữ liệu nội bộ nhạy cảm**: xóa file hoặc thay bằng dữ liệu giả trước khi triển khai công khai. Trong chế độ Firebase, ứng dụng không tải file demo.
+- Nhập Excel tự động hiện chỉ nhận cấu trúc chuẩn Ngày/Loại/Tên/Số lượng/Đơn vị. Các workbook gốc đa dạng phải thêm bộ ánh xạ tương ứng trước khi nhập toàn bộ.
+- Chi phí trên m³ và kg chỉ có ý nghĩa khi tách chi phí đúng loại. Dữ liệu tài chính hiện chưa ánh xạ từ workbook gốc.
+- Nhập AI tạo `reviews` chờ duyệt; phải phê duyệt trong Quản trị để ghi `records`.
+- Chỉ số vật tư nhập/xuất cộng khác đơn vị chỉ mang tính số dòng giao dịch, không phải tồn kho chuẩn; cần quy đổi và quản lý theo mã hàng.
+- Cloud tải tối đa 5000 bản ghi/lần; cần phân trang, chỉ mục và tổng hợp theo tháng để mở rộng quy mô lớn.
+- Đối với sản xuất, nên bổ sung: nhật ký sửa/xóa phía server, import idempotent chống trùng, kiểm tra ảnh và mã độc, rate limiting, kiểm thử Firestore rules, sao lưu định kỳ, phân quyền theo nhà máy, bản đồ thực và báo cáo PDF phía server.
+
+## GitHub Actions - automatic Hosting deployment
+
+**Never reuse `topkey-badminton`** for this EHS project. Create a separate Firebase project and GitHub repository.
+
+1. Create an empty GitHub repository, for example `rolthchildpham-wq/EHS-Environment-Management` (private recommended). Push this directory to its `main` branch. This package excludes `public/sample-data.json` because it contains internal workbook-derived data.
+2. Create a new Firebase project, register a Web app, enable Hosting, and fill in the **public** Firebase Web app configuration in `public/firebase-config.js` (an object rather than `null`).
+3. Create a Google Cloud service account for the **new EHS project only**, grant the minimum Firebase Hosting deployment permissions needed (typically Firebase Hosting Admin and Service Account User where applicable), and create its JSON key. Prefer short-lived Workload Identity Federation for mature production deployments; this starter uses a repository secret.
+4. In GitHub repository Settings > Secrets and variables > Actions, add repository **variable** `FIREBASE_PROJECT_ID` with the new project ID and repository **secret** `FIREBASE_SERVICE_ACCOUNT` with the full JSON key. Never commit the JSON key or paste it into chat.
+5. Push to `main` or run Actions > Deploy EHS to Firebase Hosting > Run workflow. The workflow deploys **Hosting only** and never automatically deploys Firestore rules, Storage rules or Functions.
+6. First-time backend setup (Auth, Firestore, Storage, Functions and Gemini secret) requires a separate authenticated administrator deployment as described above. The web app cannot access live data until these are configured.
+
+### Security notes
+- `public/sample-data.json` is deliberately excluded from the deployment bundle. Keep internal records in Firestore with appropriate security rules; do not ship the sample file.
+- `firebase.json` contains an `/api/**` rewrite to the `api` Cloud Function; that endpoint will fail until Functions is deployed separately.
+- Do not create a public GitHub repository if source code or internal operational logic is confidential.
+- No automatic PR preview is enabled in this starter because a secure preview workflow requires separate environment-specific secrets and permissions. Production auto-deployment from `main` is configured.
