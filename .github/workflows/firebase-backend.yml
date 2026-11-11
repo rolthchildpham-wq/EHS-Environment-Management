@@ -1,93 +1,27 @@
-name: Deploy EHS Firebase Backend
+name: Deploy EHS Firestore Rules (Spark)
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/firebase-backend.yml'
   workflow_dispatch:
-    inputs:
-      component:
-        description: 'Choose backend component'
-        required: true
-        type: choice
-        default: 'firestore'
-        options:
-          - firestore
-          - approval
-          - functions
 permissions:
   contents: read
-concurrency:
-  group: ehs-firebase-backend
-  cancel-in-progress: false
 jobs:
-  firestore:
-    if: ${{ github.event_name == 'push' || inputs.component == 'firestore' }}
+  deploy-rules:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Authenticate and deploy Firestore security rules
+      - name: Validate Firebase target
         env:
           FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: |
           test "$FIREBASE_PROJECT_ID" = "ehs-environment-management"
           test -n "$FIREBASE_SERVICE_ACCOUNT"
+      - name: Deploy Firestore rules (no Cloud Functions)
+        env:
+          FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
           printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/ehs-sa.json"
           chmod 600 "$RUNNER_TEMP/ehs-sa.json"
           export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/ehs-sa.json"
           npm install -g firebase-tools@14
           firebase deploy --only firestore:rules --project "$FIREBASE_PROJECT_ID" --non-interactive
-  approval:
-    if: ${{ github.event_name == 'push' || inputs.component == 'approval' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - name: Validate environment and install dependencies
-        env:
-          FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-        run: |
-          test "$FIREBASE_PROJECT_ID" = "ehs-environment-management"
-          test -n "$FIREBASE_SERVICE_ACCOUNT"
-          cd functions
-          npm install --omit=dev --no-audit --no-fund
-          node --check index.js
-      - name: Deploy secure approval function
-        env:
-          FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-        run: |
-          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/ehs-sa.json"
-          chmod 600 "$RUNNER_TEMP/ehs-sa.json"
-          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/ehs-sa.json"
-          npm install -g firebase-tools@14
-          firebase deploy --only functions:approveReview --project "$FIREBASE_PROJECT_ID" --non-interactive
-  all-functions:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.component == 'functions' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - name: Validate and install
-        run: |
-          cd functions
-          npm install --omit=dev --no-audit --no-fund
-          node --check index.js
-      - name: Deploy AI and approval functions
-        env:
-          FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-        run: |
-          test "$FIREBASE_PROJECT_ID" = "ehs-environment-management"
-          test -n "$FIREBASE_SERVICE_ACCOUNT"
-          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/ehs-sa.json"
-          chmod 600 "$RUNNER_TEMP/ehs-sa.json"
-          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/ehs-sa.json"
-          npm install -g firebase-tools@14
-          firebase deploy --only functions --project "$FIREBASE_PROJECT_ID" --non-interactive
