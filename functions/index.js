@@ -23,7 +23,7 @@ exports.readEvidence=onCall({secrets:[GEMINI_KEY],maxInstances:10,timeoutSeconds
  return result;
 });
 exports.approveReview=onCall(async(req)=>{
- await requireRole(req,['admin','editor']);
+ await requireRole(req,['admin']);
  const id=req.data?.id;
  if(typeof id!=='string'||!id||id.length>150)throw new HttpsError('invalid-argument','ID không hợp lệ');
  const db=admin.firestore();
