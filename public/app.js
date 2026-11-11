@@ -1,5 +1,5 @@
-import {mountOperations,unmountOperations,loadOperations,getOperationalRecords} from './ehs-operations.js';
-import {resolveMember,mountMemberAdmin} from './member-admin.js';
+import {mountOperations,unmountOperations,loadOperations,getOperationalRecords} from './ehs-operations.js?v=20261111b';
+import {resolveMember,mountMemberAdmin} from './member-admin.js?v=20261111b';
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js';
 import {getAuth,GoogleAuthProvider,signInWithPopup,onAuthStateChanged,signOut} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js';
 import {getFirestore,collection,doc,getDoc,addDoc,getDocs,query,limit,serverTimestamp,updateDoc} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
