@@ -46,8 +46,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: functions/package-lock.json
       - name: Validate environment and install dependencies
         env:
           FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
@@ -56,7 +54,7 @@ jobs:
           test "$FIREBASE_PROJECT_ID" = "ehs-environment-management"
           test -n "$FIREBASE_SERVICE_ACCOUNT"
           cd functions
-          npm ci
+          npm install --omit=dev --no-audit --no-fund
           node --check index.js
       - name: Deploy secure approval function
         env:
@@ -76,12 +74,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: functions/package-lock.json
       - name: Validate and install
         run: |
           cd functions
-          npm ci
+          npm install --omit=dev --no-audit --no-fund
           node --check index.js
       - name: Deploy AI and approval functions
         env:
