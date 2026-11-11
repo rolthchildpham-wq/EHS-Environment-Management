@@ -205,9 +205,21 @@ export async function loadOperations(){
  }catch(e){notify('Không tải được dữ liệu nghiệp vụ: '+e.message);return []}
 }
 export function getOperationalRecords(){
- return operations.filter(x=>['waste','water_in','water_out','stock_in','stock_out'].includes(x.kind)).map(x=>({
-  date:x.date,kind:x.kind,value:x.quantity,unit:x.unit,name:x.name||'',note:x.note||'',source:'operations'
- }));
+ const fullMonths=new Set(operations.filter(x=>x.kind==='water_cost_month'&&x.group==='water_cost_full').map(x=>x.date.slice(0,7)));
+ const mapped=[];
+ for(const x of operations){
+  let kind=x.kind,name=x.name||'';
+  if(kind==='water_cost_month'){
+   if(fullMonths.has(x.date.slice(0,7))&&x.group!=='water_cost_full')continue;
+   kind='cost';name='water_cost';
+  }else if(kind==='waste_finance_month'){
+   if(x.name==='scrap_revenue'){kind='revenue';name='scrap_revenue'}
+   else if(x.name==='industrial_cost'||x.name==='hazardous_cost'){kind='cost';name=x.name}
+   else continue;
+  }else if(!['waste','water_in','water_out','stock_in','stock_out'].includes(kind))continue;
+  mapped.push({date:x.date,kind,value:x.quantity,unit:x.unit,name,note:x.note||'',source:'operations'});
+ }
+ return mapped;
 }
 export function mountOperations(database,actor,actorRole,onUpdate){
  db=database;user=actor;role=actorRole;refreshFn=onUpdate;
