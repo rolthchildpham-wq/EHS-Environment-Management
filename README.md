@@ -54,3 +54,13 @@ The **web dashboard now runs without Cloud Functions or Blaze**. Hosted on Fireb
 **GitHub Actions:** changes to `public/**` automatically deploy Hosting on `main` after JavaScript syntax validation. Firestore rules have a **separate manual** Actions workflow and are never automatically loosened by a UI update. The optional Cloud Functions source under `functions/` is historical only and is not deployed in Spark mode.
 
 **Current limits:** imports expect normalized Excel headers; the dashboard fetches at most 5,000 direct rows and 1,000 review rows per refresh; there is no actual AI OCR, file upload to Storage, or server-side PDF generator. Auth and rules must be activated for multiuser use. Spark remains subject to Firebase quotas.
+
+## Quản lý thành viên trên Spark
+
+Đã bổ sung thẻ **Quản trị → Quản lý nhân viên** (chỉ hiển thị với role `admin`). Quản trị viên nhập email Google, chọn `editor` mặc định, `viewer` hoặc `admin`, điều chỉnh quyền, khóa/mở quyền và xem nhật ký. Người được mời vào website, đăng nhập Google bằng **đúng email đã mời**, hệ thống tạo `members/{uid}` tự động. Không tạo mật khẩu Firebase cho người khác.
+
+Firestore collections: `invites/{email}`, `members/{uid}`, `member_audit/{auditId}`. Các thay đổi bởi admin được ghi đồng thời bằng write batch, `member_audit` chỉ tạo mới, không thể sửa/xóa qua client. Firestore Rules không cho người bị vô hiệu hóa tiếp tục đọc/ghi records, reviews và quản trị. Admin không thể tự vô hiệu hóa hoặc đổi vai trò chính mình.
+
+**Bắt buộc trước khi sử dụng:** chủ dự án vào Firebase Console → Firestore → Rules, dán nguyên văn file `firestore.rules` mới nhất và chọn **Publish**. GitHub Hosting Action chỉ triển khai giao diện, không triển khai Rules. Bản deploy Rules qua service account hiện từng gặp lỗi quyền API 403 nên cần kiểm tra Publish thực tế.
+
+Nếu chưa có admin đầu tiên, hãy tạo thủ công `members/{UID}` trong Firestore Console, field `role: 'admin'`. Kích hoạt Google Authentication trong Firebase Console. Sau khi publish rules, test lần lượt: invite → đăng nhập bằng email mời → đổi quyền → khóa quyền → kiểm tra Firestore từ client bị chặn → mở lại quyền. Nếu quản trị viên được tạo thủ công không có trường `active`, hệ thống coi là hoạt động theo mặc định.
