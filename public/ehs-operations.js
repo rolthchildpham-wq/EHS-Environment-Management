@@ -46,6 +46,7 @@ function formRecord(){
  return obj;
 }
 function validate(r){
+ if(r.quantity===null||r.quantity===undefined||r.quantity==='')return 'Thiếu số lượng';
  const err=validateOperation(r);if(err)return err;
  if((r.kind==='stock_in'||r.kind==='stock_out')&&!String(r.code||'').trim())return 'Thiếu mã vật tư';
  if(r.kind==='waste'&&!String(r.name||'').trim())return 'Thiếu tên loại rác';
@@ -74,6 +75,7 @@ function paint(){
 function recordToDb(x,importId){
  const keys=['date','kind','quantity','unit','name','code','spec','worker','note','price','amount','previous','meter','group','nameZh','sourceSheet','sourceRow','sourceFile','year'];
  const obj={};for(const k of keys){const val=x[k];if(val!==undefined)obj[k]=val===null?null:val;}
+ for(const k of ['unit','name','code','note','sourceFile','sourceSheet'])if(typeof obj[k]!=='string')obj[k]=String(obj[k]??'');
  return {...obj,importId,createdBy:user.uid,createdAt:serverTimestamp()};
 }
 async function stableId(x){
@@ -107,8 +109,7 @@ async function save(){
    notify('Đã lưu '+saved+'/'+pending.length+' dòng; bỏ qua '+duplicates+' dòng đã tồn tại.');
   }
   pending=[];lastWarning=[];paint();
-  await loadOperations();
-  if(refreshFn)await refreshFn();
+  if(refreshFn)await refreshFn();else await loadOperations();
   notify('Hoàn tất: '+saved+' dòng được lưu, '+duplicates+' dòng trùng. Các số liệu đã đồng bộ.');
  }catch(e){notify('Lưu chưa hoàn tất: '+e.message+'. Những lô đã lưu trước đó vẫn giữ nguyên; hãy nhập lại file để bỏ qua bản ghi trùng.')}
  finally{el('opsSave').disabled=false}
