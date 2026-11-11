@@ -4,7 +4,7 @@ import {parseWorkbook,asDay,validateOperation} from './ehs-excel-adapters.js';
 const el=id=>document.getElementById(id);
 const safe=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money=x=>Number(x||0).toLocaleString('vi-VN',{maximumFractionDigits:2});
-const kinds={waste:'Rác thải (A.1)',water_in:'Nước xử lý (A.2)',water_out:'Nước xả (A.2)',stock_in:'Nhập kho (入库)',stock_out:'Xuất kho (出库)',water_cost_month:'Chi phí XLNT tháng (A.3)',waste_finance_month:'Thu chi rác tháng',monthly_reference:'Tham chiếu báo cáo tháng'};
+const kinds={waste:'Rác thải (A.1)',water_in:'Nước xử lý (A.2)',water_out:'Nước xả (A.2)',stock_in:'Nhập kho (入库)',stock_out:'Xuất kho (出库)',stock_opening:'Tồn đầu kỳ (收发存)',water_cost_month:'Chi phí XLNT tháng (A.3)',waste_finance_month:'Thu chi rác tháng',monthly_reference:'Tham chiếu báo cáo tháng',waste_detail_reference:'Chi tiết rác tham chiếu',scrap_detail_reference:'Phế liệu tham chiếu'};
 let db=null,user=null,role=null,pending=[],operations=[],refreshFn=null,lastWarning=[],lastFound=[],selected=0;
 const notify=s=>{if(el('opsMessage'))el('opsMessage').textContent=s};
 const fields=[
@@ -22,6 +22,7 @@ function manualModel(){
    water_in:['date','kind','quantity','unit','meter','previous','note'],
    water_out:['date','kind','quantity','unit','meter','previous','note'],
    stock_in:['date','kind','code','name','spec','quantity','unit','worker','price','amount','note'],
+   stock_opening:['date','kind','code','name','spec','quantity','unit','note'],
    stock_out:['date','kind','code','name','spec','quantity','unit','worker','note'],
    water_cost_month:['date','kind','name','quantity','unit','note'],
    waste_finance_month:['date','kind','name','quantity','unit','note']
@@ -48,7 +49,7 @@ function formRecord(){
 function validate(r){
  if(r.quantity===null||r.quantity===undefined||r.quantity==='')return 'Thiếu số lượng';
  const err=validateOperation(r);if(err)return err;
- if((r.kind==='stock_in'||r.kind==='stock_out')&&!String(r.code||'').trim())return 'Thiếu mã vật tư';
+ if(['stock_in','stock_out','stock_opening'].includes(r.kind)&&!String(r.code||'').trim())return 'Thiếu mã vật tư';
  if(r.kind==='waste'&&!String(r.name||'').trim())return 'Thiếu tên loại rác';
  if((r.kind==='water_in'||r.kind==='water_out')&&r.meter!=null&&r.previous!=null&&Number(r.meter)<Number(r.previous))return 'Chỉ số đồng hồ hiện tại nhỏ hơn lần trước';
  return '';
@@ -127,7 +128,7 @@ function report(){
  const from=el('from')?.value||'2000-01-01',to=el('to')?.value||'2099-12-31',rows=operations.filter(x=>x.date>=from&&x.date<=to);
  const monthGroups={};
  for(const r of rows){
-  const m=month(r);if(!monthGroups[m])monthGroups[m]={month:m,waste:0,in:0,out:0,stockIn:0,stockOut:0,waterCost:0,industrialCost:0,hazardousCost:0,scrapRevenue:0};
+  const m=month(r);if(!monthGroups[m])monthGroups[m]={month:m,waste:0,in:0,out:0,stockIn:0,stockOut:0,waterCost:0,industrialCost:0,hazardousCost:0,industrialKg:0,hazardousKg:0,scrapRevenue:0};
   const p=monthGroups[m];
   if(r.kind==='waste')p.waste+=Number(r.quantity);
   if(r.kind==='water_in')p.in+=Number(r.quantity);
@@ -137,6 +138,8 @@ function report(){
   if(r.kind==='water_cost_month')p.waterCost+=Number(r.quantity);
   if(r.kind==='waste_finance_month'){
    if(r.name==='industrial_cost')p.industrialCost+=Number(r.quantity);
+   if(r.name==='industrial_waste_kg')p.industrialKg+=Number(r.quantity);
+   if(r.name==='hazardous_waste_kg')p.hazardousKg+=Number(r.quantity);
    if(r.name==='hazardous_cost')p.hazardousCost+=Number(r.quantity);
    if(r.name==='scrap_revenue')p.scrapRevenue+=Number(r.quantity);
   }
@@ -145,19 +148,21 @@ function report(){
  el('opsMonthlyRows').innerHTML=out.map(x=>'<tr>'+[
   x.month,money(x.waste),money(x.in),money(x.out),money(x.stockIn),money(x.stockOut),
   money(x.waterCost),x.out&&x.waterCost?money(x.waterCost/x.out):'—',
-  money(x.industrialCost+x.hazardousCost),money(x.scrapRevenue)
+  money(x.industrialCost+x.hazardousCost),x.industrialKg+x.hazardousKg?money((x.industrialCost+x.hazardousCost)/(x.industrialKg+x.hazardousKg)):'—',money(x.scrapRevenue)
  ].map(t=>'<td>'+safe(t)+'</td>').join('')+'</tr>').join('');
  const inventory={};
- for(const x of operations.filter(x=>x.date<=to&&(x.kind==='stock_in'||x.kind==='stock_out'))){
-  const key=[x.code||x.name,x.unit].join('|');if(!inventory[key])inventory[key]={code:x.code,name:x.name,unit:x.unit,qty:0,in:0,out:0,amount:0};
-  inventory[key].qty+=Number(x.quantity)*(x.kind==='stock_in'?1:-1);
-  inventory[key][x.kind==='stock_in'?'in':'out']+=Number(x.quantity);
+ for(const x of operations.filter(x=>x.date<=to&&['stock_in','stock_out','stock_opening'].includes(x.kind))){
+  const key=[x.code||x.name,x.unit].join('|');if(!inventory[key])inventory[key]={code:x.code,name:x.name,unit:x.unit,qty:0,opening:0,in:0,out:0,amount:0};
+  inventory[key].qty+=Number(x.quantity)*(x.kind==='stock_out'?-1:1);
+  if(x.kind==='stock_opening')inventory[key].opening+=Number(x.quantity);
+  else inventory[key][x.kind==='stock_in'?'in':'out']+=Number(x.quantity);
   if(x.kind==='stock_in')inventory[key].amount+=Number(x.amount||0);
  }
  el('opsInventoryRows').innerHTML=Object.values(inventory).sort((a,b)=>a.code.localeCompare(b.code)).map(x=>'<tr>'+
-  [x.code,x.name,x.unit,money(x.in),money(x.out),money(x.qty),money(x.amount)].map(v=>'<td>'+safe(v)+'</td>').join('')+'</tr>').join('');
- const yrs={};for(const x of out){const y=x.month.slice(0,4);if(!yrs[y])yrs[y]={y,waste:0,water:0,waterCost:0,wasteCost:0,revenue:0};const k=yrs[y];k.waste+=x.waste;k.water+=x.out;k.waterCost+=x.waterCost;k.wasteCost+=x.industrialCost+x.hazardousCost;k.revenue+=x.scrapRevenue}
- el('opsYearRows').innerHTML=Object.values(yrs).sort((a,b)=>a.y.localeCompare(b.y)).map(x=>'<tr>'+[x.y,money(x.waste),money(x.water),money(x.waterCost),x.water&&x.waterCost?money(x.waterCost/x.water):'—',money(x.wasteCost),money(x.revenue)].map(v=>'<td>'+safe(v)+'</td>').join('')+'</tr>').join('');
+  [x.code,x.name,x.unit,money(x.opening),money(x.in),money(x.out),money(x.qty),money(x.amount)].map(v=>'<td>'+safe(v)+'</td>').join('')+'</tr>').join('');
+ const yrs={};for(const x of out){const y=x.month.slice(0,4);if(!yrs[y])yrs[y]={y,waste:0,water:0,waterCost:0,wasteCost:0,wasteKg:0,revenue:0};const k=yrs[y];k.waste+=x.waste;k.water+=x.out;k.waterCost+=x.waterCost;k.wasteCost+=x.industrialCost+x.hazardousCost;k.wasteKg+=x.industrialKg+x.hazardousKg;k.revenue+=x.scrapRevenue}
+ el('opsYearRows').innerHTML=Object.values(yrs).sort((a,b)=>a.y.localeCompare(b.y)).map(x=>'<tr>'+[x.y,money(x.waste),money(x.water),money(x.waterCost),x.water&&x.waterCost?money(x.waterCost/x.water):'—',money(x.wasteCost),x.wasteKg?money(x.wasteCost/x.wasteKg):'—',money(x.revenue)].map(v=>'<td>'+safe(v)+'</td>').join('')+'</tr>').join('');
+ el('opsReferenceRows').innerHTML=operations.filter(x=>['waste_detail_reference','scrap_detail_reference','monthly_reference'].includes(x.kind)).slice(0,500).map(x=>'<tr>'+[x.sourceSheet,x.date,x.name,x.code,money(x.quantity),x.unit,money(x.amount),x.note].map(v=>'<td>'+safe(v)+'</td>').join('')+'</tr>').join('');
  el('opsDataCount').textContent='Đã đọc '+operations.length+' bản ghi nghiệp vụ (giới hạn hiển thị tối đa 5.000 dòng; cần tải theo kỳ nếu dữ liệu nhiều năm).';
 }
 export async function loadOperations(){
@@ -194,9 +199,9 @@ export function mountOperations(database,actor,actorRole,onUpdate){
  if(reportHost)reportHost.innerHTML='<div class="panel" style="margin-top:18px"><h2>Báo cáo nghiệp vụ từ file Excel</h2>'+
   '<p class="muted">Tổng hợp từ các dòng đã lưu. Chi phí xử lý nước thải chỉ sử dụng sheet A.3 phụ, không cộng trùng với giá trị nhập kho. Tồn kho tính từ giao dịch nhập/xuất, chưa cộng số dư đầu kỳ của sheet 收发存.</p><p id="opsDataCount"></p>'+
   '<div class="controls"><button id="opsExportAll">Xuất dữ liệu nghiệp vụ (CSV)</button><button id="opsExportMonth">Xuất báo cáo tháng (Excel)</button></div>'+
-  '<h3>Thống kê tháng</h3><div class="scroll"><table><thead><tr><th>Tháng</th><th>Rác A.1 (kg)</th><th>XLNT (m³)</th><th>Xả (m³)</th><th>Phiếu nhập kho</th><th>Phiếu xuất kho</th><th>Chi phí XLNT</th><th>Chi phí/m³</th><th>Chi phí rác</th><th>Thu phế liệu</th></tr></thead><tbody id="opsMonthlyRows"></tbody></table></div>'+
-  '<h3>So sánh theo năm</h3><div class="scroll"><table><thead><tr><th>Năm</th><th>Rác (kg)</th><th>Nước xả (m³)</th><th>Chi phí XLNT</th><th>Chi phí/m³</th><th>Chi phí rác</th><th>Thu phế liệu</th></tr></thead><tbody id="opsYearRows"></tbody></table></div>'+
-  '<h3>Nhập – xuất – tồn theo mã vật tư</h3><div class="scroll"><table><thead><tr><th>Mã</th><th>Vật tư</th><th>ĐVT</th><th>SL nhập</th><th>SL xuất</th><th>Tồn giao dịch</th><th>Giá trị nhập</th></tr></thead><tbody id="opsInventoryRows"></tbody></table></div></div>';
+  '<h3>Thống kê tháng</h3><div class="scroll"><table><thead><tr><th>Tháng</th><th>Rác A.1 (kg)</th><th>XLNT (m³)</th><th>Xả (m³)</th><th>Phiếu nhập kho</th><th>Phiếu xuất kho</th><th>Chi phí XLNT</th><th>Chi phí/m³</th><th>Chi phí rác</th><th>Chi phí/kg rác</th><th>Thu phế liệu</th></tr></thead><tbody id="opsMonthlyRows"></tbody></table></div>'+
+  '<h3>So sánh theo năm</h3><div class="scroll"><table><thead><tr><th>Năm</th><th>Rác (kg)</th><th>Nước xả (m³)</th><th>Chi phí XLNT</th><th>Chi phí/m³</th><th>Chi phí rác</th><th>Chi phí/kg rác</th><th>Thu phế liệu</th></tr></thead><tbody id="opsYearRows"></tbody></table></div>'+
+  '<h3>Nhập – xuất – tồn theo mã vật tư</h3><div class="scroll"><table><thead><tr><th>Mã</th><th>Vật tư</th><th>ĐVT</th><th>Tồn đầu</th><th>SL nhập</th><th>SL xuất</th><th>Tồn cuối</th><th>Giá trị nhập</th></tr></thead><tbody id="opsInventoryRows"></tbody></table></div></div>';
  el('opsKind').onchange=manualModel;manualModel();
  el('opsAddManual').onclick=()=>{const x=formRecord();const err=validate(x);if(err)return notify('Dữ liệu nhập tay: '+err);pending.push(x);selected=Math.floor((pending.length-1)/100)*100;paint();notify('Đã thêm vào danh sách chờ lưu. Bấm Lưu hàng loạt để ghi Firestore.')};
  el('opsParse').onclick=async()=>{
@@ -215,9 +220,14 @@ export function mountOperations(database,actor,actorRole,onUpdate){
  el('opsSave').onclick=save;
  if(el('opsExportAll'))el('opsExportAll').onclick=()=>makeCsv(operations,'EHS_nghiep_vu.csv');
  if(el('opsExportMonth'))el('opsExportMonth').onclick=()=>{
-  const table=el('opsMonthlyRows').closest('table'),array=[...table.rows].map(row=>[...row.cells].map(c=>c.textContent));
-  if(window.XLSX){const wb=window.XLSX.utils.book_new();window.XLSX.utils.book_append_sheet(wb,window.XLSX.utils.aoa_to_sheet(array),'Bao cao thang');window.XLSX.writeFile(wb,'EHS_bao_cao_thang.xlsx')}
-  else notify('Không có thư viện Excel.');
+  if(!window.XLSX)return notify('Không có thư viện Excel.');
+  const wb=window.XLSX.utils.book_new();
+  const tables=[['opsMonthlyRows','Bao cao thang'],['opsYearRows','Tong hop nam'],['opsInventoryRows','Nhap xuat ton'],['opsReferenceRows','Tham chieu goc']];
+  for(const [id,name] of tables){const table=el(id).closest('table'),array=[...table.rows].map(row=>[...row.cells].map(c=>c.textContent));window.XLSX.utils.book_append_sheet(wb,window.XLSX.utils.aoa_to_sheet(array),name)}
+  const cols=['date','kind','code','name','nameZh','group','quantity','unit','meter','previous','spec','worker','price','amount','note','sourceFile','sourceSheet','sourceRow'];
+  const raw=[cols,...operations.map(r=>cols.map(k=>r[k]??''))];
+  window.XLSX.utils.book_append_sheet(wb,window.XLSX.utils.aoa_to_sheet(raw),'Du lieu chi tiet');
+  window.XLSX.writeFile(wb,'EHS_bao_cao_quan_tri.xlsx');
  };
  paint();report();
 }
