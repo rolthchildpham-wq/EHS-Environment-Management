@@ -1,3 +1,4 @@
+import {mountOCR} from './ehs-ocr.js';
 import {collection,doc,getDoc,getDocs,query,limit,orderBy,writeBatch,serverTimestamp}
 from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
 import {parseWorkbook,asDay,validateOperation} from './ehs-excel-adapters.js';
@@ -223,6 +224,8 @@ export function mountOperations(database,actor,actorRole,onUpdate){
   '<div class="scroll"><table><thead><tr><th>Bỏ</th><th>Nguồn</th><th>Ngày</th><th>Nghiệp vụ</th><th>Tên</th><th>Số lượng</th><th>Đơn vị</th><th>Mã</th><th>Kiểm tra</th></tr></thead><tbody id="opsPreviewRows"></tbody></table></div>'+
   '<div class="controls" style="margin-top:12px"><button id="opsPrev">100 dòng trước</button><button id="opsNext">100 dòng tiếp</button><button class="primary" id="opsSave">Lưu hàng loạt vào Firestore</button></div>'+
   '<p class="notice" id="opsMessage" role="status" aria-live="polite">Chưa có file Excel nào được đọc.</p><dialog id="opsEditor" aria-label="Sửa dòng Excel"></dialog></div>';
+ host.insertAdjacentHTML('afterend','<div id="opsOcrMount"></div>');
+ mountOCR();
  const reportHost=el('opsReport');
  if(reportHost)reportHost.innerHTML='<div class="panel" style="margin-top:18px"><h2>Báo cáo nghiệp vụ từ file Excel</h2>'+
   '<p class="muted">Tổng hợp từ các dòng đã lưu. Chi phí xử lý nước thải chỉ sử dụng sheet A.3 phụ, không cộng trùng với giá trị nhập kho. Tồn kho tính từ giao dịch nhập/xuất, chưa cộng số dư đầu kỳ của sheet 收发存.</p><p id="opsDataCount"></p>'+
@@ -260,4 +263,4 @@ export function mountOperations(database,actor,actorRole,onUpdate){
  paint();report();
 }
 
-export function unmountOperations(){db=null;user=null;role=null;refreshFn=null;pending=[];operations=[];selected=0;lastWarning=[];if(el('opsMount'))el('opsMount').innerHTML='';if(el('opsReport'))el('opsReport').innerHTML='';}
+export function unmountOperations(){db=null;user=null;role=null;refreshFn=null;pending=[];operations=[];selected=0;lastWarning=[];if(el('opsMount'))el('opsMount').innerHTML='';if(el('opsOcrMount'))el('opsOcrMount').remove();if(el('opsReport'))el('opsReport').innerHTML='';}
