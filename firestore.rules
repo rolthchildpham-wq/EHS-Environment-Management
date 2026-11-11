@@ -1,25 +1,61 @@
 rules_version = '2';
 service cloud.firestore {
- match /databases/{database}/documents {
-  function signed() { return request.auth != null; }
-  function member() { return signed() && exists(/databases/$(database)/documents/members/$(request.auth.uid)); }
-  function role() { return get(/databases/$(database)/documents/members/$(request.auth.uid)).data.role; }
-  function editor() { return member() && role() in ['admin','editor']; }
-  function admin() { return member() && role() == 'admin'; }
-  match /members/{uid} { allow read: if member() && (request.auth.uid == uid || admin()); allow write: if admin(); }
-  match /records/{id} {
-    allow read: if member();
-    allow create: if editor() && request.resource.data.keys().hasAll(['kind','date','value','unit','createdBy','createdAt']) && request.resource.data.createdBy == request.auth.uid && request.resource.data.value is number && request.resource.data.value >= 0 && request.resource.data.kind in ['waste','water_in','water_out','stock_in','stock_out','cost','revenue'];
-    allow update, delete: if admin();
+  match /databases/{database}/documents {
+    function signed() { return request.auth != null; }
+    function userDoc() { return /databases/$(database)/documents/members/$(request.auth.uid); }
+    function member() { return signed() && exists(userDoc()); }
+    function role() { return get(userDoc()).data.role; }
+    function editor() { return member() && role() in ['admin', 'editor']; }
+    function admin() { return member() && role() == 'admin'; }
+    function validKind(k) { return k in ['waste','water_in','water_out','stock_in','stock_out','cost','revenue']; }
+    function validEntry(d) {
+      return d.keys().hasAll(['date','kind','value','unit','name','note','source','createdBy','createdAt'])
+        && d.date is string && d.date.matches('^\\d{4}-\\d{2}-\\d{2}$')
+        && validKind(d.kind)
+        && d.value is number && d.value >= 0
+        && d.unit is string && d.unit.size() <= 32
+        && d.name is string && d.name.size() <= 200
+        && d.note is string && d.note.size() <= 2000
+        && d.source is string && d.source.size() <= 32
+        && d.createdBy == request.auth.uid
+        && d.createdAt == request.time;
+    }
+
+    match /members/{uid} {
+      allow get: if member() && (uid == request.auth.uid || admin());
+      allow list: if admin();
+      allow create, update, delete: if admin();
+    }
+
+    match /records/{id} {
+      allow read: if member();
+      allow create: if editor()
+        && request.resource.data.keys().hasOnly(['date','kind','value','unit','name','note','source','createdBy','createdAt'])
+        && validEntry(request.resource.data);
+      // No overwrite or deletion: append-only environmental measurements.
+      allow update, delete: if false;
+    }
+
+    match /reviews/{id} {
+      allow read: if member();
+      // One record per review keeps approvals atomic on Spark without Cloud Functions.
+      allow create: if editor()
+        && request.resource.data.keys().hasOnly(['date','kind','value','unit','name','note','source','createdBy','createdAt','status'])
+        && request.resource.data.status == 'pending'
+        && validEntry(request.resource.data);
+      allow update: if admin()
+        && resource.data.status == 'pending'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','reviewedBy','reviewedAt'])
+        && request.resource.data.status in ['approved','rejected']
+        && request.resource.data.reviewedBy == request.auth.uid
+        && request.resource.data.reviewedAt == request.time;
+      allow delete: if false;
+    }
+
+    match /settings/{id} {
+      allow read: if member();
+      allow write: if admin();
+    }
+    match /{document=**} { allow read, write: if false; }
   }
-  match /reviews/{id} {
-    allow read: if member();
-    allow create: if editor() && request.resource.data.status == 'pending' && request.resource.data.createdBy == request.auth.uid;
-    allow update: if false; // Only Cloud Functions/Admin SDK can approve or reject
-    allow delete: if admin();
-  }
-  match /audit/{id} { allow read: if admin(); allow write: if false; }
-  match /settings/{id} { allow read: if member(); allow write: if admin(); }
-  match /{document=**} { allow read, write: if false; }
- }
 }
