@@ -34,6 +34,7 @@ export function detectSheet(name){
  if(s.includes('收发存'))return 'stock_opening';
  if(s.includes('入库'))return 'stock_in';
  if(s.includes('出库'))return 'stock_out';
+ if(s.includes('a.3 chi phí nước thải')||s.includes('a.3 chi phi nuoc thai'))return 'water_cost_full';
  if(s.includes('a.3 phu')||s.includes('a.3 phu')||s.includes('phu bi')||s.includes('phụ biểu'))return 'water_cost';
  if(s.includes('rác nh_cn&sh'))return 'waste_detail_reference';
  if(s.includes('pl _廢品'))return 'scrap_detail_reference';
@@ -44,6 +45,7 @@ export function detectSheet(name){
 export function parseWorkbook(book,fileName,reportYear){
  const items=[],summaries=[],found=[],warnings=[];
  const year=Number(reportYear)||new Date().getFullYear();
+ const hasMainCost=book.SheetNames.some(s=>detectSheet(s)==='water_cost_full');
  const sheetRows=s=>window.XLSX.utils.sheet_to_json(s,{header:1,defval:null,raw:true,blankrows:false});
  for(const sheetName of book.SheetNames){
   const type=detectSheet(sheetName);if(!type)continue;
@@ -84,11 +86,28 @@ export function parseWorkbook(book,fileName,reportYear){
    matrix.forEach((r,i)=>{if(i<5||!str(r[2])||/tổng|總/i.test(str(r[2])))return;
     add(summaries,'scrap_detail_reference',year+'-10-01',r[3],{...source,sourceRow:i+1,unit:'kg',name:str(r[2]),amount:number(r[4]),group:'cumulative',note:'Thống kê phế liệu lũy kế đến 10/'+year+'; không cộng vào giao dịch A.1'});
    });
+  }else if(type==='water_cost_full'){
+   // Master A.3 cost sheet: columns G/H through AC/AD (quantity, VND) for 12 months.
+   // Skip subtotal/total rows; the full expense detail is the authoritative monthly cost.
+   matrix.forEach((r,i)=>{
+    if(i<5||i>19)return;
+    const name=str(r[0]),unit=str(r[1]),price=number(r[2]);
+    if(!name||!Number.isFinite(price)||/tổng|總/i.test(name))return;
+    for(let m=1;m<=12;m++){
+     const consumed=number(r[6+2*(m-1)]),amount=number(r[7+2*(m-1)]);
+     if(!Number.isFinite(amount)||amount<0)continue;
+     add(summaries,'water_cost_month',year+'-'+String(m).padStart(2,'0')+'-01',amount,{
+      ...source,sourceRow:i+1,unit:'VND',name,price,amount,
+      note:'Chi phí A.3 chính; tiêu thụ '+(Number.isFinite(consumed)?consumed:'—')+' '+unit,
+      group:'water_cost_full'
+     });
+    }
+   });
   }else if(type==='water_cost'){
    // Cost appendix has twelve monthly amount columns (B:M), row 4 contains month labels.
    matrix.slice(4).forEach((r,j)=>{
     const name=str(r[0]);if(!name||/tổng|合計|total/i.test(name))return;
-    for(let m=1;m<=12;m++)add(summaries,'water_cost_month',year+'-'+String(m).padStart(2,'0')+'-01',r[m],{...source,sourceRow:j+5,unit:'VND',name,group:'water_cost',note:'Báo cáo chi phí theo tháng; không tự cộng với giao dịch vật tư'});
+    for(let m=1;m<=12;m++)add(summaries,hasMainCost?'water_cost_reference':'water_cost_month',year+'-'+String(m).padStart(2,'0')+'-01',r[m],{...source,sourceRow:j+5,unit:'VND',name,group:'water_cost',note:'Báo cáo chi phí theo tháng; không tự cộng với giao dịch vật tư'});
    });
   }else if(type==='waste_finance'){
    const descriptors=[['industrial_waste_kg',4,'kg'],['industrial_cost',5,'VND'],['hazardous_waste_kg',6,'kg'],['hazardous_cost',7,'VND'],['recyclable_kg',8,'kg'],['scrap_revenue',9,'VND']];
