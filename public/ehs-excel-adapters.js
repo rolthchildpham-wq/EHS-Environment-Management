@@ -31,9 +31,12 @@ export function detectSheet(name){
  const s=str(name).toLowerCase();
  if(/^a\.1\s/i.test(s))return 'waste';
  if(/^a\.2\s/i.test(s))return 'water';
+ if(s.includes('收发存'))return 'stock_opening';
  if(s.includes('入库'))return 'stock_in';
  if(s.includes('出库'))return 'stock_out';
  if(s.includes('a.3 phu')||s.includes('a.3 phu')||s.includes('phu bi')||s.includes('phụ biểu'))return 'water_cost';
+ if(s.includes('rác nh_cn&sh'))return 'waste_detail_reference';
+ if(s.includes('pl _廢品'))return 'scrap_detail_reference';
  if(s.includes('bảng thu chi hàng tháng')||s.includes('每月收支表'))return 'waste_finance';
  if(s.includes('a.tk rác_xlnt'))return 'monthly_reference';
  return null;
@@ -59,6 +62,9 @@ export function parseWorkbook(book,fileName,reportYear){
     add(items,'water_out',d,discharged,{...source,sourceRow:i+1,unit:'m³',meter:meterOut,previous:previousOut,note:str(r[7])});
     if((Number.isFinite(meterIn)&&Number.isFinite(previousIn)&&meterIn<previousIn)||(Number.isFinite(meterOut)&&Number.isFinite(previousOut)&&meterOut<previousOut))warnings.push(sheetName+' dòng '+(i+1)+': đồng hồ nhỏ hơn lần trước, cần kiểm tra.');
    });
+  }else if(type==='stock_opening'){
+   // Inventory sheet 收发存 uses row 4 headers and initial balance for 2025 in column F.
+   matrix.forEach((r,i)=>{if(i<5)return;add(summaries,'stock_opening','2025-01-01',r[5],{...source,sourceRow:i+1,code:str(r[1]),name:str(r[2]),spec:str(r[3]),unit:str(r[4]),note:'Số dư đầu kỳ 2025 từ 收发存 (không phải phiếu nhập kho)'})});
   }else if(type==='stock_in'){
    matrix.forEach((r,i)=>{
     if(i<3)return;const d=asDay(r[2]),qty=number(r[7]),price=number(r[10]),amount=number(r[11]);
@@ -67,6 +73,17 @@ export function parseWorkbook(book,fileName,reportYear){
    });
   }else if(type==='stock_out'){
    matrix.forEach((r,i)=>{if(i<2)return;add(items,'stock_out',asDay(r[1]),r[6],{...source,sourceRow:i+1,code:str(r[2]),name:str(r[3]),spec:str(r[4]),unit:str(r[5]),worker:str(r[7]),note:str(r[8])})});
+  }else if(type==='waste_detail_reference'){
+   matrix.forEach((r,i)=>{
+    if(i<4||!str(r[2])||/tổng|總|更新/i.test(str(r[2])))return;
+    const q=number(r[4]),c=number(r[5]);
+    if(!Number.isFinite(q)&&!Number.isFinite(c))return;
+    add(summaries,'waste_detail_reference',year+'-10-01',q,{...source,sourceRow:i+1,unit:'kg',name:str(r[2]),code:str(r[3]),amount:c,group:'cumulative',note:'Báo cáo lũy kế đến 10/'+year+'; không cộng vào A.1'});
+   });
+  }else if(type==='scrap_detail_reference'){
+   matrix.forEach((r,i)=>{if(i<5||!str(r[2])||/tổng|總/i.test(str(r[2])))return;
+    add(summaries,'scrap_detail_reference',year+'-10-01',r[3],{...source,sourceRow:i+1,unit:'kg',name:str(r[2]),amount:number(r[4]),group:'cumulative',note:'Thống kê phế liệu lũy kế đến 10/'+year+'; không cộng vào giao dịch A.1'});
+   });
   }else if(type==='water_cost'){
    // Cost appendix has twelve monthly amount columns (B:M), row 4 contains month labels.
    matrix.slice(4).forEach((r,j)=>{
