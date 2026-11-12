@@ -372,4 +372,5 @@ export function mountOperations(database,actor,actorRole,onUpdate){
  paint();report();
 }
 
+export function renderOperationsReport(){if(el('opsMonthlyRows')&&el('opsReport')&&operations.length)report();}
 export function unmountOperations(){db=null;user=null;role=null;refreshFn=null;pending=[];operations=[];selected=0;lastWarning=[];if(el('opsMount'))el('opsMount').innerHTML='';if(el('opsOcrMount'))el('opsOcrMount').remove();if(el('opsReport'))el('opsReport').innerHTML='';}
