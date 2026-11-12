@@ -135,6 +135,6 @@ test('A.3 and C imports retain original monthly consumption and bilingual row na
  assert.equal(water.nameZh,'氢氧化钠溶液');
  assert.equal(water.spec,'cost-detail-v3');
  assert.equal(green.consumedQuantity,30);
- assert.equal(green.consumedUnit,'VNĐ');
+ assert.equal(green.consumedUnit,'VND');
  assert.equal(green.nameZh,'绿化养护人员工资');
 });
