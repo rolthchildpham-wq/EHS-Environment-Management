@@ -6,6 +6,9 @@ import {parseWorkbook,asDay,validateOperation} from './ehs-excel-adapters.js?v=2
 const el=id=>document.getElementById(id);
 const safe=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money=x=>Number(x||0).toLocaleString('vi-VN',{maximumFractionDigits:2});
+const flowKeys={industrial_cost:'Chi phí rác công nghiệp',domestic_cost:'Chi phí rác sinh hoạt',hazardous_cost:'Chi phí rác nguy hại',scrap_revenue:'Doanh thu phế liệu'};
+const signedWaste=x=>x===null||x===undefined?'—':(x>0?'+':'')+money(x);
+const cashFlow=r=>r.kind==='monthly_master'&&Object.hasOwn(flowKeys,r.name)?(r.name==='scrap_revenue'?Math.abs(r.quantity):-Math.abs(r.quantity)):null;
 const kinds={waste:'Rác thải (A.1)',water_in:'Nước xử lý (A.2)',water_out:'Nước xả (A.2)',stock_in:'Nhập kho (入库)',stock_out:'Xuất kho (出库)',stock_opening:'Tồn đầu kỳ (收发存)',water_cost_month:'Chi tiết chi phí XLNT (A.3)',water_cost_total:'Tổng chi phí XLNT (A.3)',green_cost_detail:'Chi tiết cây xanh (C)',green_cost_total:'Tổng chi phí cây xanh (C)',water_cost_reference:'Chi phí phụ biểu tham chiếu',waste_finance_month:'Thu chi rác tháng',monthly_reference:'Tham chiếu báo cáo tháng',waste_detail_reference:'Chi tiết rác tham chiếu',scrap_detail_reference:'Phế liệu tham chiếu'};
 let db=null,user=null,role=null,pending=[],operations=[],refreshFn=null,lastWarning=[],lastFound=[],selected=0,lastFinancial=null;
 const notify=s=>{if(el('opsMessage'))el('opsMessage').textContent=s};
@@ -88,12 +91,16 @@ function paint(){
    '<td><input aria-label="Ngày dòng '+(ix+1)+'" type="date" data-row-date="'+ix+'" value="'+safe(x.date)+'"></td>'+
    '<td>'+safe(kinds[x.kind]||x.kind)+'</td><td>'+safe(x.name||x.code||'')+'</td>'+
    '<td><input aria-label="Số lượng dòng '+(ix+1)+'" type="number" min="0" step="any" data-row-qty="'+ix+'" value="'+safe(x.quantity)+'"></td>'+
-   '<td>'+safe(x.unit)+'</td><td>'+safe(x.code||'')+'</td><td>'+safe(err||'Hợp lệ')+'</td></tr>';
+   '<td>'+safe(x.unit)+'</td><td>'+safe(x.code||'')+'</td><td>'+safe(cashFlow(x)===null?'—':signedWaste(cashFlow(x)))+'</td><td>'+safe(err||'Hợp lệ')+'</td></tr>';
  }).join('');
  for(const b of el('opsPreviewRows').querySelectorAll('[data-edit]'))b.onclick=()=>editRow(Number(b.dataset.edit));
  for(const b of el('opsPreviewRows').querySelectorAll('[data-remove]'))b.onclick=()=>{pending.splice(Number(b.dataset.remove),1);selected=Math.min(selected,Math.max(0,pending.length-100));paint()};
  for(const x of el('opsPreviewRows').querySelectorAll('[data-row-date]'))x.onchange=()=>{pending[Number(x.dataset.rowDate)].date=x.value;paint()};
  for(const x of el('opsPreviewRows').querySelectorAll('[data-row-qty]'))x.onchange=()=>{pending[Number(x.dataset.rowQty)].quantity=Number(x.value);paint()};
+ const flow=pending.filter(x=>cashFlow(x)!==null);
+ const exp=flow.filter(x=>cashFlow(x)<0).reduce((a,x)=>a+Math.abs(cashFlow(x)),0);
+ const inc=flow.filter(x=>cashFlow(x)>0).reduce((a,x)=>a+cashFlow(x),0);
+ if(el('opsCashflowPreview'))el('opsCashflowPreview').textContent=flow.length?('A.TK: '+flow.length+' dòng thu/chi. Chi phí chất thải: −'+money(exp)+' VND · Thu phế liệu: +'+money(inc)+' VND · Dòng tiền ròng: '+signedWaste(inc-exp)+' VND. Dữ liệu nguồn giữ nguyên để đối chiếu.'):'Chưa có dữ liệu thu/chi A.TK trong danh sách nhập. Hãy chọn file chứa sheet A.TK.';
  const errors=pending.filter(x=>validate(x)).length;
  el('opsPreviewCount').textContent=pending.length+' dòng chờ lưu ('+errors+' dòng cần sửa). Hiện trang '+(Math.floor(selected/100)+1)+'/'+Math.max(1,Math.ceil(pending.length/100));
  el('opsWarnings').innerHTML=lastWarning.slice(0,12).map(s=>'<div>⚠ '+safe(s)+'</div>').join('')+
@@ -180,6 +187,15 @@ function report(){
   y.hasWasteCost ||= x.wasteCost!==null;
   y.hasWaterCost ||= x.waterCost!==null;y.hasGreenCost ||= x.greenCost!==null;
  }
+ el('opsWasteCashflowRows').innerHTML=calc.months.filter(x=>[x.industrialCost,x.domesticCost,x.hazardousCost,x.revenue].some(v=>v!==null)).map(x=>cells([
+  x.month,n(x.industrialKg),n(x.hazardousKg),
+  x.industrialCost===null?'—':signedWaste(-Math.abs(x.industrialCost)),
+  x.domesticCost===null?'—':signedWaste(-Math.abs(x.domesticCost)),
+  x.hazardousCost===null?'—':signedWaste(-Math.abs(x.hazardousCost)),
+  x.wasteCost===null?'—':signedWaste(-Math.abs(x.wasteCost)),
+  x.revenue===null?'—':signedWaste(Math.abs(x.revenue)),
+  n(x.wasteNet===null?null:x.wasteNet)
+ ])).join('');
  el('opsYearRows').innerHTML=[...years.values()].map(x=>{
   const cost=x.industrialCost+x.domesticCost+x.hazardousCost;
   return cells([x.y,n(x.wasteKg),n(x.waterOut),x.hasWasteCost?n(cost):'—',
@@ -260,7 +276,8 @@ export function mountOperations(database,actor,actorRole,onUpdate){
   '<div class="controls" id="opsManualFields"></div><button class="primary" id="opsAddManual">Thêm vào danh sách chờ lưu</button>'+
   '<hr><h3>Kiểm tra & chỉnh sửa trước khi lưu</h3>'+
   '<p id="opsPreviewCount"></p><div id="opsWarnings" class="notice"></div>'+
-  '<div class="scroll"><table><thead><tr><th>Bỏ</th><th>Nguồn</th><th>Ngày</th><th>Nghiệp vụ</th><th>Tên</th><th>Số lượng</th><th>Đơn vị</th><th>Mã</th><th>Kiểm tra</th></tr></thead><tbody id="opsPreviewRows"></tbody></table></div>'+
+  '<div id="opsCashflowPreview" class="notice" style="margin:10px 0"></div>'+ 
+  '<div class="scroll"><table><thead><tr><th>Bỏ</th><th>Nguồn</th><th>Ngày</th><th>Nghiệp vụ</th><th>Tên</th><th>Số lượng gốc</th><th>Đơn vị</th><th>Mã</th><th>Thu/chi (+/−)</th><th>Kiểm tra</th></tr></thead><tbody id="opsPreviewRows"></tbody></table></div>'+
   '<div class="controls" style="margin-top:12px"><button id="opsPrev">100 dòng trước</button><button id="opsNext">100 dòng tiếp</button><button class="primary" id="opsSave">Lưu hàng loạt vào Firestore</button></div>'+
   '<p class="notice" id="opsMessage" role="status" aria-live="polite">Chưa có file Excel nào được đọc.</p><dialog id="opsEditor" aria-label="Sửa dòng Excel"></dialog></div>';
  if(el('opsOcrMount'))el('opsOcrMount').remove();
@@ -271,6 +288,7 @@ export function mountOperations(database,actor,actorRole,onUpdate){
   '<p class="muted">A.TK là nguồn chuẩn cho chi phí rác, khối lượng theo nhóm, doanh thu phế liệu; A.3 là nguồn chuẩn cho tổng chi phí nước thải; C là nguồn chuẩn cho tổng chi phí cây xanh. Dòng chi tiết giữ nguyên để đối chiếu; không cộng lặp lại tổng.</p><p id="opsDataCount"></p>'+
   '<div class="controls"><button id="opsExportAll">Xuất nghiệp vụ (CSV)</button><button id="opsExportMonth">Xuất báo cáo đối chiếu (Excel nhiều sheet)</button></div>'+
   '<h3>Tổng hợp tháng theo nguồn chuẩn</h3><div class="scroll"><table><thead><tr><th>Tháng</th><th>Rác A.1 kg</th><th>XLNT m³</th><th>Xả m³</th><th>Rác CN kg</th><th>Rác NH kg</th><th>Chi phí CN</th><th>Chi phí SH</th><th>Chi phí NH</th><th>Tổng CP rác</th><th>Thu phế liệu</th><th>CP nước A.3</th><th>CP/m³</th><th>CP cây xanh C</th><th>CP/kg rác</th><th>Phiếu nhập</th><th>Phiếu xuất</th></tr></thead><tbody id="opsMonthlyRows"></tbody></table></div>'+
+  '<h3>Thu – chi chất thải (+/−) từ A.TK</h3><p class="muted">Các chi phí có dấu âm (−), thu hồi phế liệu có dấu dương (+). Dòng tiền ròng = doanh thu phế liệu − tổng chi phí xử lý chất thải; không bao gồm chi phí nước thải và cây xanh.</p><div class="scroll"><table><thead><tr><th>Tháng</th><th>Rác CN kg</th><th>Rác NH kg</th><th>Chi phí CN (−)</th><th>Chi phí SH (−)</th><th>Chi phí NH (−)</th><th>Tổng chi (−)</th><th>Thu phế liệu (+)</th><th>Thu–chi ròng</th></tr></thead><tbody id="opsWasteCashflowRows"></tbody></table></div>'+ 
   '<h3>Tổng hợp năm</h3><div class="scroll"><table><thead><tr><th>Năm</th><th>Rác A.1 kg</th><th>Xả m³</th><th>CP rác</th><th>CP/kg</th><th>CP nước</th><th>CP/m³</th><th>CP cây xanh</th><th>Thu phế liệu</th></tr></thead><tbody id="opsYearRows"></tbody></table></div>'+
   '<h3>Chi tiết A.3 – Chi phí xử lý nước thải</h3><div class="scroll"><table><thead><tr><th>Tháng</th><th>Hạng mục</th><th>Chi phí VND</th><th>ĐVT</th><th>Đơn giá</th><th>Sheet, dòng</th></tr></thead><tbody id="opsWaterCostRows"></tbody></table></div>'+
   '<h3>Chi tiết C – Chi phí cây xanh</h3><div class="scroll"><table><thead><tr><th>Tháng</th><th>Hạng mục</th><th>Chi phí VND</th><th>ĐVT</th><th>Đơn giá</th><th>Sheet, dòng</th></tr></thead><tbody id="opsGreenCostRows"></tbody></table></div>'+
@@ -300,6 +318,15 @@ export function mountOperations(database,actor,actorRole,onUpdate){
   const wb=window.XLSX.utils.book_new();
   const add=(rows,name)=>window.XLSX.utils.book_append_sheet(wb,window.XLSX.utils.json_to_sheet(rows),name);
   const m=lastFinancial?.months||[];
+  add(m.filter(x=>[x.industrialCost,x.domesticCost,x.hazardousCost,x.revenue].some(v=>v!==null)).map(x=>({
+   'Tháng':x.month,
+   'Chi phí CN (-VND)':x.industrialCost===null?null:-Math.abs(x.industrialCost),
+   'Chi phí SH (-VND)':x.domesticCost===null?null:-Math.abs(x.domesticCost),
+   'Chi phí NH (-VND)':x.hazardousCost===null?null:-Math.abs(x.hazardousCost),
+   'Tổng chi (-VND)':x.wasteCost===null?null:-Math.abs(x.wasteCost),
+   'Doanh thu PL (+VND)':x.revenue===null?null:Math.abs(x.revenue),
+   'Thu chi ròng (VND)':x.wasteNet
+  })),'Thu chi chat thai');
   add(m.map(x=>({
    'Tháng':x.month,'Rác A.1 (kg)':x.wasteKg,
    'Nước xử lý (m³)':x.waterIn,'Nước xả (m³)':x.waterOut,
@@ -331,7 +358,7 @@ export function mountOperations(database,actor,actorRole,onUpdate){
     'Tổng chuẩn':x.actual,'Tổng chi tiết':x.detail,'Chênh lệch':x.difference})),'Doi chieu chenhlech');
   add(operations.filter(x=>x.kind==='monthly_master').map(x=>({
    'Tháng':x.date.slice(0,7),'Chỉ tiêu':x.name,'Giá trị':x.quantity,
-   'Đơn vị':x.unit,'Ô nguồn':x.note,'File gốc':x.sourceFile
+   'Đơn vị':x.unit,'Thu chi (+/- VND)':cashFlow(x),'Ô nguồn':x.note,'File gốc':x.sourceFile
   })),'A TK Goc');
   add(operations.filter(x=>['stock_in','stock_out','stock_opening'].includes(x.kind))
     .map(x=>({'Ngày':x.date,'Loại':x.kind,'Mã':x.code,'Tên':x.name,
