@@ -49,6 +49,7 @@ jobs:
           node --check public/ehs-cost-detail.js
           node --experimental-default-type=module --test tests/ehs-finance.test.mjs
           node --experimental-default-type=module --test tests/ehs-ui.test.mjs
+          node --test tests/firestore-rules.test.mjs
       - name: Install Firebase CLI
         run: npm install -g firebase-tools@14
       - name: Deploy Hosting only
