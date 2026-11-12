@@ -199,14 +199,7 @@ service cloud.firestore {
         'factorSource','createdBy','createdAt'
       ])
       && request.resource.data.date is string
-      && request.resource.data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}
-    allow read: if activeMember();
-    allow write: if admin();
-  }
-  match /{document=**} { allow read, write: if false; }
- }
-}
-)
+      && request.resource.data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
       && request.resource.data.scope in ['1','2','3']
       && request.resource.data.activity is string
       && request.resource.data.activity.size() > 0
@@ -220,14 +213,7 @@ service cloud.firestore {
           || (request.resource.data.factor is number
               && request.resource.data.factor >= 0
               && request.resource.data.factorYear is string
-              && request.resource.data.factorYear.matches('^[0-9]{4}
-    allow read: if activeMember();
-    allow write: if admin();
-  }
-  match /{document=**} { allow read, write: if false; }
- }
-}
-)
+              && request.resource.data.factorYear.matches('^[0-9]{4}$')
               && request.resource.data.factorSource is string
               && request.resource.data.factorSource.size() > 0))
       && request.resource.data.factorYear is string
