@@ -150,29 +150,52 @@ export function parseWorkbook(book,fileName,reportYear){
     for(let m=1;m<=12;m++)add(summaries,'waste_finance_month',year+'-'+String(m).padStart(2,'0')+'-01',vals[m+3],{...source,sourceRow:ridx+1,unit,name:metric,group:'waste_finance'});
    }
   }else if(type==='monthly_reference'){
-   // The A.TK sheet is the official management summary; monthly columns D:O.
-   // Explicit row mapping prevents confusion with rows of labels, subtitles and formulas.
-   const mapping={
-    3:['water_in','m³'],4:['water_out','m³'],
-    7:['chemical_cost_per_m3','VND/m³'],8:['electricity_cost','VND'],
-    9:['industrial_waste_kg','kg'],10:['industrial_cost','VND'],
-    11:['domestic_waste_kg_approx','kg'],12:['domestic_cost','VND'],
-    13:['hazardous_waste_kg','kg'],14:['hazardous_cost','VND'],
-    15:['recyclable_kg','kg'],16:['scrap_revenue','VND'],
-    20:['chemical_total_reference','VND']
-   };
-   for(const [rowNo,[metric,unit]] of Object.entries(mapping)){
-    const r=matrix[Number(rowNo)-1]||[];
+   // Version 2: identify A.TK metrics by their actual row labels, NOT array offsets.
+   // Historic version skipped a blank row and silently shifted every metric one row.
+   const norm=s=>str(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/gi,'d').toLowerCase();
+   const colC=i=>norm((matrix[i]||[])[2]);
+   const colB=i=>str((matrix[i]||[])[1]);
+   const findC=rx=>matrix.findIndex((r,i)=>rx.test(colC(i)));
+   const findB=rx=>matrix.findIndex((r,i)=>rx.test(colB(i)));
+   const wasteCategory=(chinese,label)=>{const exact=findB(chinese);return exact>=0?exact:findC(label)};
+   const industrial=wasteCategory(/工業垃圾|工业垃圾/,/khoi luong rac cn/);
+   const domestic=wasteCategory(/生活垃圾/,/rac sinh hoat/);
+   const hazardous=wasteCategory(/危害垃圾/,/rac nh|rac nguy hai/);
+   const recyclable=wasteCategory(/回收垃圾/,/klg pl|rac phe lieu/);
+   const mapping=[
+    ['water_in','m³',findC(/nuoc thai san xuat dau vao/)],
+    ['water_out','m³',findC(/nuoc thai dau ra \((m3|m³)\)$/)],
+    ['chemical_cost_per_m3','VND/m³',findC(/chi phi hoa chat xu ly dau vao/)],
+    ['electricity_cost','VND',findC(/chi phi dien nang/)],
+    ['industrial_waste_kg','kg',industrial],
+    ['industrial_cost','VND',industrial>=0?industrial+1:-1],
+    ['domestic_waste_kg_approx','kg',domestic],
+    ['domestic_cost','VND',domestic>=0?domestic+1:-1],
+    ['hazardous_waste_kg','kg',hazardous],
+    ['hazardous_cost','VND',hazardous>=0?hazardous+1:-1],
+    ['recyclable_kg','kg',recyclable],
+    ['scrap_revenue','VND',recyclable>=0?recyclable+1:-1],
+    ['chemical_total_reference','VND',findB(/tong chi phi xu ly nuoc thai|tổng chi phí xử lý nước thải/i)]
+   ];
+   for(const [metric,unit,index] of mapping){
+    if(index<0){warnings.push(sheetName+': không tìm thấy chỉ tiêu '+metric+' — không suy đoán ô Excel.');continue}
+    const label=colC(index);
+    if(/_cost$/.test(metric)&&!/(chi phi|cost)/.test(label)){
+      warnings.push(sheetName+' dòng '+(index+1)+': cần kiểm tra nhãn chi phí '+metric);continue
+    }
+    if(metric==='scrap_revenue'&&!/(tien thu|doanh thu|thu)/.test(label)){
+      warnings.push(sheetName+' dòng '+(index+1)+': cần kiểm tra nhãn doanh thu phế liệu.');continue
+    }
+    const r=matrix[index]||[],rowNo=index+1;
     for(let m=1;m<=12;m++){
-     let value=r[m+2];
-     const approximate=typeof value==='string'&&value.trim().startsWith('~');
-     if(approximate)value=number(value.replace(/^~/,''));
-     if(!Number.isFinite(number(value)))continue;
-     const financial=/^(industrial_cost|domestic_cost|hazardous_cost|scrap_revenue)$/.test(metric);
-     const direction=metric==='scrap_revenue'?'income':financial?'expense':'management_master';
-     const officialValue=financial?Math.abs(number(value)):value;
-     add(summaries,'monthly_master',year+'-'+String(m).padStart(2,'0')+'-01',officialValue,{
-      ...source,sourceRow:Number(rowNo),name:metric,unit,
+     const raw=r[m+2],approximate=typeof raw==='string'&&raw.trim().startsWith('~');
+     const n=number(approximate?raw.replace(/^~/,''):raw);
+     if(!Number.isFinite(n))continue;
+     const finance=['industrial_cost','domestic_cost','hazardous_cost','scrap_revenue'].includes(metric);
+     const direction=metric==='scrap_revenue'?'income':finance?'expense':'management_master';
+     const monthDate=year+'-'+String(m).padStart(2,'0')+'-01';
+     add(summaries,'monthly_master',monthDate,finance?Math.abs(n):n,{
+      ...source,sourceRow:rowNo,name:metric,unit,spec:'master-map-v2',
       group:approximate?'estimated':direction,
       note:sheetName+'!'+String.fromCharCode(67+m)+rowNo+(approximate?' (ước tính)':'')
      });
