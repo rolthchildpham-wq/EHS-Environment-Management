@@ -140,7 +140,8 @@ service cloud.firestore {
       && request.resource.data.importId is string
       && request.resource.data.createdBy == request.auth.uid
       && request.resource.data.createdAt == request.time;
-    allow update, delete: if false;
+    allow update: if false;
+    allow delete: if admin();
   }
 
   match /records/{id} {
@@ -148,7 +149,8 @@ service cloud.firestore {
     allow create: if editor()
       && request.resource.data.keys().hasOnly(['date','kind','value','unit','name','note','source','createdBy','createdAt'])
       && validEntry(request.resource.data);
-    allow update, delete: if false;
+    allow update: if false;
+    allow delete: if admin();
   }
   match /reviews/{id} {
     allow read: if activeMember();
@@ -162,8 +164,28 @@ service cloud.firestore {
       && request.resource.data.status in ['approved','rejected']
       && request.resource.data.reviewedBy == request.auth.uid
       && request.resource.data.reviewedAt == request.time;
-    allow delete: if false;
+    allow delete: if admin();
   }
+  match /data_reset_audit/{id} {
+    allow read: if admin();
+    allow create: if admin()
+      && request.resource.data.action in ['reset_start','reset_complete']
+      && request.resource.data.actorUid == request.auth.uid
+      && request.resource.data.status in ['started','completed']
+      && request.resource.data.keys().hasOnly([
+        'action','actorUid','actorEmail','startedAt','completedAt','recordCounts',
+        'total','deleted','startedAuditId','status'
+      ])
+      && (
+        (request.resource.data.action=='reset_start'
+          && request.resource.data.startedAt==request.time)
+        ||
+        (request.resource.data.action=='reset_complete'
+          && request.resource.data.completedAt==request.time)
+      );
+    allow update, delete: if false;
+  }
+
   match /settings/{id} {
     allow read: if activeMember();
     allow write: if admin();
