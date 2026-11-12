@@ -267,7 +267,8 @@ export function mountOperations(database,actor,actorRole,onUpdate){
  const host=el('opsMount');
  if(!host)return;
  host.innerHTML='<div class="panel"><h2>Nhập tay & nhập Excel theo cấu trúc gốc</h2>'+
-  '<p class="muted">Nhận diện A.1, A.2, 入库, 出库, A.TK, A.3 chi phí nước thải, C chi phí cây xanh và báo cáo thu chi rác. Dữ liệu Excel được kiểm tra trước khi ghi. Chọn năm báo cáo đúng với nội dung các sheet tổng hợp.</p>'+
+  '<p class="muted">Nhận diện A.1, A.2, 入库, 出库, A.TK, A.3 chi phí nước thải, C chi phí cây xanh và báo cáo thu chi rác. Dữ liệu Excel được kiểm tra trước khi ghi. Chọn năm báo cáo đúng với nội dung các sheet tổng hợp.</p>'+ 
+  '<p class="notice">Sheet A.TK: <b>chi phí xử lý chất thải (−)</b>, <b>doanh thu phế liệu (+)</b>. Sau khi đọc Excel, xem phần Thu/chi (+/−) và bảng Thu – chi chất thải trong Báo cáo. Không đổi dấu dữ liệu nguồn.</p>'+
   '<div class="controls"><label>File Excel gốc<input id="opsFile" type="file" accept=".xlsx,.xls"></label>'+
   '<label>Năm cho sheet báo cáo tháng<input id="opsYear" type="number" min="2015" max="2100" value="2026"></label>'+
   '<button id="opsParse">Đọc và kiểm tra Excel</button></div>'+
