@@ -123,3 +123,16 @@ New **Chỉ số EHS & ISO** tab (Spark-compatible, no Cloud Functions):
 - Vietnam GHG regulations: Decree 06/2022 as amended by 119/2025 and 83/2026: https://vanban.chinhphu.vn/?classid=0&docid=217277&pageid=27160
 
 **Not yet included:** verified Scope 1/2/3 emission totals for all site activities; emission factor library; official GHG compliance filing; real chemical SDS register, hazardous consignment tracking, wastewater lab compliance and automatic full-scope budget-versus-actual. These need site-specific measurements, documented calculation methodologies and review, not fabricated figures.
+
+
+## A.3 / C detail explorer, multilingual source view and attribution (2026-11-12)
+
+The report tab begins with **Sổ chi tiết A.3 nước thải và C cây xanh**. Choose sheet (A.3 or C) and month, search items and view: expense category, source line's bilingual name, monthly **consumed quantity and original unit**, unit cost, line amount (VND), and source worksheet/row. Export **EHS_Chi_tiet_A3_C_YYYY-MM-DD.xlsx** with separated A.3 and C detail sheets. The original Excel labels remain intact in export and in the Firestore record for audit.
+
+**Important re-import:** Old records stored only expense amount and a note string. The new importer stamps the cost lines `spec: cost-detail-v3` and stores `consumedQuantity`, `consumedUnit`, `costGroup`, `nameVi`, and `nameZh`. Re-import the original **2026 workbook** (and 2025 separately, with correct report year) to populate these additional fields. New versioned deterministic IDs prevent overwriting the old immutable documents; reconciliation prefers newer v3 detail rows. It does not delete historical records.
+
+**Translation scope:** Vietnamese is the primary UI language; English/Chinese UI dictionary expanded. The detailed A.3/C source expense labels have manual reviewed English terminology plus Chinese names printed in the user's own workbook. A **Dịch nội dung** button in the header attempts browser-local translation of dynamic Vietnamese text through the native Browser Translator API, when available. A cost ledger button does the same for unrecognized item names. In unsupported browsers, translation of unrecognized arbitrary imported text is **not guaranteed**; preserve raw source and manually verify terminology. There is no hidden translation API call, paid backend, or promise of 100% accuracy. Manual correction of terminology in the detail view currently applies to the browser session only.
+
+Header account info includes **Thiết kế bởi BacPham**.
+
+**Firestore activation:** update project `ehs-environment-management` Firestore Rules from the latest repository `firestore.rules` to allow the extended cost-detail fields. Hosting Actions do not publish security rules. Do not expose private workbook/employee records to online public translation services without review.
