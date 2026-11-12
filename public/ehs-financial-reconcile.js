@@ -20,7 +20,7 @@ const setByName=(rows,name)=>rows.filter(x=>x.name===name);
 const value=(rows,name)=>num(setByName(rows,name).at(-1)?.quantity);
 function preferred(rows,key){
  const candidates=rows.filter(r=>r.name===key).sort((a,b)=>stamp(a)-stamp(b));
- return candidates.length?Number(candidates.at(-1).quantity):null;
+ return candidates.length?Math.abs(Number(candidates.at(-1).quantity)):null;
 }
 export function reconcile(rows,from='1900-01-01',to='2100-12-31'){
  const filtered=distinct(rows.filter(x=>x.date>=from&&x.date<=to));
@@ -54,11 +54,12 @@ export function reconcile(rows,from='1900-01-01',to='2100-12-31'){
   const domesticCost=pick('domestic_cost');
   const revenue=pick('scrap_revenue');
   const totalWasteCost=[industrialCost,hazardousCost,domesticCost].every(v=>v===null)?null:num(industrialCost)+num(hazardousCost)+num(domesticCost);
+  const wasteNet=totalWasteCost===null&&revenue===null?null:num(revenue)-num(totalWasteCost);
   const eligibleKg=num(industrialKg)+num(hazardousKg)+num(domesticKg);
   result.push({
    month:m,wasteKg:daily('waste'),waterIn,waterOut,industrialKg,hazardousKg,domesticKg,
    recyclableKg:pick('recyclable_kg'),
-   industrialCost,hazardousCost,domesticCost,revenue,
+   industrialCost,hazardousCost,domesticCost,revenue,wasteNet,
    waterCost:officialWater,greenCost:officialGreen,
    wasteCost:totalWasteCost,
    costWaterPerM3:waterOut>0&&officialWater!==null?officialWater/waterOut:null,
