@@ -41,6 +41,8 @@ jobs:
           node --check public/ehs-excel-adapters.js
           node --check public/ehs-ocr.js
           node --check public/ehs-financial-reconcile.js
+          node --check public/i18n.js
+          node --check public/data-reset.js
           node --experimental-default-type=module --test tests/ehs-finance.test.mjs
       - name: Install Firebase CLI
         run: npm install -g firebase-tools@14
