@@ -28,3 +28,22 @@ test('greenhouse gas reporting requires traceable user supplied emission factor'
  assert.match(rules,/match \/ghg_activities\/\{id\}/);
  assert.match(rules,/request\.resource\.data\.factorSource\.size\(\) > 0/);
 });
+
+test('cost explorer is prominent and connected to authenticated operations',()=>{
+ const html=read('public/index.html'),app=read('public/app.js'),explorer=read('public/ehs-cost-detail.js');
+ assert.match(html,/<section id="reports"><div id="costExplorerMount"><\/div>/);
+ assert.match(html,/Thiết kế bởi BacPham/);
+ assert.match(app,/initCostExplorer\(\)/);
+ assert.match(app,/setCostExplorerRecords\(getAllOperations\(\)\)/);
+ for(const term of ['costExplorerMonth','costExplorerType','costExplorerRows','consumedQuantity','consumedUnit','Xuất chi tiết A.3'])
+  assert.ok(explorer.includes(term),term);
+});
+test('financial source parser preserves amount and monthly quantity units',()=>{
+ const adapter=read('public/ehs-excel-adapters.js'),rules=read('firestore.rules'),ops=read('public/ehs-operations.js');
+ for(const k of ['consumedQuantity','consumedUnit','nameVi','nameZh','costGroup','cost-detail-v3']){
+  assert.ok(adapter.includes(k),'adapter '+k);
+  if(k!=='nameZh')assert.ok(ops.includes(k),'persist '+k);
+ }
+ for(const k of ['consumedQuantity','consumedUnit','costGroup','nameVi'])
+  assert.ok(rules.includes("'"+k+"'"),'rules '+k);
+});
