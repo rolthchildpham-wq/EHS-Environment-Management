@@ -1,6 +1,6 @@
-import {getLanguage,t} from './i18n.js';
-import {displaySourceName,translateUnknownRecords,translationState,manualOverride} from './source-terms.js';
-import {reconcile} from './ehs-financial-reconcile.js';
+import {getLanguage,t} from './i18n.js?v=20261112f';
+import {displaySourceName,translateUnknownRecords,translationState,manualOverride} from './source-terms.js?v=20261112f';
+import {reconcile} from './ehs-financial-reconcile.js?v=20261112f';
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
 const n=v=>v===null||v===undefined||!Number.isFinite(Number(v))?'—':Number(v).toLocaleString(getLanguage()==='en'?'en-US':'vi-VN',{maximumFractionDigits:2});
