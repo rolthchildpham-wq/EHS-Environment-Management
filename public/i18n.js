@@ -933,6 +933,184 @@ Object.assign(dictionary,{
     "zh": "备注/参数/责任人"
   }
 });
+Object.assign(dictionary,{
+  "Thiết kế bởi BacPham": {
+    "en": "Designed by BacPham",
+    "zh": "由 BacPham 设计"
+  },
+  "Sổ chi tiết A.3 nước thải và C cây xanh": {
+    "en": "Detailed ledgers A.3 wastewater & C landscaping",
+    "zh": "A.3 废水处理及 C 绿化养护费用明细"
+  },
+  "Hiển thị chi tiết theo tháng: hạng mục, lượng tiêu thụ, đơn vị gốc, đơn giá, thành tiền, nguồn Excel. Giá trị gốc không bị dịch hoặc sửa.": {
+    "en": "Monthly line items: consumption, original unit, unit price, amount and source Excel. Original values remain unchanged.",
+    "zh": "按月列出项目、耗用量、原始单位、单价、金额及Excel来源，原始数据保持不变。"
+  },
+  "Loại báo cáo": {
+    "en": "Report type",
+    "zh": "报表类型"
+  },
+  "Tháng chi tiết": {
+    "en": "Detail month",
+    "zh": "明细月份"
+  },
+  "Tìm hạng mục": {
+    "en": "Find item",
+    "zh": "搜索项目"
+  },
+  "Xuất chi tiết A.3 & C (Excel)": {
+    "en": "Export A.3 & C details (Excel)",
+    "zh": "导出A.3与C明细（Excel）"
+  },
+  "Dịch tên hạng mục trên thiết bị": {
+    "en": "Translate missing item names on device",
+    "zh": "在设备上翻译未译项目"
+  },
+  "Hiệu chỉnh bản dịch": {
+    "en": "Edit translation",
+    "zh": "修订翻译"
+  },
+  "Nhóm chi phí": {
+    "en": "Cost category",
+    "zh": "费用类别"
+  },
+  "Hạng mục": {
+    "en": "Item",
+    "zh": "项目"
+  },
+  "Lượng tiêu thụ": {
+    "en": "Consumption",
+    "zh": "耗用量"
+  },
+  "Đơn vị gốc": {
+    "en": "Original unit",
+    "zh": "原始单位"
+  },
+  "Đơn giá (VND)": {
+    "en": "Unit price (VND)",
+    "zh": "单价（越南盾）"
+  },
+  "Thành tiền (VND)": {
+    "en": "Amount (VND)",
+    "zh": "金额（越南盾）"
+  },
+  "Ô Excel": {
+    "en": "Excel cell / row",
+    "zh": "Excel 单元格/行"
+  },
+  "Tên gốc Việt / Trung": {
+    "en": "Original Vietnamese / Chinese name",
+    "zh": "越南语/中文原始名称"
+  },
+  "Chưa có dòng chi tiết. Hãy nhập lại workbook chứa sheet A.3 và C.": {
+    "en": "No detail rows. Re-import the workbook with A.3 and C sheets.",
+    "zh": "无明细记录，请重新导入含A.3和C工作表的文件。"
+  },
+  "Tổng chi tiết": {
+    "en": "Line-item subtotal",
+    "zh": "明细合计"
+  },
+  "Tổng theo Excel": {
+    "en": "Official Excel total",
+    "zh": "Excel正式合计"
+  },
+  "Chênh lệch": {
+    "en": "Variance",
+    "zh": "差异"
+  },
+  "Có chênh lệch; kiểm tra các dòng nguồn và nhập lại workbook chi tiết.": {
+    "en": "Amounts differ. Check source lines and re-import detailed workbook.",
+    "zh": "数据有差异，请核对原始行并重新导入详细工作簿。"
+  },
+  "Đã có": {
+    "en": "Available",
+    "zh": "已有"
+  },
+  "dòng chi tiết": {
+    "en": "detail rows",
+    "zh": "条明细"
+  },
+  "Đã có lượng tiêu thụ và đơn giá từ Excel.": {
+    "en": "Excel consumption and unit prices available.",
+    "zh": "已读取Excel的耗用量和单价。"
+  },
+  "Dữ liệu cũ có thể thiếu lượng tiêu thụ; hãy nhập lại workbook.": {
+    "en": "Older imports may lack consumption; re-import the workbook.",
+    "zh": "旧版导入可能缺少耗用量，请重新导入工作簿。"
+  },
+  "Chưa có dữ liệu chi tiết. Nhập lại workbook gốc A.3 và C.": {
+    "en": "No detail data yet. Re-import the A.3 and C workbook.",
+    "zh": "暂无明细，请重新导入A.3与C原始工作簿。"
+  },
+  "tên chưa có bản dịch tự động.": {
+    "en": "names have no automatic translation.",
+    "zh": "个名称尚无自动翻译。"
+  },
+  "Đang dịch trên thiết bị, không gửi tài liệu lên máy chủ...": {
+    "en": "Translating on device; documents are not uploaded...",
+    "zh": "正在设备上翻译，文档不会上传服务器……"
+  },
+  "Đã dịch thêm": {
+    "en": "Translated",
+    "zh": "已翻译"
+  },
+  "hạng mục; cần kiểm tra thuật ngữ kỹ thuật.": {
+    "en": "items; verify technical terminology.",
+    "zh": "个项目；请核对专业术语。"
+  },
+  "Chọn số thứ tự hạng mục cần bổ sung bản dịch": {
+    "en": "Enter item number to add translation",
+    "zh": "输入需补充翻译的项目序号"
+  },
+  "Nhập bản dịch được kiểm tra": {
+    "en": "Enter verified translation",
+    "zh": "输入已核实的翻译"
+  },
+  "Hóa chất": {
+    "en": "Chemicals",
+    "zh": "化学品"
+  },
+  "Điện và nước": {
+    "en": "Electricity and water",
+    "zh": "电与水"
+  },
+  "Nhân công": {
+    "en": "Labor",
+    "zh": "人工"
+  },
+  "Bùn thải": {
+    "en": "Waste sludge",
+    "zh": "污泥"
+  },
+  "Phí tiếp nhận xả thải": {
+    "en": "Wastewater acceptance fees",
+    "zh": "废水接纳费"
+  },
+  "Bảo trì": {
+    "en": "Maintenance",
+    "zh": "维护"
+  },
+  "Phân bón và vật tư chăm sóc": {
+    "en": "Fertilizer and care materials",
+    "zh": "肥料与养护用品"
+  },
+  "Nước tưới": {
+    "en": "Irrigation water",
+    "zh": "灌溉用水"
+  },
+  "Dịch vụ chăm sóc": {
+    "en": "Care services",
+    "zh": "养护服务"
+  },
+  "Kho vật tư": {
+    "en": "Material warehouse",
+    "zh": "物料仓库"
+  },
+  "Giá trị gốc không bị dịch hoặc sửa.": {
+    "en": "Original values remain unchanged.",
+    "zh": "原始数据不会被翻译或更改。"
+  }
+});
 let active='vi';
 const originals=new WeakMap();
 const rev=new Map();
