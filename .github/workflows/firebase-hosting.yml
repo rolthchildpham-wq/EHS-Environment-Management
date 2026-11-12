@@ -46,6 +46,7 @@ jobs:
           node --check public/factory-map.js
           node --check public/ehs-compliance.js
           node --experimental-default-type=module --test tests/ehs-finance.test.mjs
+          node --experimental-default-type=module --test tests/ehs-ui.test.mjs
       - name: Install Firebase CLI
         run: npm install -g firebase-tools@14
       - name: Deploy Hosting only
