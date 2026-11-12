@@ -108,7 +108,8 @@ service cloud.firestore {
       && request.resource.data.keys().hasOnly([
         'date','kind','quantity','unit','name','code','spec','worker','note',
         'price','amount','previous','meter','group','nameZh','sourceSheet',
-        'sourceRow','sourceFile','year','importId','createdBy','createdAt'
+        'sourceRow','sourceFile','year','importId','createdBy','createdAt',
+        'consumedQuantity','consumedUnit','costGroup','nameVi'
       ])
       && request.resource.data.keys().hasAll([
         'date','kind','quantity','unit','name','sourceFile','sourceSheet',
