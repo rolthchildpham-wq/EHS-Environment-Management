@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - 'public/**'
+      - 'tests/**'
       - 'firebase.json'
       - '.github/workflows/firebase-hosting.yml'
   workflow_dispatch:
