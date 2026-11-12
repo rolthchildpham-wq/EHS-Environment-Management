@@ -35,8 +35,13 @@ export function reconcile(rows,from='1900-01-01',to='2100-12-31'){
   const gtotal=at.filter(x=>x.kind==='green_cost_total').sort((a,b)=>stamp(a)-stamp(b)).at(-1)||null;
   const waterFull=at.filter(x=>x.kind==='water_cost_month'&&x.group==='water_cost_full');
   const waterOther=at.filter(x=>x.kind==='water_cost_month'&&x.group!=='water_cost_full');
-  const waterLines=recent(wtotal?waterFull.filter(x=>x.importId===wtotal.importId):waterFull.length?waterFull:waterOther);
-  const greenLines=recent(gtotal?at.filter(x=>x.kind==='green_cost_detail'&&x.importId===gtotal.importId):at.filter(x=>x.kind==='green_cost_detail'));
+  // Official monthly totals are independent of the detail import batch.
+  // Prefer the newest cost-detail-v3 records after re-importing original Excel.
+  const waterV3=waterFull.filter(x=>x.spec==='cost-detail-v3');
+  const greenAll=at.filter(x=>x.kind==='green_cost_detail');
+  const greenV3=greenAll.filter(x=>x.spec==='cost-detail-v3');
+  const waterLines=recent(waterV3.length?waterV3:waterFull.length?waterFull:waterOther);
+  const greenLines=recent(greenV3.length?greenV3:greenAll);
   const detailW=waterLines.reduce((a,x)=>a+num(x.quantity),0);
   const detailG=greenLines.reduce((a,x)=>a+num(x.quantity),0);
   const officialWater=wtotal?num(wtotal.quantity):waterLines.length?detailW:null;
