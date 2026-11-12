@@ -97,3 +97,29 @@ Báo cáo: thống kê theo tháng, năm, chi phí/m³, chi phí/kg, doanh thu p
 **Before reset:** inform other users not to import while reset is running; verify the backup JSON downloaded, store it privately, and never commit its contents to this public repository. After reset, select the correct report year for each workbook and re-import 2025 and 2026 separately. If legacy wrong imports remain, the charts may still be incorrect.
 
 **Limitation:** Confirmation/download and Firestore delete permissions are wired, but the destructive button has not been clicked on the user's production data. This procedure is intentionally manual. End-to-end behavior must be verified by the administrator after publishing rules.
+
+
+## Interactive factory map, EHS controls and GHG inventory (2026-11-12)
+
+The Map tab now supports **responsive uploaded factory floor plans** with administrator-clickable pins, title, category, notes and relative coordinates. The browser compresses the image to a JPEG data URI below ~680 KB before storing it in Firestore document `settings/factoryMap`. Other authenticated members may view the common map and notes. Only admins can upload/edit/delete pins. Pin coordinates are percentages of the displayed image so they remain aligned when resized. **This is a layout image, not geographic GPS data.**
+
+The yellow message indicating how many Firestore documents have been read is now shown **only on the Dashboard**, not above every tab.
+
+New **Chỉ số EHS & ISO** tab (Spark-compatible, no Cloud Functions):
+- Operational waste collected (not automatically GRI 306-3 waste *generated*), separately flagged hazardous classification where verified.
+- Wastewater entering/leaving the treatment plant (not automatically GRI 303 total facility water withdrawal or consumption).
+- Stock in, stock out and chemical / fertilizer classification by code and unit; units are never combined across kg/bottles/bags.
+- Preliminary GHG inventory activity register: date, scope 1/2/3, activity source, quantity/unit, **user-provided** emission factor kg CO2e per unit, documented EF source and year. Calculation `tCO2e = quantity * kgCO2e/unit / 1000` only for fully sourced activities. It does **not** assign fertilizer N2O factors or claim ISO verification.
+- Excel export with operational KPIs, material movements by category, GHG register and missing-data checklist.
+- `ghg_activities` is an append-only Firestore collection for authenticated editors/admins; consult and **Publish the latest firestore.rules** manually before creating inventory records. The GitHub pipeline deploys Hosting only.
+
+**Evidence/standards references**:
+- ISO 14064-1:2018 https://www.iso.org/standard/66453.html
+- ISO 14031:2021 https://www.iso.org/standard/81453.html
+- GHG Protocol https://ghgprotocol.org/standards-guidance
+- GRI 303 https://www.globalreporting.org/publications/documents/english/gri-303-water-and-effluents-2018/
+- GRI 306 https://globalreporting.org/publications/documents/english/gri-306-waste-2020/
+- GRI 301 https://www.globalreporting.org/publications/documents/english/gri-301-materials-2016/
+- Vietnam GHG regulations: Decree 06/2022 as amended by 119/2025 and 83/2026: https://vanban.chinhphu.vn/?classid=0&docid=217277&pageid=27160
+
+**Not yet included:** verified Scope 1/2/3 emission totals for all site activities; emission factor library; official GHG compliance filing; real chemical SDS register, hazardous consignment tracking, wastewater lab compliance and automatic full-scope budget-versus-actual. These need site-specific measurements, documented calculation methodologies and review, not fabricated figures.
