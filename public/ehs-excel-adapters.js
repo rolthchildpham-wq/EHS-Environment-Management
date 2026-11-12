@@ -21,7 +21,13 @@ export function asDay(v){
  if(m){let a=Number(m[1]),b=Number(m[2]);if(a>12)return [m[3],String(b).padStart(2,'0'),String(a).padStart(2,'0')].join('-');return [m[3],String(a).padStart(2,'0'),String(b).padStart(2,'0')].join('-');}
  return '';
 }
-const row=(kind,date,quantity,more={})=>({kind,date,quantity:Number(quantity),unit:more.unit||'',name:more.name||'',code:more.code||'',spec:more.spec||'',worker:more.worker||'',note:more.note||'',price:Number.isFinite(more.price)?more.price:null,amount:Number.isFinite(more.amount)?more.amount:null,previous:Number.isFinite(more.previous)?more.previous:null,meter:Number.isFinite(more.meter)?more.meter:null,group:more.group||'',nameZh:more.nameZh||'',sourceSheet:more.sourceSheet||'',sourceRow:more.sourceRow||0,sourceFile:more.sourceFile||'',year:more.year||0});
+const row=(kind,date,quantity,more={})=>({kind,date,quantity:Number(quantity),unit:more.unit||'',name:more.name||'',code:more.code||'',spec:more.spec||'',worker:more.worker||'',note:more.note||'',price:Number.isFinite(more.price)?more.price:null,amount:Number.isFinite(more.amount)?more.amount:null,previous:Number.isFinite(more.previous)?more.previous:null,meter:Number.isFinite(more.meter)?more.meter:null,group:more.group||'',nameZh:more.nameZh||'',sourceSheet:more.sourceSheet||'',sourceRow:more.sourceRow||0,sourceFile:more.sourceFile||'',year:more.year||0,consumedQuantity:Number.isFinite(more.consumedQuantity)?more.consumedQuantity:null,consumedUnit:more.consumedUnit||'',costGroup:more.costGroup||'',nameVi:more.nameVi||''});
+const bilingualLabel=value=>{
+ const lines=str(value).split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+ return {nameVi:lines[0]||'',nameZh:lines.slice(1).join(' ')};
+};
+const waterGroup=i=>i<=9?'Hóa chất':i<=12?'Điện và nước':i<=14?'Nhân công':i<=17?'Bùn thải':i===18?'Phí tiếp nhận xả thải':'Bảo trì';
+const greenGroup=i=>i<=14?'Phân bón và vật tư chăm sóc':i<=16?'Nước tưới':i<=18?'Nhân công':i<=21?'Dịch vụ chăm sóc':'Bảo trì';
 const groupForWaste=s=>/有害|nguy hại|TPNH|Bùn thải|污泥/i.test(s)?'hazardous':/工業|công nghiệp/i.test(s)?'industrial':/giấy|carton|pallet|gỗ|phế liệu|nylon/i.test(s)?'recyclable':'other';
 function add(out,kind,date,qty,more){
  const n=number(qty);if(!date||!Number.isFinite(n)||n<0)return;
@@ -99,6 +105,8 @@ export function parseWorkbook(book,fileName,reportYear){
      if(!Number.isFinite(amount)||amount<0)continue;
      add(summaries,'green_cost_detail',year+'-'+String(m).padStart(2,'0')+'-01',amount,{
       ...source,sourceRow:i+1,unit:'VND',name,price,amount,
+      consumedQuantity:qty,consumedUnit:unit,costGroup:greenGroup(i),...bilingualLabel(name),
+      spec:'cost-detail-v3',
       note:'Cây xanh '+sheetName+'; sử dụng '+(Number.isFinite(qty)?qty:'—')+' '+unit,
       group:'green_cost_full'
      });
@@ -120,6 +128,8 @@ export function parseWorkbook(book,fileName,reportYear){
      if(!Number.isFinite(amount)||amount<0)continue;
      add(summaries,'water_cost_month',year+'-'+String(m).padStart(2,'0')+'-01',amount,{
       ...source,sourceRow:i+1,unit:'VND',name,price,amount,
+      consumedQuantity:consumed,consumedUnit:unit,costGroup:waterGroup(i),...bilingualLabel(name),
+      spec:'cost-detail-v3',
       note:'Chi phí A.3 chính; tiêu thụ '+(Number.isFinite(consumed)?consumed:'—')+' '+unit,
       group:'water_cost_full'
      });
