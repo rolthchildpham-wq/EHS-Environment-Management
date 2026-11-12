@@ -23,7 +23,9 @@ function preferred(rows,key){
  return candidates.length?Math.abs(Number(candidates.at(-1).quantity)):null;
 }
 export function reconcile(rows,from='1900-01-01',to='2100-12-31'){
- const filtered=distinct(rows.filter(x=>x.date>=from&&x.date<=to));
+ const legacy=rows.filter(x=>x.kind==='monthly_master'&&x.spec!=='master-map-v2'&&x.date>=from&&x.date<=to);
+ // Previous importer skipped Excel's first blank row. Its labels must not enter official figures.
+ const filtered=distinct(rows.filter(x=>x.date>=from&&x.date<=to&&!(x.kind==='monthly_master'&&x.spec!=='master-map-v2')));
  const months=[...new Set(filtered.map(month))].filter(Boolean).sort();
  const result=[],issues=[];
  for(const m of months){
@@ -73,5 +75,5 @@ export function reconcile(rows,from='1900-01-01',to='2100-12-31'){
    greenSource:gtotal?'C tổng chính thức':greenLines.length?'C chi tiết':'Chưa nhập C'
   });
  }
- return {months:result,issues,waterDetails:filtered.filter(x=>x.kind==='water_cost_month'),greenDetails:filtered.filter(x=>x.kind==='green_cost_detail'),raw:filtered};
+ return {months:result,issues,legacyCount:legacy.length,waterDetails:filtered.filter(x=>x.kind==='water_cost_month'),greenDetails:filtered.filter(x=>x.kind==='green_cost_detail'),raw:filtered};
 }
