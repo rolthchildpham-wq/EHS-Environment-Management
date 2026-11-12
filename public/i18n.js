@@ -1113,6 +1113,7 @@ Object.assign(dictionary,{
 });
 let active='vi';
 const originals=new WeakMap();
+const runtimeTranslations=new Map();
 const rev=new Map();
 for(const [vi,translations] of Object.entries(dictionary)){
  rev.set(vi,vi);rev.set(translations.en,vi);rev.set(translations.zh,vi);
@@ -1129,9 +1130,10 @@ function textNode(node){
  if(node.parentElement?.closest('script,style,textarea,code,pre,[data-no-translate]'))return;
  const leading=str.match(/^\s*/)[0],trailing=str.match(/\s*$/)[0],trimmed=str.trim();
  const original=rev.get(trimmed)||originals.get(node)||trimmed;
- if(!dictionary[original])return;
  originals.set(node,original);
- const next=leading+(active==='vi'?original:dictionary[original][active])+trailing;
+ const result=active==='vi'?original:(dictionary[original]?.[active]||runtimeTranslations.get(active+'|'+original));
+ if(!result)return;
+ const next=leading+result+trailing;
  if(node.nodeValue!==next)node.nodeValue=next;
 }
 export function translateDOM(root=document.body){
@@ -1161,9 +1163,42 @@ export function setLanguage(lang){
  translateDOM();
  document.dispatchEvent(new CustomEvent('ehs-language-change',{detail:{language:lang}}));
 }
+export async function translateVisibleContent(){
+ const target=document.getElementById('pageTranslationStatus');
+ if(active==='vi'){if(target)target.textContent='Đang hiển thị tiếng Việt';return 0}
+ if(!globalThis.Translator?.create){
+  if(target)target.textContent='Trình duyệt hiện không hỗ trợ dịch nội dung động trên thiết bị. Các nhãn chuẩn và A.3/C song ngữ vẫn được dịch bằng từ điển; dữ liệu khác giữ nguyên bản gốc.';
+  return 0;
+ }
+ const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
+ let node;const pending=new Set();
+ while((node=walker.nextNode())){
+  if(node.parentElement?.closest('script,style,textarea,code,pre,[data-no-translate]'))continue;
+  const raw=(originals.get(node)||node.nodeValue||'').trim();
+  if(raw.length<3||raw.length>210||dictionary[raw]||runtimeTranslations.has(active+'|'+raw))continue;
+  if(!/[àáạảãăằắặẳẵâầấậẩẫđèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹ]/i.test(raw))continue;
+  pending.add(raw);
+ }
+ if(target)target.textContent='Đang dịch '+pending.size+' chuỗi chưa có bản dịch bằng mô hình trên thiết bị...';
+ if(!pending.size){if(target)target.textContent='Các chuỗi hiện tại đã có bản dịch hoặc không cần dịch.';return 0}
+ const translator=await globalThis.Translator.create({sourceLanguage:'vi',targetLanguage:active});
+ let count=0;
+ try{
+  for(const raw of pending){
+   const translated=await translator.translate(raw);
+   if(translated?.trim()){runtimeTranslations.set(active+'|'+raw,translated.trim());count++;}
+   if(count%20===0&&target)target.textContent='Đang dịch '+count+'/'+pending.size+' chuỗi';
+  }
+ }finally{translator.destroy?.()}
+ translateDOM();
+ if(target)target.textContent='Đã dịch thêm '+count+' chuỗi. Nội dung kỹ thuật cần người quản lý kiểm tra.';
+ return count;
+}
 export function installI18n(){
  const selector=document.getElementById('languageSelect');
- if(selector)selector.onchange=()=>setLanguage(selector.value);
+ if(selector)selector.onchange=()=>{setLanguage(selector.value);translateVisibleContent().catch(e=>{const status=document.getElementById('pageTranslationStatus');if(status)status.textContent=e.message})};
+ const button=document.getElementById('translatePageButton');
+ if(button)button.onclick=()=>translateVisibleContent().catch(e=>{const status=document.getElementById('pageTranslationStatus');if(status)status.textContent=e.message});
  const persisted=localStorage.getItem('ehs-language');
  setLanguage(['vi','en','zh'].includes(persisted)?persisted:'vi');
  const observer=new MutationObserver(rescan);
