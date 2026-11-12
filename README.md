@@ -82,3 +82,18 @@ Nhập từng dòng bằng biểu mẫu nghiệp vụ cũng hỗ trợ đầy đ
 Báo cáo: thống kê theo tháng, năm, chi phí/m³, chi phí/kg, doanh thu phế liệu, tồn kho, tham chiếu nguyên bản, xuất Excel nhiều sheet và in PDF từ trình duyệt. Các chỉ số chỉ chính xác trong phạm vi dữ liệu đã nhập; năm trên sheet báo cáo tổng hợp phải chọn thủ công trước khi đọc file.
 
 **Quan trọng:** Chủ Firebase Project phải vào Firestore → Rules, xuất bản lại [file `firestore.rules`](firestore.rules) mới nhất để cấp quyền `operations`; GitHub Actions hiện chỉ triển khai Hosting do service account từng thiếu quyền triển khai Rules. Giới hạn tải hiện tại 5.000 bản ghi nghiệp vụ/mỗi lượt, chưa có phân trang toàn bộ lịch sử nhiều năm. Chưa nhận dạng AI chữ viết tay trên bản Spark; ảnh được nhập thủ công và duyệt riêng.
+
+
+## EHS V2.5 — Year filter / clean import / Vietnamese–English–Chinese (2026-11-12)
+
+**One display year for all four charts.** Use the **Năm hiển thị (cả 4 biểu đồ)** select above dashboard, choose 2025 or 2026. Selection sets both date filters to Jan 1 – Dec 31 of that year; the waste trend, wastewater, composition and financial plots all use exactly the same filtered records. Other years can be added when records are imported.
+
+**Language.** Vietnamese is the default UI language. The header language selector offers Vietnamese, English and simplified Chinese. Main navigation, management tools, forms, dashboard headings, report sections and standard buttons are translated client-side; source Excel labels/data stay unchanged.
+
+**Admin-only backup + reset.** Quản trị → Khôi phục dữ liệu gốc / Làm sạch dữ liệu. The interface requires a checkbox, the literal confirmation phrase `XOA DU LIEU EHS`, two confirmation prompts and generates a local JSON backup before deletion. It deletes only `operations`, `records`, `reviews` in batches. It never deletes `members`, `invites`, `settings`, `member_audit` or `data_reset_audit`. The append-only `data_reset_audit` collection logs action and count. Destructive operations must be initiated by a logged-in `admin`; editors/viewers cannot use the button.
+
+**Required activation:** Update Firebase Console → Firestore Database → Rules using the **latest** `firestore.rules` from this repository, then click Publish. GitHub Actions currently deploys **Hosting only**, not security rules. Until the new rules are published, the cleanup button will be blocked by permission errors. Publish rules *before* doing the initial cleanup.
+
+**Before reset:** inform other users not to import while reset is running; verify the backup JSON downloaded, store it privately, and never commit its contents to this public repository. After reset, select the correct report year for each workbook and re-import 2025 and 2026 separately. If legacy wrong imports remain, the charts may still be incorrect.
+
+**Limitation:** Confirmation/download and Firestore delete permissions are wired, but the destructive button has not been clicked on the user's production data. This procedure is intentionally manual. End-to-end behavior must be verified by the administrator after publishing rules.
