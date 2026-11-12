@@ -803,6 +803,136 @@ Object.assign(dictionary,{
     "zh": "数据录入和Excel"
   }
 });
+Object.assign(dictionary,{
+  "Chỉ số EHS & ISO": {
+    "en": "EHS & ISO indicators",
+    "zh": "EHS与ISO指标"
+  },
+  "Bản đồ tương tác nhà máy": {
+    "en": "Interactive factory map",
+    "zh": "厂区交互地图"
+  },
+  "Tải sơ đồ nhà máy": {
+    "en": "Upload factory plan",
+    "zh": "上传厂区平面图"
+  },
+  "Xóa tất cả ghim": {
+    "en": "Delete all pins",
+    "zh": "删除所有标记"
+  },
+  "Danh sách điểm và ghi chú": {
+    "en": "Map locations and notes",
+    "zh": "地图位置与备注"
+  },
+  "Vị trí": {
+    "en": "Location",
+    "zh": "位置"
+  },
+  "Nhóm": {
+    "en": "Category",
+    "zh": "分类"
+  },
+  "Tọa độ tương đối": {
+    "en": "Relative position",
+    "zh": "相对坐标"
+  },
+  "Quản lý": {
+    "en": "Manage",
+    "zh": "管理"
+  },
+  "Chỉ xem": {
+    "en": "View only",
+    "zh": "仅查看"
+  },
+  "Thêm dữ liệu hoạt động kiểm kê khí nhà kính": {
+    "en": "Add GHG inventory activity data",
+    "zh": "添加温室气体盘查活动数据"
+  },
+  "Lưu hoạt động kiểm kê": {
+    "en": "Save inventory activity",
+    "zh": "保存盘查活动"
+  },
+  "Xuất báo cáo EHS & KNK (Excel)": {
+    "en": "Export EHS & GHG report (Excel)",
+    "zh": "导出EHS与温室气体报表（Excel）"
+  },
+  "Chỉ số EHS · Vật tư · Hóa chất · Kiểm kê khí nhà kính": {
+    "en": "EHS · Materials · Chemicals · Greenhouse gas inventory",
+    "zh": "EHS·物料·化学品·温室气体盘查"
+  },
+  "Nguồn hệ số phát thải": {
+    "en": "Emission factor reference",
+    "zh": "排放因子来源"
+  },
+  "Năm hệ số": {
+    "en": "Factor year",
+    "zh": "因子年份"
+  },
+  "Scope": {
+    "en": "Scope",
+    "zh": "范围"
+  },
+  "Hoạt động": {
+    "en": "Activity",
+    "zh": "活动"
+  },
+  "Hệ số (kgCO₂e/đơn vị, có thể để trống)": {
+    "en": "Emission factor (kgCO₂e/unit; optional)",
+    "zh": "排放因子（kgCO₂e/单位，可选）"
+  },
+  "Lượng rác thu gom": {
+    "en": "Waste collected",
+    "zh": "已收集垃圾量"
+  },
+  "Nước vào XLNT": {
+    "en": "WWTP inlet",
+    "zh": "废水处理进水量"
+  },
+  "Nước xả XLNT": {
+    "en": "WWTP discharge",
+    "zh": "废水处理排放量"
+  },
+  "Dòng xuất kho": {
+    "en": "Stock issue records",
+    "zh": "出库记录数"
+  },
+  "Chỉ số giám sát môi trường & nguồn dữ liệu": {
+    "en": "Environmental indicators & sources",
+    "zh": "环境指标与数据来源"
+  },
+  "Kiểm soát hóa chất, vật tư và phân bón theo loại": {
+    "en": "Chemical, materials and fertilizer controls by type",
+    "zh": "按类别管理化学品、物资和肥料"
+  },
+  "Kiểm kê khí nhà kính – ISO 14064-1 / GHG Protocol": {
+    "en": "Greenhouse gas inventory – ISO 14064-1 / GHG Protocol",
+    "zh": "温室气体盘查 – ISO 14064-1 / GHG Protocol"
+  },
+  "Các nguồn dữ liệu còn cần để báo cáo chuẩn": {
+    "en": "Missing data for standards-based reports",
+    "zh": "符合标准报表所缺数据"
+  },
+  "Chưa đủ": {
+    "en": "Incomplete",
+    "zh": "未完整"
+  },
+  "Một phần": {
+    "en": "Partial",
+    "zh": "部分"
+  },
+  "Chưa đủ nguồn": {
+    "en": "Insufficient references",
+    "zh": "数据来源不足"
+  },
+  "Tên vị trí": {
+    "en": "Location name",
+    "zh": "地点名称"
+  },
+  "Ghi chú / thông số / trách nhiệm": {
+    "en": "Notes / data / responsibilities",
+    "zh": "备注/参数/责任人"
+  }
+});
 let active='vi';
 const originals=new WeakMap();
 const rev=new Map();
