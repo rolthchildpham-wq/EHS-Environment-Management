@@ -1,5 +1,5 @@
 // Display translations only. The original Excel source values are immutable.
-import {getLanguage} from './i18n.js';
+import {getLanguage} from './i18n.js?v=20261112f';
 const normalize=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
 const enMap=[
  ['hoa chat naoh','Sodium hydroxide (NaOH)'],
