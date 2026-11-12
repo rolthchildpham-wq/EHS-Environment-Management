@@ -127,8 +127,44 @@ async function addActivity(e){
   await loadGHG();
  }catch(err){$('ghgStatus').textContent='Không lưu được: '+err.message}
 }
+function exportCompliance(){
+ if(!window.XLSX)return alert('Không tải được thư viện Excel.');
+ const from=$('from')?.value||'1900-01-01',to=$('to')?.value||'2100-12-31';
+ const ops=selectedPeriod(getOps()),chem=chemical(ops),g=ghg.filter(x=>x.date>=from&&x.date<=to);
+ const wb=window.XLSX.utils.book_new();
+ const append=(name,rows)=>window.XLSX.utils.book_append_sheet(wb,window.XLSX.utils.json_to_sheet(rows.length?rows:[{Ghi_chu:'Chưa có dữ liệu'}]),name);
+ const waste=ops.filter(x=>x.kind==='waste'),waterIn=ops.filter(x=>x.kind==='water_in'),waterOut=ops.filter(x=>x.kind==='water_out');
+ append('Chi so EHS',[{
+  Tu_ngay:from,Den_ngay:to,Rac_thu_gom_kg:sum(waste),
+  Nuoc_vao_XLNT_m3:sum(waterIn),Nuoc_xa_XLNT_m3:sum(waterOut),
+  So_dong_xuat_kho:ops.filter(x=>x.kind==='stock_out').length,
+  Canh_bao:'Nước đầu vào XLNT không phải tổng lượng nước khai thác GRI 303; rác thu gom chưa đủ GRI 306'
+ }]);
+ append('Vat tu Hoa chat',chem.map(x=>({
+  Nhom:x.group,Ma_vat_tu:x.code,Ten:x.name,Don_vi:x.unit,
+  So_luong_nhap:x.in,So_luong_xuat:x.out,Gia_tri_nhap_VND:x.amount
+ })));
+ append('Kiem ke KNK',g.map(x=>({
+  Ngay:x.date,Scope:'Scope '+x.scope,Nguon:x.activity,So_luong:x.quantity,
+  Don_vi:x.unit,He_so_kgCO2e_moi_don_vi:x.factor,He_so_nam:x.factorYear,
+  Nguon_he_so:x.factorSource,
+  tCO2e:Number.isFinite(x.factor)&&x.factorSource&&x.factorYear?x.quantity*x.factor/1000:null,
+  Ghi_chu:'Giá trị tính chỉ là sơ bộ theo dữ liệu người dùng nhập, không tự chứng nhận ISO'
+ })));
+ append('Khoang trong du lieu',[
+  {Chuan:'GRI 303',Thieu:'Nguồn khai thác, nước tiêu thụ, chất lượng nước xả, stress nước'},
+  {Chuan:'GRI 306',Thieu:'Khối lượng phát sinh, phân loại, phương án xử lý, chứng từ giao nhận'},
+  {Chuan:'GRI 301',Thieu:'Nguyên liệu tái tạo, vật liệu tái chế, số dư kiểm kê thực tế'},
+  {Chuan:'ISO 14064-1 / GHG Protocol',Thieu:'Ranh giới kiểm kê, năm cơ sở, điện/nhiên liệu, nguồn và độ tin cậy EF, nguồn Scope 3'},
+  {Chuan:'Kiểm soát hóa chất / phân bón',Thieu:'Đơn vị chuẩn, lô, hạn dùng, SDS, hoạt chất, lượng nitơ, tồn thực tế'},
+  {Chuan:'Kiểm soát tài chính',Thieu:'Kế hoạch ngân sách, chứng từ kế toán, phân loại trung tâm chi phí'}
+ ]);
+ window.XLSX.writeFile(wb,'EHS_Chi_So_ISO_Kiem_Ke_KNK_'+from+'_'+to+'.xlsx');
+}
 export function initCompliance(){
  $('ghgForm').onsubmit=addActivity;
+ $('complianceExport').onclick=exportCompliance;
+ $('ghgForm').elements.date.value=new Date().toISOString().slice(0,10);
  $('from')?.addEventListener('change',render);$('to')?.addEventListener('change',render);
 }
 export function refreshCompliance(){if(ready)render()}
