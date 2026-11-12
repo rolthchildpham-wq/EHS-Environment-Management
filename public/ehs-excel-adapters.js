@@ -168,9 +168,12 @@ export function parseWorkbook(book,fileName,reportYear){
      const approximate=typeof value==='string'&&value.trim().startsWith('~');
      if(approximate)value=number(value.replace(/^~/,''));
      if(!Number.isFinite(number(value)))continue;
-     add(summaries,'monthly_master',year+'-'+String(m).padStart(2,'0')+'-01',value,{
+     const financial=/^(industrial_cost|domestic_cost|hazardous_cost|scrap_revenue)$/.test(metric);
+     const direction=metric==='scrap_revenue'?'income':financial?'expense':'management_master';
+     const officialValue=financial?Math.abs(number(value)):value;
+     add(summaries,'monthly_master',year+'-'+String(m).padStart(2,'0')+'-01',officialValue,{
       ...source,sourceRow:Number(rowNo),name:metric,unit,
-      group:approximate?'estimated':'management_master',
+      group:approximate?'estimated':direction,
       note:sheetName+'!'+String.fromCharCode(67+m)+rowNo+(approximate?' (ước tính)':'')
      });
     }
