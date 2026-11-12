@@ -136,7 +136,7 @@ export function initCostExplorer(){
  $('costExcelExport').onclick=exportRows;
  $('costTranslate').onclick=translateMissing;
  $('costManualTranslate').onclick=adjustName;
- document.addEventListener('ehs-language-change',()=>{initCostExplorer();setCostExplorerRecords(all)});
+ document.addEventListener('ehs-language-change',()=>{render()});
  updatePeriods();render();
 }
 export function setCostExplorerRecords(rows){
