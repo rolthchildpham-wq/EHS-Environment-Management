@@ -53,6 +53,7 @@ test('uses official totals not double counting details',()=>{
  assert.equal(jan.domesticCost,100);
  assert.equal(jan.wasteCost,600);
  assert.equal(jan.revenue,150);
+ assert.equal(jan.wasteNet,-450);
  assert.equal(jan.costWaterPerM3,1000/70);
  assert.equal(summary.issues.length,0);
 });
@@ -63,4 +64,20 @@ test('shows discrepancy without replacing official total',()=>{
  const r=reconcile(rows,'2026-01-01','2026-01-31');
  assert.equal(r.months[0].waterCost,1000);
  assert.equal(r.issues.find(x=>x.type==='water_cost')?.difference,100);
+});
+
+test('expense with negative signed Excel source remains a cost and scrap remains income',()=>{
+ const wb=sampleWorkbook();
+ wb.Sheets['A.TK Rác_XLNT 2025 (Hàng tháng)'].rows[9][3]=-200;
+ const records=parseWorkbook(wb,'sample.xlsx',2026).items;
+ const expense=records.find(x=>x.kind==='monthly_master'&&x.name==='industrial_cost');
+ const scrap=records.find(x=>x.kind==='monthly_master'&&x.name==='scrap_revenue');
+ assert.equal(expense.quantity,200);
+ assert.equal(expense.group,'expense');
+ assert.equal(scrap.quantity,150);
+ assert.equal(scrap.group,'income');
+ const summary=reconcile(records,'2026-01-01','2026-01-31').months[0];
+ assert.equal(summary.industrialCost,200);
+ assert.equal(summary.revenue,150);
+ assert.equal(summary.wasteNet,-450);
 });
