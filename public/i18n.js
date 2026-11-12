@@ -617,6 +617,192 @@ const dictionary={
     "zh": "金额"
   }
 };
+Object.assign(dictionary,{
+  "Toàn bộ 4 biểu đồ sử dụng cùng năm đã chọn phía trên. Dữ liệu năm khác không được trộn vào biểu đồ.": {
+    "en": "All four charts use the selected year. Data from other years is excluded.",
+    "zh": "四个图表均使用所选年份，不混入其他年份的数据。"
+  },
+  "Chọn khoảng thời gian phía trên để lập báo cáo tháng, quý, năm hoặc khoảng tùy chọn. Bản in có bảng tổng hợp, chênh lệch cùng kỳ và các chỉ số vận hành.": {
+    "en": "Choose a date range above for monthly, quarterly, annual or custom reports.",
+    "zh": "通过上方日期范围生成月度、季度、年度或自定义报表。"
+  },
+  "Nhập tay & nhập Excel theo cấu trúc gốc": {
+    "en": "Manual entry & original Excel import",
+    "zh": "手动输入及原始Excel导入"
+  },
+  "File Excel gốc": {
+    "en": "Original Excel file",
+    "zh": "原始Excel文件"
+  },
+  "Năm cho sheet báo cáo tháng": {
+    "en": "Year of monthly report",
+    "zh": "月度报表年份"
+  },
+  "Nhập dữ liệu thủ công": {
+    "en": "Enter data manually",
+    "zh": "手动录入数据"
+  },
+  "Nghiệp vụ": {
+    "en": "Transaction",
+    "zh": "业务类型"
+  },
+  "Tên rác / vật tư / chỉ tiêu": {
+    "en": "Waste / material / metric",
+    "zh": "垃圾/物资/指标"
+  },
+  "Mã vật tư": {
+    "en": "Material code",
+    "zh": "物料编码"
+  },
+  "Số lượng / m³ trong ngày": {
+    "en": "Quantity / daily m³",
+    "zh": "数量/每日立方米"
+  },
+  "Chỉ số đồng hồ hiện tại": {
+    "en": "Current meter reading",
+    "zh": "当前水表读数"
+  },
+  "Chỉ số đồng hồ trước": {
+    "en": "Previous meter reading",
+    "zh": "上次水表读数"
+  },
+  "Quy cách": {
+    "en": "Specification",
+    "zh": "规格"
+  },
+  "Nhân viên": {
+    "en": "Employee",
+    "zh": "员工"
+  },
+  "Ngày nhập": {
+    "en": "Entry date",
+    "zh": "录入日期"
+  },
+  "Tháng": {
+    "en": "Month",
+    "zh": "月份"
+  },
+  "Chi phí chất thải": {
+    "en": "Waste disposal cost",
+    "zh": "垃圾处理费用"
+  },
+  "Doanh thu phế liệu": {
+    "en": "Scrap sales revenue",
+    "zh": "废料销售收入"
+  },
+  "Chi phí rác công nghiệp": {
+    "en": "Industrial waste cost",
+    "zh": "工业垃圾费用"
+  },
+  "Chi phí rác sinh hoạt": {
+    "en": "Domestic waste cost",
+    "zh": "生活垃圾费用"
+  },
+  "Chi phí rác nguy hại": {
+    "en": "Hazardous waste cost",
+    "zh": "危险废物费用"
+  },
+  "Thu – chi chất thải (+/−) từ A.TK": {
+    "en": "Waste cash flow (+/−) from A.TK",
+    "zh": "A.TK垃圾收支（+/−）"
+  },
+  "Tổng CP rác": {
+    "en": "Total waste expenses",
+    "zh": "垃圾费用合计"
+  },
+  "Chi phí/kg rác": {
+    "en": "Waste cost/kg",
+    "zh": "垃圾每公斤费用"
+  },
+  "Phân loại": {
+    "en": "Category",
+    "zh": "类别"
+  },
+  "Chi tiết": {
+    "en": "Details",
+    "zh": "明细"
+  },
+  "Lưu dữ liệu": {
+    "en": "Save data",
+    "zh": "保存数据"
+  },
+  "Chi phí XLNT": {
+    "en": "Wastewater treatment costs",
+    "zh": "废水处理费用"
+  },
+  "CP nước A.3": {
+    "en": "Wastewater A.3 costs",
+    "zh": "A.3废水处理费"
+  },
+  "CP cây xanh C": {
+    "en": "Landscaping C costs",
+    "zh": "C绿化费用"
+  },
+  "Tổng hợp tháng theo nguồn chuẩn": {
+    "en": "Monthly summary from official source",
+    "zh": "正式来源月度汇总"
+  },
+  "Chi tiết A.3 – Chi phí xử lý nước thải": {
+    "en": "A.3 – Wastewater cost details",
+    "zh": "A.3 – 废水处理费用明细"
+  },
+  "Chi tiết C – Chi phí cây xanh": {
+    "en": "C – Landscaping cost details",
+    "zh": "C – 绿化费用明细"
+  },
+  "Chi phí (−)": {
+    "en": "Expense (−)",
+    "zh": "支出（−）"
+  },
+  "Thu (+)": {
+    "en": "Income (+)",
+    "zh": "收入（+）"
+  },
+  "Chi phí xử lý (−)": {
+    "en": "Treatment expense (−)",
+    "zh": "处理支出（−）"
+  },
+  "Quản lý nhân viên · Spark": {
+    "en": "Member administration · Spark",
+    "zh": "员工管理 · Spark"
+  },
+  "Khôi phục dữ liệu gốc / Làm sạch dữ liệu": {
+    "en": "Restore original data / Clear business data",
+    "zh": "恢复原始数据 / 清除业务数据"
+  },
+  "Chỉ Admin. Xóa toàn bộ số liệu nghiệp vụ đã nhập sai ở": {
+    "en": "Admin only. Delete invalid imported business records in",
+    "zh": "仅管理员可操作：清除错误的业务记录于"
+  },
+  "Không thể hoàn tác bằng một nút.": {
+    "en": "This action cannot be undone with a single click.",
+    "zh": "此操作无法一键撤销。"
+  },
+  "Tôi đã hiểu dữ liệu nghiệp vụ sẽ bị xóa vĩnh viễn và sẽ kiểm tra bản sao lưu.": {
+    "en": "I understand business data will be permanently deleted and will verify the backup.",
+    "zh": "我明白业务数据将被永久删除，并会检查备份。"
+  },
+  "Nhập XOA DU LIEU EHS để xác nhận": {
+    "en": "Type XOA DU LIEU EHS to confirm",
+    "zh": "输入 XOA DU LIEU EHS 确认"
+  },
+  "Đã khóa": {
+    "en": "Disabled",
+    "zh": "已禁用"
+  },
+  "Đang hoạt động": {
+    "en": "Active",
+    "zh": "有效"
+  },
+  "Mở lại": {
+    "en": "Re-enable",
+    "zh": "重新启用"
+  },
+  "Nhập liệu & Excel": {
+    "en": "Input & Excel",
+    "zh": "数据录入和Excel"
+  }
+});
 let active='vi';
 const originals=new WeakMap();
 const rev=new Map();
