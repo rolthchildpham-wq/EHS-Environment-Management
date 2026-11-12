@@ -107,13 +107,13 @@ function paint(){
   (lastWarning.length>12?'<div>…và '+(lastWarning.length-12)+' cảnh báo khác.</div>':'');
 }
 function recordToDb(x,importId){
- const keys=['date','kind','quantity','unit','name','code','spec','worker','note','price','amount','previous','meter','group','nameZh','sourceSheet','sourceRow','sourceFile','year'];
+ const keys=['date','kind','quantity','unit','name','code','spec','worker','note','price','amount','previous','meter','group','nameZh','sourceSheet','sourceRow','sourceFile','year','consumedQuantity','consumedUnit','costGroup','nameVi'];
  const obj={};for(const k of keys){const val=x[k];if(val!==undefined)obj[k]=val===null?null:val;}
  for(const k of ['unit','name','code','note','sourceFile','sourceSheet'])if(typeof obj[k]!=='string')obj[k]=String(obj[k]??'');
  return {...obj,importId,createdBy:user.uid,createdAt:serverTimestamp()};
 }
 async function stableId(x){
- const key=[x.kind==='monthly_master'&&x.spec==='master-map-v2'?'mapping-v2':'original',x.sourceFile,x.sourceSheet,x.sourceRow,x.kind,x.name,x.code,x.date].join('||');
+ const key=[x.spec==='cost-detail-v3'?'cost-detail-v3':x.kind==='monthly_master'&&x.spec==='master-map-v2'?'mapping-v2':'original',x.sourceFile,x.sourceSheet,x.sourceRow,x.kind,x.name,x.code,x.date].join('||');
  const hash=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(key));
  return 'xls_'+Array.from(new Uint8Array(hash)).slice(0,20).map(b=>b.toString(16).padStart(2,'0')).join('');
 }
