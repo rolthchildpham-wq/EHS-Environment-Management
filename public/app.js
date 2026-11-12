@@ -1,4 +1,6 @@
-import {mountOperations,unmountOperations,loadOperations,getOperationalRecords} from './ehs-operations.js?v=20261111b';
+import {installI18n,t} from './i18n.js?v=20261112a';
+import {mountDataReset} from './data-reset.js?v=20261112a';
+import {mountOperations,unmountOperations,loadOperations,getOperationalRecords,renderOperationsReport} from './ehs-operations.js?v=20261111b';
 import {resolveMember,mountMemberAdmin} from './member-admin.js?v=20261111b';
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js';
 import {getAuth,GoogleAuthProvider,signInWithPopup,onAuthStateChanged,signOut} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js';
@@ -26,15 +28,28 @@ function previous(){
 function stat(title,v,unit,p){return '<div class="stat"><div class="muted">'+esc(title)+'</div><strong>'+fmt(v)+' <small>'+esc(unit)+'</small></strong><span class="muted">'+(p?fmt((v-p)/p*100)+'% so kỳ trước':'Chưa đủ dữ liệu so sánh')+'</span></div>'}
 function monthly(r,k){const n=Array(12).fill(0);r.filter(x=>x.kind===k).forEach(x=>{const m=Number(x.date.slice(5,7));if(m>=1&&m<=12)n[m-1]+=x.value});return n}
 function chart(id,type,labels,sets){if(!window.Chart)return;if(charts[id])charts[id].destroy();charts[id]=new window.Chart(el(id),{type,data:{labels,datasets:sets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}}}})}
+function updateYearOptions(){
+ const select=el('dashboardYear');if(!select)return;
+ const all=[...data,...reviewData];
+ const years=new Set([2025,2026,new Date().getFullYear()]);
+ for(const row of all){const y=Number(String(row.date||'').slice(0,4));if(y>=2000&&y<=2100)years.add(y)}
+ const chosen=select.value||String(new Date().getFullYear());
+ select.innerHTML=[...years].sort((a,b)=>b-a).map(y=>'<option value="'+y+'">'+y+'</option>').join('');
+ select.value=years.has(Number(chosen))?chosen:String(new Date().getFullYear());
+}
 function render(){
+ const year=el('dashboardYear')?.value||'2026';
+ for(const id of ['chartYearWaste','chartYearWater','chartYearCategory','chartYearMoney']){
+  if(el(id))el(id).textContent=' · '+year;
+ }
  const r=current(),p=previous(),months=Array.from({length:12},(_,i)=>'T'+(i+1));
- el('stats').innerHTML=stat('Rác thu gom',sum(r,'waste'),'kg',sum(p,'waste'))+stat('Nước thải đầu ra',sum(r,'water_out'),'m³',sum(p,'water_out'))+stat('Số dòng nhập vật tư',r.filter(x=>x.kind==='stock_in').length,'dòng',0)+stat('Số dòng xuất vật tư',r.filter(x=>x.kind==='stock_out').length,'dòng',0);
- chart('wasteChart','bar',months,[{label:'Rác (kg)',data:monthly(r,'waste'),backgroundColor:'#168982'}]);
- chart('waterChart','line',months,[{label:'Đầu vào',data:monthly(r,'water_in'),borderColor:'#db983e'},{label:'Đầu ra',data:monthly(r,'water_out'),borderColor:'#268cb8'}]);
+ el('stats').innerHTML=stat(t('Rác thu gom'),sum(r,'waste'),'kg',sum(p,'waste'))+stat(t('Nước thải đầu ra'),sum(r,'water_out'),'m³',sum(p,'water_out'))+stat(t('Số dòng nhập vật tư'),r.filter(x=>x.kind==='stock_in').length,'dòng',0)+stat(t('Số dòng xuất vật tư'),r.filter(x=>x.kind==='stock_out').length,'dòng',0);
+ chart('wasteChart','bar',months,[{label:t('Rác (kg)'),data:monthly(r,'waste'),backgroundColor:'#168982'}]);
+ chart('waterChart','line',months,[{label:t('Đầu vào'),data:monthly(r,'water_in'),borderColor:'#db983e'},{label:t('Đầu ra'),data:monthly(r,'water_out'),borderColor:'#268cb8'}]);
  const groups={};r.filter(x=>x.kind==='waste').forEach(x=>groups[x.name||'Khác']=(groups[x.name||'Khác']||0)+x.value);
  const top=Object.entries(groups).sort((a,b)=>b[1]-a[1]).slice(0,8);
  chart('categoryChart','doughnut',top.map(x=>x[0]),[{data:top.map(x=>x[1])}]);
- chart('moneyChart','bar',months,[{label:'Chi phí',data:monthly(r,'cost'),backgroundColor:'#d18c52'},{label:'Doanh thu',data:monthly(r,'revenue'),backgroundColor:'#128e77'}]);
+ chart('moneyChart','bar',months,[{label:t('Chi phí'),data:monthly(r,'cost'),backgroundColor:'#d18c52'},{label:t('Doanh thu'),data:monthly(r,'revenue'),backgroundColor:'#128e77'}]);
  el('recordRows').innerHTML=r.filter(x=>el('kind').value==='all'||x.kind===el('kind').value).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,1500).map(x=>'<tr><td>'+esc(x.date)+'</td><td>'+esc(names[x.kind])+'</td><td>'+esc(x.name)+'</td><td>'+fmt(x.value)+'</td><td>'+esc(x.unit)+'</td><td>'+esc(x.source)+'</td></tr>').join('');
  const cost=sum(r,'cost'),revenue=sum(r,'revenue');
  const wc=r.filter(x=>x.kind==='cost'&&x.name==='water_cost').reduce((s,x)=>s+x.value,0);
@@ -62,7 +77,7 @@ async function reload(){
  const snap=await getDocs(query(collection(db,'records'),limit(5000)));
  data=snap.docs.map(d=>norm(d.data())).filter(valid);
  await loadOperations();data.push(...getOperationalRecords());
- await reviews();render();notice('Đã tải '+data.length+' bản ghi dữ liệu gốc/nghiệp vụ và '+reviewData.length+' chứng từ đã duyệt. Bảng báo cáo nghiệp vụ hiển thị chi tiết theo sheet Excel.');
+ await reviews();updateYearOptions();render();notice('Đã tải '+data.length+' bản ghi dữ liệu gốc/nghiệp vụ và '+reviewData.length+' chứng từ đã duyệt. Bảng báo cáo nghiệp vụ hiển thị chi tiết theo sheet Excel.');
 }
 async function reviews(){
  if(!db||!role)return;
@@ -87,8 +102,21 @@ async function reviews(){
  });
 }
 
-el('tabs').innerHTML=Object.entries(labels).map(([id,title],i)=>'<button data-tab="'+id+'" class="'+(i===0?'active':'')+'">'+title+'</button>').join('');
+installI18n();
+el('tabs').innerHTML=Object.entries(labels).map(([id,title],i)=>'<button data-tab="'+id+'" class="'+(i===0?'active':'')+'">'+t(title)+'</button>').join('');
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{document.querySelectorAll('section').forEach(s=>s.classList.toggle('active',s.id===b.dataset.tab));document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b))});
+el('dashboardYear').onchange=()=>{
+ const y=Number(el('dashboardYear').value);if(!Number.isFinite(y))return;
+ el('from').value=y+'-01-01';el('to').value=y+'-12-31';
+ render();renderOperationsReport();
+};
+const syncYear=()=>{
+ const y1=el('from').value.slice(0,4),y2=el('to').value.slice(0,4);
+ if(y1===y2&&[...el('dashboardYear').options].some(o=>o.value===y1))el('dashboardYear').value=y1;
+ render();renderOperationsReport();
+};
+el('from').onchange=syncYear;el('to').onchange=syncYear;
+document.addEventListener('ehs-language-change',()=>{render();renderOperationsReport()});
 el('refresh').onclick=async()=>{await reload();};el('kind').onchange=render;el('exportExcel').onclick=()=>xlsxExport('EHS_du_lieu.xlsx');el('reportExcel').onclick=()=>xlsxExport('EHS_bao_cao.xlsx');
 el('printReport').onclick=()=>{const w=window.open('','_blank');if(!w)return alert('Bật popup để in');w.document.write('<html><head><meta charset="utf-8"><style>body{font-family:Arial;padding:30px;font-size:12px}table{width:100%;border-collapse:collapse;page-break-inside:auto}tr{page-break-inside:avoid}td,th{border:1px solid #ddd;padding:6px}button,.controls{display:none}</style></head><body><h1>BÁO CÁO EHS</h1>'+el('reportBody').innerHTML+el('opsReport').innerHTML+'</body></html>');w.document.close();w.print()};
 el('reportPpt').onclick=()=>{if(!window.pptxgen)return alert('Không tải được PowerPoint');const p=new window.pptxgen();p.layout='LAYOUT_WIDE';const s=p.addSlide();s.addText('BÁO CÁO MÔI TRƯỜNG EHS',{x:.6,y:.6,w:11,h:.7,fontSize:27,bold:true});s.addText(el('from').value+' – '+el('to').value,{x:.6,y:1.5,w:10,h:.5,fontSize:18});['waste','water_in','water_out','cost','revenue'].forEach((k,i)=>s.addText(names[k]+': '+fmt(sum(current(),k)),{x:.7,y:2.2+i*.7,w:10,h:.5,fontSize:18}));p.writeFile({fileName:'EHS_bao_cao.pptx'})};
@@ -135,5 +163,5 @@ el('login').onclick=()=>auth&&signInWithPopup(auth,new GoogleAuthProvider()).cat
 el('logout').onclick=()=>auth&&signOut(auth);
 if(window.EHS_FIREBASE_CONFIG){
  const app=initializeApp(window.EHS_FIREBASE_CONFIG);auth=getAuth(app);db=getFirestore(app);
- onAuthStateChanged(auth,async u=>{user=u;role=null;el('login').classList.toggle('hide',!!u);el('logout').classList.toggle('hide',!u);if(!u){el('mode').textContent='Chưa đăng nhập';mountMemberAdmin(db,null,null);unmountOperations();data=[];reviewData=[];render();return}try{const membership=await resolveMember(db,u);role=membership?.role||null;mountMemberAdmin(db,u,role);if(role)mountOperations(db,u,role,reload);else unmountOperations();el('mode').textContent=u.email+' · '+(role||'chưa cấp quyền');if(role)await reload();else notice('Chưa được cấp quyền; tạo members/'+u.uid+' trong Firestore Console.')}catch(e){notice(e.message)}});
+ onAuthStateChanged(auth,async u=>{user=u;role=null;el('login').classList.toggle('hide',!!u);el('logout').classList.toggle('hide',!u);if(!u){el('mode').textContent='Chưa đăng nhập';mountMemberAdmin(db,null,null);mountDataReset(db,null,null,null);unmountOperations();data=[];reviewData=[];render();return}try{const membership=await resolveMember(db,u);role=membership?.role||null;mountMemberAdmin(db,u,role);mountDataReset(db,u,role,reload);if(role)mountOperations(db,u,role,reload);else unmountOperations();el('mode').textContent=u.email+' · '+(role||'chưa cấp quyền');if(role)await reload();else notice('Chưa được cấp quyền; tạo members/'+u.uid+' trong Firestore Console.')}catch(e){notice(e.message)}});
 }else{el('mode').textContent='Chưa cấu hình Firebase';el('login').classList.add('hide');render();notice('Chưa kết nối Firebase Web App. Thêm cấu hình từ Project settings để kích hoạt.')}
