@@ -113,7 +113,7 @@ function recordToDb(x,importId){
  return {...obj,importId,createdBy:user.uid,createdAt:serverTimestamp()};
 }
 async function stableId(x){
- const key=[x.sourceFile,x.sourceSheet,x.sourceRow,x.kind,x.name,x.code,x.date].join('||');
+ const key=[x.kind==='monthly_master'&&x.spec==='master-map-v2'?'mapping-v2':'original',x.sourceFile,x.sourceSheet,x.sourceRow,x.kind,x.name,x.code,x.date].join('||');
  const hash=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(key));
  return 'xls_'+Array.from(new Uint8Array(hash)).slice(0,20).map(b=>b.toString(16).padStart(2,'0')).join('');
 }
@@ -227,7 +227,7 @@ function report(){
   x.month,x.type==='water_cost'?'Xử lý nước thải':'Cây xanh',n(x.actual),n(x.detail),n(x.difference),
   'Số tổng của Excel được ưu tiên, cần kiểm tra dòng chi tiết'
  ])).join('');
- el('opsDataCount').textContent='Đã tải '+operations.length+' bản ghi nghiệp vụ. Tổng và chi phí chuẩn lấy từ A.TK, A.3, C; chi tiết được đối chiếu độc lập, không cộng hai lần. Giới hạn đọc hiện tại: 5.000 dòng.';
+ el('opsDataCount').textContent='Đã tải '+operations.length+' bản ghi. '+(calc.legacyCount?'Cảnh báo: '+calc.legacyCount+' dòng A.TK cũ bị lệch chỉ tiêu đã được loại khỏi báo cáo. Cần nhập lại file Excel gốc để khôi phục số liệu. ':'')+'Báo cáo dùng A.TK đã kiểm tra nhãn dòng, A.3 và C. Tối đa 5.000 bản ghi.';
 }
 export async function loadOperations(){
  if(!db||!role)return [];
@@ -239,7 +239,7 @@ export async function loadOperations(){
 }
 export function getOperationalRecords(){
  const calc=reconcile(operations,'1900-01-01','2100-12-31');
- const master=new Set(operations.filter(x=>x.kind==='monthly_master')
+ const master=new Set(operations.filter(x=>x.kind==='monthly_master'&&x.spec==='master-map-v2')
    .map(x=>x.date.slice(0,7)+'/'+x.name));
  const records=[];
  for(const x of operations){
@@ -269,6 +269,7 @@ export function mountOperations(database,actor,actorRole,onUpdate){
  host.innerHTML='<div class="panel"><h2>Nhập tay & nhập Excel theo cấu trúc gốc</h2>'+
   '<p class="muted">Nhận diện A.1, A.2, 入库, 出库, A.TK, A.3 chi phí nước thải, C chi phí cây xanh và báo cáo thu chi rác. Dữ liệu Excel được kiểm tra trước khi ghi. Chọn năm báo cáo đúng với nội dung các sheet tổng hợp.</p>'+ 
   '<p class="notice">Sheet A.TK: <b>chi phí xử lý chất thải (−)</b>, <b>doanh thu phế liệu (+)</b>. Sau khi đọc Excel, xem phần Thu/chi (+/−) và bảng Thu – chi chất thải trong Báo cáo. Không đổi dấu dữ liệu nguồn.</p>'+
+  '<p class="notice">Đã sửa lỗi lệch dòng A.TK của bản nhập cũ. Hãy đọc và lưu lại file Excel 2026 gốc một lần; những bản ghi A.TK cũ sẽ không được dùng để tính báo cáo. Các loại dữ liệu A.1, A.2, A.3, C và vật tư không bị xóa.</p>'+
   '<div class="controls"><label>File Excel gốc<input id="opsFile" type="file" accept=".xlsx,.xls"></label>'+
   '<label>Năm cho sheet báo cáo tháng<input id="opsYear" type="number" min="2015" max="2100" value="2026"></label>'+
   '<button id="opsParse">Đọc và kiểm tra Excel</button></div>'+
