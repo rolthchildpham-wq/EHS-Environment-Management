@@ -237,6 +237,7 @@ export async function loadOperations(){
   report();return operations;
  }catch(e){notify('Không tải được dữ liệu nghiệp vụ: '+e.message);return []}
 }
+export function getAllOperations(){return operations.slice()}
 export function getOperationalRecords(){
  const calc=reconcile(operations,'1900-01-01','2100-12-31');
  const master=new Set(operations.filter(x=>x.kind==='monthly_master'&&x.spec==='master-map-v2')
