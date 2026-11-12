@@ -118,3 +118,23 @@ test('old wrong-row A.TK documents are excluded; corrected reimport is authorita
  assert.equal(corrected.months[0].industrialCost,200);
  assert.equal(corrected.months[0].revenue,150);
 });
+
+test('A.3 and C imports retain original monthly consumption and bilingual row name',()=>{
+ const wb=sampleWorkbook();
+ wb.Sheets['A.3 Chi Phí Nước Thải污水处理费'].rows[5][0]='Hóa chất NaOH (1,23%)\n氢氧化钠溶液';
+ wb.Sheets['A.3 Chi Phí Nước Thải污水处理费'].rows[5][6]=125;
+ wb.Sheets['C.Chi Phí Cây xanh绿化养护费用'].rows[18][0]='Lương nhân công bảo dưỡng\n绿化养护人员工资';
+ const data=parseWorkbook(wb,'test.xlsx',2026).items;
+ const water=data.find(x=>x.kind==='water_cost_month'&&x.sourceRow===6);
+ const green=data.find(x=>x.kind==='green_cost_detail'&&x.sourceRow===19);
+ assert.equal(water.quantity,100);
+ assert.equal(water.consumedQuantity,125);
+ assert.equal(water.consumedUnit,'kg');
+ assert.equal(water.costGroup,'Hóa chất');
+ assert.equal(water.nameVi,'Hóa chất NaOH (1,23%)');
+ assert.equal(water.nameZh,'氢氧化钠溶液');
+ assert.equal(water.spec,'cost-detail-v3');
+ assert.equal(green.consumedQuantity,30);
+ assert.equal(green.consumedUnit,'VNĐ');
+ assert.equal(green.nameZh,'绿化养护人员工资');
+});
