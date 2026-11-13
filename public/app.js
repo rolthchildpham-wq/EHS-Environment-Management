@@ -43,13 +43,18 @@ function chart(id,type,labels,sets){
  if(charts[id])charts[id].destroy();
  const ctx=el(id);if(!ctx)return;
  const isDoughnut=type==='doughnut';
+ const categoryPalette=['#2188CC','#E85B79','#F59E42','#F6C44A','#25B7B0','#8B61E8','#70879D','#4E9C50','#D173B6','#D57532','#6479D6','#AA7B3B'];
  const polished=sets.map((set,i)=>{
   const color=['#108e83','#2999bd','#eaa34f','#896dd5'][i%4];
   return {...set,
+   // Each waste category gets a distinct slice color and matching legend marker.
+   backgroundColor:isDoughnut
+    ? (Array.isArray(set.backgroundColor)?set.backgroundColor:labels.map((_,j)=>categoryPalette[j%categoryPalette.length]))
+    : (set.backgroundColor||(type==='line'?'transparent':color)),
    borderWidth:isDoughnut?2:type==='line'?2.5:0,
    borderRadius:type==='bar'?5:0,
    maxBarThickness:37,
-   borderColor:set.borderColor||color,
+   borderColor:isDoughnut?'#ffffff':(set.borderColor||color),
    pointBackgroundColor:set.borderColor||color,
    pointBorderColor:'#fff',
    pointBorderWidth:type==='line'?2:0,
