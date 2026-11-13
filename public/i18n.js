@@ -1111,6 +1111,104 @@ Object.assign(dictionary,{
     "zh": "原始数据不会被翻译或更改。"
   }
 });
+Object.assign(dictionary,{
+  "TRUNG TÂM ĐIỀU HÀNH MÔI TRƯỜNG": {
+    "en": "ENVIRONMENT CONTROL CENTER",
+    "zh": "环境运营控制中心"
+  },
+  "Điều hành môi trường": {
+    "en": "Environmental management",
+    "zh": "环境运营管理"
+  },
+  "Tổng quan môi trường & vận hành": {
+    "en": "Environment & operations overview",
+    "zh": "环境与运营总览"
+  },
+  "Giám sát chỉ số nước thải, chất thải, vật tư và hiệu quả tài chính trên cùng một hệ thống dữ liệu.": {
+    "en": "Monitor wastewater, waste, materials and financial performance in one unified workspace.",
+    "zh": "统一监测废水、废弃物、物料与财务表现。"
+  },
+  "Chỉ số vận hành trọng yếu": {
+    "en": "Key operational metrics",
+    "zh": "关键运营指标"
+  },
+  "Theo kỳ đã chọn": {
+    "en": "Selected period",
+    "zh": "所选期间"
+  },
+  "Phân tích xu hướng & cơ cấu": {
+    "en": "Trends & composition",
+    "zh": "趋势与构成分析"
+  },
+  "Dữ liệu thực tế · Theo năm và khoảng ngày đã chọn": {
+    "en": "Actual data · Selected year and date range",
+    "zh": "实际数据 · 按所选年份与日期范围"
+  },
+  "Khối lượng thu gom · 12 tháng": {
+    "en": "Collected waste · 12 months",
+    "zh": "收集废弃物 · 12个月"
+  },
+  "So sánh lưu lượng vào & ra": {
+    "en": "Inlet versus outlet flows",
+    "zh": "进水与出水对比"
+  },
+  "Cơ cấu khối lượng theo nhóm rác": {
+    "en": "Breakdown by waste category",
+    "zh": "按废弃物类别分析"
+  },
+  "Dòng tiền môi trường · VND": {
+    "en": "Environmental cash flow · VND",
+    "zh": "环境收支 · 越南盾"
+  },
+  "Phạm vi dữ liệu": {
+    "en": "Data coverage",
+    "zh": "数据范围"
+  },
+  "bản ghi theo kỳ": {
+    "en": "records in period",
+    "zh": "条期间记录"
+  },
+  "Chưa có bản ghi trong kỳ": {
+    "en": "No records in this period",
+    "zh": "本期间暂无数据"
+  },
+  "Hiệu quả kiểm soát nước": {
+    "en": "Wastewater monitoring",
+    "zh": "废水监测"
+  },
+  "nước thải đầu ra ghi nhận": {
+    "en": "recorded discharged wastewater",
+    "zh": "记录的废水排放量"
+  },
+  "Chưa có nước thải đầu ra ghi nhận": {
+    "en": "No discharged wastewater recorded",
+    "zh": "暂无废水排放记录"
+  },
+  "Thu – chi môi trường": {
+    "en": "Environmental revenue & costs",
+    "zh": "环境收支"
+  },
+  "Thu": {
+    "en": "Income",
+    "zh": "收入"
+  },
+  "Chi": {
+    "en": "Expense",
+    "zh": "支出"
+  },
+  "Chưa có đủ chứng từ chi phí và doanh thu": {
+    "en": "Missing cost or revenue evidence",
+    "zh": "缺少费用或收入凭证"
+  },
+  "So với kỳ đối chiếu": {
+    "en": "vs comparison period",
+    "zh": "与对比期间相比"
+  },
+  "ĐIỀU HÀNH MÔI TRƯỜNG": {
+    "en": "EHS CONTROL CENTER",
+    "zh": "环境运营管理"
+  }
+});
 let active='vi';
 const originals=new WeakMap();
 const runtimeTranslations=new Map();
