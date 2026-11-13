@@ -28,9 +28,58 @@ function previous(){
  const x=a.toISOString().slice(0,10),y=b.toISOString().slice(0,10);
  return [...data,...reviewData].filter(r=>r.date>=x&&r.date<=y);
 }
-function stat(title,v,unit,p){return '<div class="stat"><div class="muted">'+esc(title)+'</div><strong>'+fmt(v)+' <small>'+esc(unit)+'</small></strong><span class="muted">'+(p?fmt((v-p)/p*100)+'% so kỳ trước':'Chưa đủ dữ liệu so sánh')+'</span></div>'}
+function stat(title,v,unit,p){
+ const icon=/rác|waste/i.test(title)?'♻':/nước|water/i.test(title)?'≋':/nhập|stock.in/i.test(title)?'↧':/xuất|stock.out/i.test(title)?'↥':/doanh thu|revenue/i.test(title)?'↗':/chi phí|cost/i.test(title)?'◈':'◉';
+ const change=p?((v-p)/Math.abs(p))*100:null;
+ const delta=change===null?'<span>'+esc(t('Chưa đủ dữ liệu so sánh'))+'</span>':
+   '<span class="stat-delta '+(change<0?'down':'')+'">'+(change>0?'+':'')+fmt(change)+'%</span><span>'+esc(t('So với kỳ đối chiếu'))+'</span>';
+ return '<div class="stat"><span class="stat-icon" aria-hidden="true">'+icon+'</span>'+
+  '<div class="muted">'+esc(title)+'</div><strong>'+fmt(v)+' <small>'+esc(unit)+'</small></strong>'+
+  '<div class="stat-bottom">'+delta+'</div></div>';
+}
 function monthly(r,k){const n=Array(12).fill(0);r.filter(x=>x.kind===k).forEach(x=>{const m=Number(x.date.slice(5,7));if(m>=1&&m<=12)n[m-1]+=x.value});return n}
-function chart(id,type,labels,sets){if(!window.Chart)return;if(charts[id])charts[id].destroy();charts[id]=new window.Chart(el(id),{type,data:{labels,datasets:sets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}}}})}
+function chart(id,type,labels,sets){
+ if(!window.Chart)return;
+ if(charts[id])charts[id].destroy();
+ const ctx=el(id);if(!ctx)return;
+ const isDoughnut=type==='doughnut';
+ const polished=sets.map((set,i)=>{
+  const color=['#108e83','#2999bd','#eaa34f','#896dd5'][i%4];
+  return {...set,
+   borderWidth:isDoughnut?2:type==='line'?2.5:0,
+   borderRadius:type==='bar'?5:0,
+   maxBarThickness:37,
+   borderColor:set.borderColor||color,
+   pointBackgroundColor:set.borderColor||color,
+   pointBorderColor:'#fff',
+   pointBorderWidth:type==='line'?2:0,
+   pointRadius:type==='line'?3:0,
+   pointHoverRadius:5,
+   tension:type==='line'?.36:0,
+   fill:type==='line'?false:undefined,
+   hoverOffset:isDoughnut?8:0
+  }
+ });
+ charts[id]=new window.Chart(ctx,{
+  type,
+  data:{labels,datasets:polished},
+  options:{
+   responsive:true,maintainAspectRatio:false,
+   interaction:{mode:'index',intersect:false},
+   animation:{duration:550,easing:'easeOutQuart'},
+   cutout:isDoughnut?'70%':undefined,
+   layout:{padding:{top:12,bottom:2}},
+   plugins:{
+    legend:{position:'bottom',align:'center',labels:{color:'#617689',font:{family:'Inter, Segoe UI, Arial',size:11,weight:600},boxWidth:11,boxHeight:11,usePointStyle:true,padding:15}},
+    tooltip:{backgroundColor:'#142e43',titleColor:'#fff',bodyColor:'#d8e9f1',cornerRadius:9,padding:12,displayColors:true}
+   },
+   scales:isDoughnut?{}:{
+    x:{grid:{display:false},border:{display:false},ticks:{color:'#8c9dad',font:{size:10}}},
+    y:{beginAtZero:true,grid:{color:'#edf2f6',lineWidth:1},border:{display:false},ticks:{color:'#8c9dad',font:{size:10},maxTicksLimit:6,callback:v=>Number(v).toLocaleString('vi-VN')}}
+   }
+  }
+ });
+}
 function updateYearOptions(){
  const select=el('dashboardYear');if(!select)return;
  const all=[...data,...reviewData];
@@ -40,12 +89,28 @@ function updateYearOptions(){
  select.innerHTML=[...years].sort((a,b)=>b-a).map(y=>'<option value="'+y+'">'+y+'</option>').join('');
  select.value=years.has(Number(chosen))?chosen:String(new Date().getFullYear());
 }
+function renderExecutiveInsights(rows){
+ const element=el('executiveInsights');if(!element)return;
+ const wastewater=sum(rows,'water_out'),waste=sum(rows,'waste');
+ const spend=sum(rows,'cost'),income=sum(rows,'revenue');
+ const total=rows.length;
+ const cards=[
+  {icon:'◎',title:t('Phạm vi dữ liệu'),detail:total?fmt(total)+' '+t('bản ghi theo kỳ')+'.':t('Chưa có bản ghi trong kỳ')},
+  {icon:'≋',title:t('Hiệu quả kiểm soát nước'),detail:wastewater?fmt(wastewater)+' m³ '+t('nước thải đầu ra ghi nhận')+'.':t('Chưa có nước thải đầu ra ghi nhận')},
+  {icon:'◈',title:t('Thu – chi môi trường'),detail:(spend||income)?t('Thu')+' '+fmt(income)+' / '+t('Chi')+' '+fmt(spend)+' VND.':t('Chưa có đủ chứng từ chi phí và doanh thu')}
+ ];
+ element.innerHTML=cards.map(x=>'<article class="ehs-insight"><span class="insight-symbol" aria-hidden="true">'+x.icon+
+  '</span><div><h4>'+esc(x.title)+'</h4><p>'+esc(x.detail)+'</p></div></article>').join('');
+}
+
 function render(){
  const year=el('dashboardYear')?.value||'2026';
  for(const id of ['chartYearWaste','chartYearWater','chartYearCategory','chartYearMoney']){
   if(el(id))el(id).textContent=' · '+year;
  }
  const r=current(),p=previous(),months=Array.from({length:12},(_,i)=>'T'+(i+1));
+ if(el('dashboardPeriodLabel'))el('dashboardPeriodLabel').textContent=el('from').value+' → '+el('to').value;
+ renderExecutiveInsights(r);
  el('stats').innerHTML=stat(t('Rác thu gom'),sum(r,'waste'),'kg',sum(p,'waste'))+stat(t('Nước thải đầu ra'),sum(r,'water_out'),'m³',sum(p,'water_out'))+stat(t('Số dòng nhập vật tư'),r.filter(x=>x.kind==='stock_in').length,'dòng',0)+stat(t('Số dòng xuất vật tư'),r.filter(x=>x.kind==='stock_out').length,'dòng',0);
  chart('wasteChart','bar',months,[{label:t('Rác (kg)'),data:monthly(r,'waste'),backgroundColor:'#168982'}]);
  chart('waterChart','line',months,[{label:t('Đầu vào'),data:monthly(r,'water_in'),borderColor:'#db983e'},{label:t('Đầu ra'),data:monthly(r,'water_out'),borderColor:'#268cb8'}]);
@@ -106,7 +171,10 @@ async function reviews(){
 }
 
 installI18n();
-el('tabs').innerHTML=Object.entries(labels).map(([id,title],i)=>'<button data-tab="'+id+'" class="'+(i===0?'active':'')+'">'+t(title)+'</button>').join('');
+const navIcons={dashboard:'◫',records:'≡',finance:'◈',map:'⌖',import:'↥',reports:'▤',admin:'⚙',compliance:'✧'};
+el('tabs').innerHTML=Object.entries(labels).map(([id,title],i)=>
+ '<button data-tab="'+id+'" class="'+(i===0?'active':'')+'"><span class="nav-ico" aria-hidden="true">'+(navIcons[id]||'•')+'</span><span>'+t(title)+'</span></button>'
+).join('');
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{document.querySelectorAll('section').forEach(s=>s.classList.toggle('active',s.id===b.dataset.tab));document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b))});
 el('dashboardYear').onchange=()=>{
  const y=Number(el('dashboardYear').value);if(!Number.isFinite(y))return;
