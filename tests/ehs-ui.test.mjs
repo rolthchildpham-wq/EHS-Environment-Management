@@ -47,3 +47,15 @@ test('financial source parser preserves amount and monthly quantity units',()=>{
  for(const k of ['consumedQuantity','consumedUnit','costGroup','nameVi'])
   assert.ok(rules.includes("'"+k+"'"),'rules '+k);
 });
+
+test('premium dashboard layout retains all original data-driven charts and business functions',()=>{
+ const html=read('public/index.html'),app=read('public/app.js'),css=read('public/dashboard-v3.css');
+ for(const id of ['wasteChart','waterChart','categoryChart','moneyChart','stats','executiveInsights','dashboardYear','from','to','tabs','opsMount','costExplorerMount','mapPinRows','memberAdminMount','resetDataMount'])
+  assert.ok(html.includes('id="'+id+'"'),id);
+ for(const keyword of ['.ehs-hero','.tabs','.stat','.ehs-insight-grid','@media(max-width:620px)'])
+  assert.ok(css.includes(keyword),keyword);
+ assert.match(app,/function renderExecutiveInsights/);
+ assert.match(app,/renderExecutiveInsights\(r\)/);
+ assert.match(app,/function updateYearOptions/);
+ assert.match(app,/initFactoryMap\(\);initCompliance\(\);initCostExplorer\(\);/);
+});
