@@ -59,3 +59,11 @@ test('premium dashboard layout retains all original data-driven charts and busin
  assert.match(app,/function updateYearOptions/);
  assert.match(app,/initFactoryMap\(\);initCompliance\(\);initCostExplorer\(\);/);
 });
+
+test('V3.1 waste donut uses unique palette colors for each category and synchronized legend',()=>{
+ const app=read('public/app.js');
+ assert.match(app,/const categoryPalette=\[/);
+ assert.match(app,/labels\.map\(\(_,j\)=>categoryPalette\[j%categoryPalette\.length\]\)/);
+ assert.match(app,/borderColor:isDoughnut\?'#ffffff'/);
+ assert.match(app,/chart\('categoryChart','doughnut'/);
+});
