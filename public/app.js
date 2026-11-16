@@ -6,7 +6,7 @@ import {initFactoryMap,mountFactoryMap} from './factory-map.js?v=20261112f';
 import {initCompliance,mountCompliance,refreshCompliance} from './ehs-compliance.js?v=20261112f';
 import {installI18n,t} from './i18n.js?v=20261112f';
 import {mountDataReset} from './data-reset.js?v=20261112f';
-import {mountOperations,unmountOperations,loadOperations,getOperationalRecords,getAllOperations,renderOperationsReport} from './ehs-operations.js?v=20261116upsert';
+import {mountOperations,unmountOperations,loadOperations,getOperationalRecords,getAllOperations,renderOperationsReport} from './ehs-operations.js?v=20261116stockqr';
 import {resolveMember,mountMemberAdmin} from './member-admin.js?v=20261112f';
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js';
 import {getAuth,GoogleAuthProvider,signInWithPopup,onAuthStateChanged,signOut} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js';
@@ -15,7 +15,7 @@ const el=id=>document.getElementById(id);
 const fmt=v=>Number(v||0).toLocaleString('vi-VN',{maximumFractionDigits:2});
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const names={waste:'Rác thải',water_in:'Nước vào',water_out:'Nước ra',stock_in:'Nhập vật tư',stock_out:'Xuất vật tư',cost:'Chi phí',revenue:'Doanh thu'};
-const labels={dashboard:'Tổng quan',stockqr:'QR vật tư',records:'Nhật ký',finance:'Tài chính',map:'Bản đồ',import:'Nhập liệu & Excel',reports:'Báo cáo',admin:'Quản trị',compliance:'Chỉ số EHS & ISO'};
+const labels={dashboard:'Tổng quan',stockqr:'QR vật tư',records:'Nhật ký',map:'Bản đồ',import:'Nhập liệu & Excel',reports:'Báo cáo',admin:'Quản trị',compliance:'Chỉ số EHS & ISO'};
 let data=[],pending=[],reviewData=[],user=null,role=null,db=null,auth=null,charts={};
 const notice=s=>el('notice').textContent=s;
 const date=x=>String(x||'').slice(0,10);
@@ -172,7 +172,7 @@ async function reload(){
  if(!db||!role)return;
  const snap=await getDocs(query(collection(db,'records'),limit(5000)));
  data=snap.docs.map(d=>norm(d.data())).filter(valid);
- await loadOperations();setCostExplorerRecords(getAllOperations());setSimpleFinanceRecords(getAllOperations());data.push(...getOperationalRecords());
+ await loadOperations();setCostExplorerRecords(getAllOperations());setSimpleFinanceRecords(getAllOperations());if(role&&['admin','editor'].includes(role))mountQrStock(db,user,role,getAllOperations,reload);data.push(...getOperationalRecords());
  await reviews();updateYearOptions();render();refreshCompliance();notice('Đã tải '+data.length+' bản ghi dữ liệu gốc/nghiệp vụ và '+reviewData.length+' chứng từ đã duyệt. Bảng báo cáo nghiệp vụ hiển thị chi tiết theo sheet Excel.');
 }
 async function reviews(){
