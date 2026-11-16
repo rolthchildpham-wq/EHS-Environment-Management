@@ -11,11 +11,14 @@ const kinds={water:{kind:'water_cost_month',total:'waterCost',title:'A.3 · Chi 
 let records=[],chosen='',mappingDb=null,mappingRole=null,mappings=[];
 function preferred(rows){
  const v3=rows.filter(x=>x.spec==='cost-detail-v3'),pool=v3.length?v3:rows;
- const batches=new Map();
- for(const r of pool){const id=r.importId||r.sourceFile||'legacy',stamp=r.createdAt?.seconds||0;
-  if(!batches.has(id))batches.set(id,{stamp,rows:[]});
-  const b=batches.get(id);b.stamp=Math.max(b.stamp,stamp);b.rows.push(r);}
- return [...batches.values()].sort((a,b)=>b.stamp-a.stamp)[0]?.rows||[];
+ const unique=new Map();
+ for(const x of pool){
+  const key=[x.kind,x.date,x.sourceFile,x.sourceSheet,x.sourceRow,x.name].join('|');
+  const stamp=x.updatedAt?.seconds||x.createdAt?.seconds||0;
+  const old=unique.get(key);
+  if(!old||stamp>=(old.updatedAt?.seconds||old.createdAt?.seconds||0))unique.set(key,x);
+ }
+ return [...unique.values()];
 }
 function distinctRows(type,scope){
  const byMonth=new Map();
