@@ -74,8 +74,9 @@ export function parseWorkbook(book,fileName,reportYear){
     if(Number.isFinite(meterOut)&&Number.isFinite(previousOut)&&Number.isFinite(discharged)&&Math.abs(discharged-(meterOut-previousOut))>0.001)warnings.push(sheetName+' dòng '+(i+1)+': lượng xả khác hiệu số đồng hồ.');
    });
   }else if(type==='stock_opening'){
-   // Inventory sheet 收发存 uses row 4 headers and initial balance for 2025 in column F.
-   matrix.forEach((r,i)=>{if(i<5)return;add(summaries,'stock_opening','2025-01-01',r[5],{...source,sourceRow:i+1,code:str(r[1]),name:str(r[2]),spec:str(r[3]),unit:str(r[4]),note:'Số dư đầu kỳ 2025 từ 收发存 (không phải phiếu nhập kho)'})});
+   // Inventory and monthly usage sheets are derived reports, never transaction evidence.
+   // Stock movements are sourced strictly from the 入库 (in) and 出库 (out) sheets.
+   warnings.push(sheetName+': đây là báo cáo tồn kho; không nhập thành giao dịch thực tế.');
   }else if(type==='stock_in'){
    matrix.forEach((r,i)=>{
     if(i<3)return;const d=asDay(r[2]),qty=number(r[7]),price=number(r[10]),amount=number(r[11]);
