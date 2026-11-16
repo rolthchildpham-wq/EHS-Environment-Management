@@ -29,6 +29,11 @@ function render(){
  $('mWater').textContent=fmt(rows.length?sum(rows,'waterOut'):null)+' m³';
  $('mWaterCost').textContent=fmt(rows.length?sum(rows,'waterCost'):null)+' VND';
  $('mGreenCost').textContent=fmt(rows.length?sum(rows,'greenCost'):null)+' VND';
+ const columns=[['month','Tháng'],['wasteKg','Rác (kg)'],['waterIn','XLNT (m³)'],['waterOut','Xả (m³)'],['waterCost','Chi phí A.3 (VND)'],['greenCost','Chi phí C (VND)'],['wasteCost','Chi phí rác (VND)'],['revenue','Thu phế liệu (VND)']];
+ const head='<tr>'+columns.map(([k,label])=>'<th>'+label+'</th>').join('')+'</tr>';
+ const rowHtml=rows.map(r=>'<tr>'+columns.map(([key])=>'<td>'+esc(key==='month'?r.month:fmt(r[key]))+'</td>').join('')+'</tr>').join('');
+ const totalHtml='<tr class="total">'+columns.map(([key],i)=>'<td>'+(i===0?'TỔNG CỘNG':fmt(rows.length?sum(rows,key):null))+'</td>').join('')+'</tr>';
+ $('monthly').innerHTML='<table><thead>'+head+'</thead><tbody>'+rowHtml+totalHtml+'</tbody></table>';
  table('water',data.water);table('green',data.green);
  $('status').textContent='Đang xem '+rows.length+' tháng đã công bố. Dữ liệu chỉ đọc; không chứa thông tin nhân sự hoặc chứng từ gốc.';
 }
