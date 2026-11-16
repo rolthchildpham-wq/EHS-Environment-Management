@@ -35,7 +35,8 @@ function mappedRows(type,scope){
  for(const x of rows){
   if(Number(x.amount??x.quantity??0)>0)continue; // Excel/manual line with amount wins.
   const config=mappings.find(m=>m.type===type&&m.item===name(x));if(!config)continue;
-  const outs=records.filter(r=>r.kind==='stock_out'&&String(r.code||r.name||'')===config.code&&period(r)===period(x));
+  const category=type==='green'?'Cây xanh':'XLNT';
+  const outs=records.filter(r=>r.kind==='stock_out'&&String(r.code||r.name||'')===config.code&&period(r)===period(x)&&(!r.group||r.group===category));
   if(!outs.length)continue;
   const unit=String(config.unit||'').trim();
   if(unit&&x.consumedUnit&&unit!==String(x.consumedUnit).trim())continue;
