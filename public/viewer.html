@@ -1,0 +1,27 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EHS · Viewer công khai</title>
+<style>
+:root{font-family:Inter,"Segoe UI",Arial,sans-serif;color:#15374b;background:#f2f7f9}*{box-sizing:border-box}body{margin:0}
+header{background:#0e3448;color:#fff;padding:16px clamp(15px,3vw,40px);display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+header h1{margin:0;font-size:20px}header small{color:#b5dce1}header a{color:#fff}
+main{padding:20px clamp(14px,3vw,40px);max-width:1650px;margin:auto}
+.toolbar{background:#fff;border:1px solid #dce9ef;border-radius:12px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:13px 16px;margin-bottom:14px}
+label{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700}select{border:1px solid #c6d7df;background:#f9fcfd;border-radius:8px;height:42px;padding:8px 12px;color:#15374b;font:inherit}
+.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.metric,.panel{background:#fff;border:1px solid #dce9ef;border-radius:12px;padding:15px;min-width:0}
+.metric span{color:#648093;font-size:12px}.metric strong{display:block;font-size:24px;margin-top:8px;color:#116b6a}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}.panel{padding:0;overflow:hidden}.panel h2{font-size:16px;margin:0;padding:15px;color:#0f5c6a}
+.scroll{overflow:auto}table{border-collapse:collapse;width:100%;min-width:520px;font-size:12px}
+th,td{padding:9px 11px;border-bottom:1px solid #e6eef3}th{background:#ebf2f6;text-align:right}th:first-child,td:first-child{text-align:left}
+td:not(:first-child){text-align:right;font-variant-numeric:tabular-nums}
+.group th{text-align:left;background:#dcebf2;color:#205366}.sub td{font-weight:750;background:#f1f6f8}.total td{background:#dff4ec;color:#126450;font-weight:850}
+#status{color:#566e7e;font-size:12px;margin:7px 0 16px}
+@media(max-width:1100px){.two{grid-template-columns:1fr}.metrics{grid-template-columns:1fr 1fr}}
+@media(max-width:500px){.metrics{grid-template-columns:1fr 1fr}.metric{padding:12px}.metric strong{font-size:19px}}
+</style></head><body>
+<header><div><h1>EHS ENVIRONMENT · Viewer</h1><small>Dashboard & Báo cáo công khai · Chỉ xem, không đăng nhập</small></div><a href="./">Trang quản trị</a></header>
+<main><div class="toolbar"><label>Năm <select id="year"></select></label><label>Tháng <select id="month"></select></label><span id="updated"></span></div>
+<p id="status">Đang kiểm tra dữ liệu đã công bố...</p>
+<div class="metrics"><div class="metric"><span>Rác thải</span><strong id="mWaste">—</strong></div><div class="metric"><span>Nước thải đầu ra</span><strong id="mWater">—</strong></div><div class="metric"><span>Chi phí nước thải</span><strong id="mWaterCost">—</strong></div><div class="metric"><span>Chi phí cây xanh</span><strong id="mGreenCost">—</strong></div></div>
+<div class="two"><div class="panel"><h2>A.3 · Chi phí xử lý nước thải</h2><div id="water" class="scroll"></div></div><div class="panel"><h2>C · Chi phí cây xanh</h2><div id="green" class="scroll"></div></div></div>
+</main><script src="firebase-config.js"></script><script type="module" src="ehs-public-viewer.js"></script></body></html>
