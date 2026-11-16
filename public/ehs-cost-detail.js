@@ -1,13 +1,14 @@
 import {getLanguage,t} from './i18n.js?v=20261112f';
 import {displaySourceName} from './source-terms.js?v=20261112f';
 import {reconcile} from './ehs-financial-reconcile.js?v=20261112f';
+import {doc,getDoc,setDoc,serverTimestamp} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=v=>v===null||v===undefined||!Number.isFinite(Number(v))?'—':Number(v).toLocaleString('vi-VN',{maximumFractionDigits:2});
 const money=x=>Number(x.amount??x.quantity??0);
 const period=x=>String(x.date||'').slice(0,7);
 const kinds={water:{kind:'water_cost_month',total:'waterCost',title:'A.3 · Chi phí xử lý nước thải',filename:'A3 Nuoc thai'},green:{kind:'green_cost_detail',total:'greenCost',title:'C · Chi phí chăm sóc cây xanh',filename:'C Cay xanh'}};
-let records=[],chosen='',lastAutoselect=false;
+let records=[],chosen='',mappingDb=null,mappingRole=null,mappings=[];
 function preferred(rows){
  const v3=rows.filter(x=>x.spec==='cost-detail-v3'),pool=v3.length?v3:rows;
  const batches=new Map();
@@ -26,8 +27,66 @@ function distinctRows(type,scope){
 const name=x=>String(x.nameVi||x.name||'').split(/\r?\n/)[0].trim();
 const quantity=x=>x.consumedQuantity===null||x.consumedQuantity===undefined?null:Number(x.consumedQuantity);
 const group=x=>String(x.costGroup||'Chưa phân nhóm').trim();
+function mappedRows(type,scope){
+ const rows=distinctRows(type,scope).map(x=>({...x}));
+ for(const x of rows){
+  if(Number(x.amount??x.quantity??0)>0)continue; // Excel/manual line with amount wins.
+  const config=mappings.find(m=>m.type===type&&m.item===name(x));if(!config)continue;
+  const outs=records.filter(r=>r.kind==='stock_out'&&String(r.code||r.name||'')===config.code&&period(r)===period(x));
+  if(!outs.length)continue;
+  const unit=String(config.unit||'').trim();
+  if(unit&&x.consumedUnit&&unit!==String(x.consumedUnit).trim())continue;
+  const used=outs.reduce((a,r)=>a+Number(r.quantity||0),0);
+  const inputs=records.filter(r=>r.kind==='stock_in'&&String(r.code||r.name||'')===config.code&&r.date<=x.date)
+   .sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  const price=Number(x.price)>0?Number(x.price):Number(inputs.find(r=>Number(r.price)>0)?.price||0);
+  x.consumedQuantity=used;x.consumedUnit=unit||x.consumedUnit;
+  x.price=price||null;x.amount=price>0?used*price:0;x.autoFromStock=true;
+ }
+ return rows;
+}
+export function getCostReportRows(year){
+ const out={water:[],green:[]};
+ for(const type of Object.keys(out)){
+  for(let m=1;m<=12;m++)out[type].push(...mappedRows(type,year+'-'+String(m).padStart(2,'0')));
+ }
+ return out;
+}
+export async function configureCostExplorer(db,role){
+ mappingDb=db;mappingRole=role;mappings=[];
+ if(db&&role){
+  try{const snap=await getDoc(doc(db,'settings','costMappings'));if(snap.exists())mappings=Array.isArray(snap.data().items)?snap.data().items:[]}
+  catch(e){const status=$('costMapStatus');if(status)status.textContent='Không tải được liên kết: '+e.message}
+ }
+ renderMapping();render();
+}
+function renderMapping(){
+ const root=$('costMappingMount');if(!root)return;
+ root.hidden=mappingRole!=='admin';
+ if(mappingRole!=='admin')return;
+ const entries=Object.entries(kinds).flatMap(([type,k])=>distinctRows(type,chosen).map(x=>({type,name:name(x)})));
+ const unique=[...new Map(entries.map(x=>[[x.type,x.name].join('|'),x])).values()];
+ const inventory=[...new Map(records.filter(x=>['stock_out','stock_in'].includes(x.kind)).map(x=>[String(x.code||x.name||''),x])).values()].filter(x=>x.code||x.name);
+ const sel1=$('costMapItem'),sel2=$('costMapStock');if(!sel1||!sel2)return;
+ sel1.innerHTML=unique.map(x=>'<option value="'+esc(x.type+'|'+x.name)+'">'+esc((x.type==='water'?'A.3':'C')+' · '+x.name)+'</option>').join('');
+ sel2.innerHTML=inventory.map(x=>'<option value="'+esc(String(x.code||x.name))+'">'+esc(String(x.code||x.name)+' · '+x.name+' ('+x.unit+')')+'</option>').join('');
+ $('costMapList').textContent=mappings.length?'Đang liên kết '+mappings.length+' hạng mục: '+mappings.map(x=>x.item+' ← '+x.code).join('; '):'Chưa liên kết vật tư. Chỉ các hạng mục được xác nhận mới tự lấy số lượng xuất kho.';
+}
+async function saveMapping(){
+ if(mappingRole!=='admin'||!mappingDb)return;
+ const [type,...rest]=String($('costMapItem').value).split('|');
+ const item=rest.join('|'),code=$('costMapStock').value;
+ const stock=records.find(x=>['stock_in','stock_out'].includes(x.kind)&&String(x.code||x.name)===code);
+ if(!type||!item||!stock)return;
+ const entry={type,item,code,unit:String(stock.unit||'')};
+ const next=mappings.filter(x=>!(x.type===type&&x.item===item)).concat([entry]);
+ try{
+  await setDoc(doc(mappingDb,'settings','costMappings'),{items:next,updatedAt:serverTimestamp()});
+  mappings=next;renderMapping();render();$('costMapStatus').textContent='Đã lưu liên kết. Chỉ dùng phiếu xuất cùng tháng; dòng chi phí Excel có số tiền sẽ được ưu tiên.';
+ }catch(e){$('costMapStatus').textContent='Không lưu được: '+e.message}
+}
 function presentRows(type,scope){
- const raw=distinctRows(type,scope);
+ const raw=mappedRows(type,scope);
  if(scope.length===7)return raw.slice().sort((a,b)=>group(a).localeCompare(group(b),'vi')||Number(a.sourceRow||0)-Number(b.sourceRow||0));
  const map=new Map();
  for(const x of raw){
@@ -113,14 +172,16 @@ export function initCostExplorer(){
  '<div class="ehs-dashboard-toolbar"><div><h2>Báo cáo chi phí môi trường</h2><span>A.3 Nước thải & C Cây xanh · Xem trực tiếp như bảng Excel</span></div>'+
  '<div class="ehs-dashboard-actions"><label>Kỳ báo cáo <select id="costDashboardPeriod" aria-label="Kỳ báo cáo A.3 và C"></select></label>'+
  '<button id="costDashboardExport" class="primary" type="button">Xuất Excel</button></div></div>'+
+ '<details id="costMappingMount" class="ehs-cost-mapping" hidden><summary>Liên kết hạng mục với phiếu xuất vật tư (Admin)</summary><div class="controls"><label>Hạng mục chi phí<select id="costMapItem"></select></label><label>Mã vật tư<select id="costMapStock"></select></label><button id="costMapSave" type="button">Lưu liên kết</button></div><p id="costMapStatus" class="muted"></p><p id="costMapList" class="muted"></p></details>'+ 
  '<div class="ehs-cost-dual">'+Object.keys(kinds).map(type=>'<section class="ehs-cost-panel"><div class="ehs-cost-heading"><h3>'+esc(kinds[type].title)+'</h3><span id="costDashboardMeta'+type+'" class="muted"></span></div><div class="ehs-cost-tablewrap" id="costDashboard'+type+'"></div></section>').join('')+'</div></div>';
  $('costDashboardPeriod').onchange=()=>{chosen=$('costDashboardPeriod').value;render()};
  $('costDashboardExport').onclick=exportExcel;
+ $('costMapSave').onclick=saveMapping;
  document.addEventListener('ehs-language-change',render);
- choosePeriods();render();
+ choosePeriods();renderMapping();render();
 }
 export function setCostExplorerRecords(rows){
  records=Array.isArray(rows)?rows.slice():[];
  if(!$('costExplorerMount'))return;
- choosePeriods();render();
+ choosePeriods();renderMapping();render();
 }
