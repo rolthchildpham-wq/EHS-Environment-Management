@@ -432,3 +432,14 @@ body:has(#reports.active) main > .controls{display:none}
 #records #qrStockMount{margin-bottom:12px}
 #records .ehs-extra-reports>summary{cursor:pointer;padding:12px 14px;border-radius:10px;background:#fff;border:1px solid #dce7ec;color:#42657a;font-weight:700}
 @media(max-width:700px){#reports .ehs-report-selector label{flex:1 1 100%}#reports #reportViewMode,#reports #reportItemSearch{width:100%;min-width:0}}
+
+/* Two explicit, exclusive usage categories in the same journal form. */
+#records .qr-category-picker{display:flex;align-items:center;gap:10px;min-height:44px;flex:0 0 auto;flex-wrap:wrap}
+#records .qr-category-picker label{display:flex;align-items:center;flex-direction:row;gap:6px;font-size:13px;font-weight:800;padding:10px 12px;border:1px solid #c7dfe4;border-radius:9px;background:#f6fbfb;white-space:nowrap;cursor:pointer}
+#records .qr-category-picker input{width:18px;min-height:18px;accent-color:#0a837b}
+#records .qr-qr-link{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px;margin:12px 0;border:1px solid #d2e7ec;border-radius:10px;background:#f5fafb}
+#records .qr-qr-link>div:first-child{flex:1 1 215px}
+#records .qr-qr-link strong{font-size:14px}
+#records .qr-qr-link p{margin:5px 0 0}
+#records #qrLinkText{font-size:12px;max-width:240px;overflow-wrap:anywhere;color:#116d77}
+#records #qrLinkImage{flex:0 0 auto}
