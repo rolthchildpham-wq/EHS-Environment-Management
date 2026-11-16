@@ -1,0 +1,33 @@
+name: EHS production permission release gate
+on:
+  push:
+    branches: [fix/ehs-production-permission-release]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify JavaScript syntax
+        run: |
+          node --check public/app.js
+          node --check public/ehs-permissions.js
+          node --check scripts/deploy-ehs-rules-rest.mjs
+      - name: Test permissions and dependent features
+        run: |
+          node --test tests/ehs-public.test.mjs
+          node --test tests/ehs-permissions.test.mjs
+          node --test tests/ehs-journal-filters.test.mjs
+          node --test tests/ehs-qr-finance.test.mjs
+          node --test tests/firestore-rules.test.mjs
+          node --experimental-default-type=module --test tests/ehs-ui.test.mjs
+          node --experimental-default-type=module --test tests/ehs-finance.test.mjs
+      - name: Emulator authorization regression
+        run: |
+          npm install --no-fund --no-audit -g firebase-tools@14
+          npm install --no-save --no-fund --no-audit firebase@11 @firebase/rules-unit-testing@4
+          firebase emulators:exec --project demo-ehs-permission-gate --only firestore "node tests/ehs-permissions-emulator.cjs" --config .ehs-permissions-emulator.json
