@@ -141,7 +141,28 @@ service cloud.firestore {
       && request.resource.data.importId is string
       && request.resource.data.createdBy == request.auth.uid
       && request.resource.data.createdAt == request.time;
-    allow update: if false;
+    // Reimport changed Excel cells in place; source identity remains immutable.
+    allow update: if editor()
+      && resource.data.sourceFile != 'Nhập tay'
+      && request.resource.data.sourceFile == resource.data.sourceFile
+      && request.resource.data.sourceSheet == resource.data.sourceSheet
+      && request.resource.data.sourceRow == resource.data.sourceRow
+      && request.resource.data.kind == resource.data.kind
+      && request.resource.data.date == resource.data.date
+      && request.resource.data.createdBy == resource.data.createdBy
+      && request.resource.data.createdAt == resource.data.createdAt
+      && request.resource.data.updatedBy == request.auth.uid
+      && request.resource.data.updatedAt == request.time
+      && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+        'quantity','unit','price','amount','consumedQuantity','consumedUnit',
+        'costGroup','note','nameVi','nameZh','group','spec','worker',
+        'meter','previous','year','importId','updatedBy','updatedAt'
+      ])
+      && request.resource.data.quantity is number
+      && request.resource.data.quantity >= 0
+      && request.resource.data.unit is string
+      && request.resource.data.unit.size() <= 50
+      && request.resource.data.importId is string;
     allow delete: if admin();
   }
 
