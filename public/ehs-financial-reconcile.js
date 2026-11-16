@@ -12,9 +12,14 @@ function distinct(rows){
  return [...out.values()];
 }
 function recent(rows){
- if(!rows.length)return [];
- const newest=rows.reduce((a,x)=>stamp(x)>stamp(a)?x:a,rows[0]);
- return rows.filter(x=>x.importId===newest.importId);
+ const unique=new Map();
+ for(const x of rows){
+  const key=[x.kind,x.date,x.sourceFile,x.sourceSheet,x.sourceRow,x.name].join('|');
+  const timestamp=x.updatedAt?.seconds||x.createdAt?.seconds||0;
+  const old=unique.get(key);
+  if(!old||timestamp>=(old.updatedAt?.seconds||old.createdAt?.seconds||0))unique.set(key,x);
+ }
+ return [...unique.values()];
 }
 const setByName=(rows,name)=>rows.filter(x=>x.name===name);
 const value=(rows,name)=>num(setByName(rows,name).at(-1)?.quantity);
