@@ -384,3 +384,35 @@ details summary{font-weight:760;color:#425d71}
 
 /* Reports use their own single period selector; hide redundant global report filters. */
 body:has(#reports.active) main > .controls{display:none}
+
+/* Quick QR stock movements and one-screen professional finance. */
+#stockqr .qr-stock-panel{padding:20px}
+.qr-stock-heading,.ehs-finance-head{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+.qr-stock-heading h2,.ehs-finance-head h2{font-size:20px;margin:0 0 6px}
+.qr-tag{background:#e2f7ee;color:#126955;border-radius:100px;font-size:12px;font-weight:800;padding:8px 11px}
+.qr-stock-controls,.qr-stock-utility,.ehs-finance-actions{display:flex;align-items:end;gap:10px;flex-wrap:wrap;margin:15px 0}
+.qr-stock-controls label,.qr-stock-utility label{flex:1 1 155px;min-width:135px}
+.qr-stock-controls input,.qr-stock-controls select,.qr-stock-utility input{width:100%;min-height:44px}
+.qr-stock-controls button,.qr-stock-utility button,.ehs-finance-actions button{height:44px}
+.qr-stock-controls .qr-category-check{flex:0 0 auto;display:flex;flex-direction:row;align-items:center;gap:7px;min-width:150px;min-height:44px;font-size:13px}
+.qr-category-check input{width:20px!important;min-height:20px!important;accent-color:#0c837d}
+.qr-category-check small{font-size:10px;opacity:.7}
+#qrStockVideo{display:block;max-width:100%;width:440px;aspect-ratio:4/3;object-fit:cover;border-radius:12px;background:#173747}
+#qrStockStatus{padding:11px 14px;background:#e7f7f2;color:#085e50;border-radius:8px;font-weight:700}
+#qrStockStatus[data-error=true]{background:#fff0e9;color:#9e3f22}
+#qrStockBalance{font-weight:750}
+#reports #simpleFinanceMount{margin-bottom:14px}
+.ehs-finance-overview{background:#fff;border:1px solid #dce7ec;border-radius:14px;overflow:hidden;padding:16px}
+.ehs-finance-actions{margin:0}
+.ehs-finance-actions label{font-size:11px}
+.ehs-finance-actions select{height:44px;min-width:120px}
+.ehs-finance-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px;margin:16px 0}
+.ehs-finance-kpis>div{background:#f4f9fa;border:1px solid #e0edf0;border-radius:11px;padding:14px;min-width:0}
+.ehs-finance-kpis span{display:block;font-size:12px;color:#496477}
+.ehs-finance-kpis strong{display:block;font-size:19px;margin-top:9px;white-space:normal;color:#0f6570;font-variant-numeric:tabular-nums}
+.ehs-finance-table{font-size:12px;min-width:880px}
+.ehs-finance-table td:not(:first-child),.ehs-finance-table th:not(:first-child){text-align:right}
+.ehs-finance-total{background:#e4f4ed;color:#0e6656;font-weight:850}
+#reports .ehs-extra-reports{margin-top:10px}
+@media(max-width:950px){.ehs-finance-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:580px){.ehs-finance-overview{padding:12px}.ehs-finance-kpis strong{font-size:16px}}
