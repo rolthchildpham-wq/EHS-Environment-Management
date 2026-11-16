@@ -193,3 +193,93 @@ details summary{font-weight:760;color:#425d71}
  .panel{padding:17px!important}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+
+/* Compact application header — preserve login, language and translation controls. */
+@media (min-width: 891px) {
+  header {
+    min-height: 64px;
+    padding: 8px 24px;
+    gap: 14px;
+    flex-wrap: nowrap;
+  }
+  header > div:first-child { flex: 0 1 auto; min-width: 0; }
+  header h1 { font-size: 18px; white-space: nowrap; }
+  header h1 .ehs-brand-mark {
+    width: 32px; height: 32px; margin-right: 8px;
+    border-radius: 9px; font-size: 18px;
+  }
+  header > div:first-child > small { display: none; }
+  header .controls {
+    flex: 0 1 auto;
+    flex-wrap: nowrap;
+    gap: 9px;
+    min-width: 0;
+  }
+  header .controls > label {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 7px;
+    max-width: none;
+    white-space: nowrap;
+    font-size: 0;
+  }
+  header #languageSelect {
+    width: 112px;
+    min-width: 112px;
+    height: 36px;
+    font-size: 12px;
+  }
+  header #translatePageButton {
+    margin: 0;
+    min-height: 36px;
+    padding: 7px 10px !important;
+  }
+  header #pageTranslationStatus {
+    display: block;
+    max-width: 140px !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 10px !important;
+  }
+  header .account-meta { gap: 2px !important; }
+  header #designerCredit { display: none; }
+  header #logout, header #login {
+    min-height: 36px;
+    padding: 8px 11px;
+    white-space: nowrap;
+  }
+  main { min-height: calc(100vh - 64px); }
+  .tabs { top: 64px; }
+}
+@media (min-width: 891px) and (max-width: 1120px) {
+  header { padding: 8px 14px; }
+  header h1 { font-size: 15px; }
+  header #mode { max-width: 130px; }
+  header #pageTranslationStatus { max-width: 85px !important; }
+}
+@media (max-width: 890px) {
+  header { min-height: 0; padding: 10px 14px; gap: 8px; }
+  header h1 .ehs-brand-mark { width: 32px; height: 32px; font-size: 18px; }
+  header > div:first-child > small { display: none; }
+  header .controls { gap: 8px; }
+  header .controls > label {
+    display: flex; flex-direction: row; align-items: center;
+    gap: 6px; max-width: none; font-size: 0;
+  }
+  header #languageSelect { width: 108px; min-width: 108px; }
+  header #translatePageButton { margin-top: 0; min-height: 36px; }
+  header #pageTranslationStatus {
+    display: block; max-width: 110px !important; overflow: hidden;
+    white-space: nowrap; text-overflow: ellipsis; font-size: 10px !important;
+  }
+  header #designerCredit { display: none; }
+}
+@media (max-width: 620px) {
+  header .controls { width: 100%; flex-wrap: wrap; }
+  header .controls > label { flex: 1 1 100%; flex-wrap: wrap; }
+  header .account-meta { margin-left: 0; }
+  header #mode { max-width: 190px; }
+}
