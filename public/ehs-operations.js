@@ -164,6 +164,74 @@ function makeCsv(rows,name){
 }
 const total=(rows,type,field='quantity')=>rows.filter(x=>x.kind===type).reduce((s,x)=>s+Number(x[field]||0),0);
 const month=x=>String(x.date||'').slice(0,7);
+// Compact, data-driven filters for operational report tables; never sum unit prices or mixed units.
+const reportTableConfig={
+ opsMonthlyRows:{type:-1,add:[1,2,3,4,5,6,7,8,9,10,11,13,15,16]},
+ opsWasteCashflowRows:{type:-1,add:[1,2,3,4,5,6,7,8]},
+ opsYearRows:{type:-1,add:[1,2,3,5,7,8]},
+ opsWaterCostRows:{type:1,add:[2]},opsGreenCostRows:{type:1,add:[2]},
+ opsReconcileRows:{type:1,add:[2,3,4]},
+ opsInventoryRows:{type:2,add:[3,4,5,6,7],unitCol:2},
+ opsReferenceRows:{type:2,add:[6]}
+};
+const parseReportNumber=s=>{
+ const v=String(s||'').trim().replace(/\s/g,'');
+ if(!v||v==='—'||v==='-')return null;
+ const clean=v.replace(/\./g,'').replace(',','.').replace(/[^0-9.\-+]/g,'');
+ const n=Number(clean);return clean&&Number.isFinite(n)?n:null;
+};
+function refreshTableFilter(id){
+ const tbody=el(id),config=reportTableConfig[id],filter=el(id+'Filter');
+ if(!tbody||!filter)return;
+ const rows=[...tbody.querySelectorAll('tr')].filter(r=>!r.classList.contains('ehs-ops-total'));
+ const opts=el(id+'Type'),word=el(id+'Search'),typeIndex=config.type;
+ const values=typeIndex>=0?[...new Set(rows.map(r=>r.cells[typeIndex]?.textContent.trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'vi')):[];
+ if(opts){
+  const prev=opts.value;opts.innerHTML='<option value="all">Tất cả loại</option>'+values.map(v=>'<option value="'+safe(v)+'">'+safe(v)+'</option>').join('');
+  opts.value=values.includes(prev)?prev:'all';
+ }
+ const term=(word?.value||'').toLocaleLowerCase('vi');
+ const shown=rows.filter(r=>(!term||r.textContent.toLocaleLowerCase('vi').includes(term))&&(typeIndex<0||!opts||opts.value==='all'||r.cells[typeIndex]?.textContent.trim()===opts.value));
+ rows.forEach(r=>r.hidden=!shown.includes(r));
+ tbody.querySelector('.ehs-ops-total')?.remove();
+ const sumCols=config.add,counts=new Map(),units=config.unitCol===undefined?[]:[...new Set(shown.map(r=>r.cells[config.unitCol]?.textContent.trim()).filter(Boolean))];
+ const totals=sumCols.map(col=>{
+  if(config.unitCol!==undefined&&units.length>1&&col!==7)return '—';
+  const nums=shown.map(r=>parseReportNumber(r.cells[col]?.textContent)).filter(v=>v!==null);
+  return nums.length?money(nums.reduce((a,b)=>a+b,0)):'—';
+ });
+ if(shown.length){
+  const width=tbody.closest('table')?.querySelectorAll('thead th').length||0;
+  if(width){
+   const tr=document.createElement('tr');tr.className='ehs-ops-total';
+   const label=document.createElement('td');label.textContent='TỔNG ĐÃ LỌC ('+shown.length+' dòng)';tr.append(label);
+   for(let col=1;col<width;col++){
+    const td=document.createElement('td');
+    const idx=sumCols.indexOf(col);
+    td.textContent=idx>=0?totals[idx]:'';
+    tr.append(td);
+   }
+   tbody.append(tr);
+  }
+ }
+ const info=el(id+'Count');if(info)info.textContent=shown.length+'/'+rows.length+' dòng'+(units.length>1?' · Nhiều đơn vị, không cộng khối lượng khác ĐVT':'');
+}
+function setupReportTableFilters(){
+ for(const [id,config] of Object.entries(reportTableConfig)){
+  const tbody=el(id),table=tbody?.closest('table'),scroll=table?.closest('.scroll');
+  if(!scroll)continue;
+  if(!el(id+'Filter')){
+   const bar=document.createElement('div');bar.className='ehs-ops-filterbar';bar.id=id+'Filter';
+   bar.innerHTML='<label>Tìm trong bảng<input id="'+id+'Search" type="search" placeholder="Tìm nội dung..." aria-label="Tìm trong bảng"></label>'+
+    (config.type>=0?'<label>Loại dữ liệu<select id="'+id+'Type" aria-label="Lọc loại dữ liệu"></select></label>':'')+
+    '<span id="'+id+'Count" class="muted"></span>';
+   scroll.before(bar);
+   const search=el(id+'Search');search.addEventListener('input',()=>refreshTableFilter(id));
+   const select=el(id+'Type');if(select)select.addEventListener('change',()=>refreshTableFilter(id));
+  }
+  refreshTableFilter(id);
+ }
+}
 function report(){
  const from=el('from')?.value||'1900-01-01',to=el('to')?.value||'2100-12-31';
  const all=operations.filter(x=>x.date>=from&&x.date<=to);
@@ -227,6 +295,7 @@ function report(){
   x.month,x.type==='water_cost'?'Xử lý nước thải':'Cây xanh',n(x.actual),n(x.detail),n(x.difference),
   'Số tổng của Excel được ưu tiên, cần kiểm tra dòng chi tiết'
  ])).join('');
+ setupReportTableFilters();
  el('opsDataCount').textContent='Đã tải '+operations.length+' bản ghi. '+(calc.legacyCount?'Cảnh báo: '+calc.legacyCount+' dòng A.TK cũ bị lệch chỉ tiêu đã được loại khỏi báo cáo. Cần nhập lại file Excel gốc để khôi phục số liệu. ':'')+'Báo cáo dùng A.TK đã kiểm tra nhãn dòng, A.3 và C. Tối đa 5.000 bản ghi.';
 }
 export async function loadOperations(){
