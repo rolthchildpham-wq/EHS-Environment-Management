@@ -28,10 +28,14 @@ test('Financial summary does not double count stock purchases and usage',()=>{
  assert.match(fin,/giá trị nhập kho|Giá trị nhập vật tư/);
  assert.match(fin,/mua|purchase/);
 });
-test('Navigation offers QR stock and simple finance is primary report',()=>{
+test('Journal contains QR entry and reports open in financial overview',()=>{
  const index=r('public/index.html'),app=r('public/app.js');
  assert.match(index,/id="qrStockMount"/);
+ assert.match(index,/<section id="records"><div id="qrStockMount"><\/div>/);
  assert.match(index,/id="simpleFinanceMount"/);
+ assert.match(index,/id="reportViewMode"/);
+ assert.match(app,/setCostExplorerView\(mode,/);
+ assert.doesNotMatch(app,/stockqr:'QR vật tư'/);
  assert.match(app,/mountQrStock\(db,user,role,getAllOperations,reload\)/);
  assert.match(app,/initSimpleFinance\(\)/);
 });
