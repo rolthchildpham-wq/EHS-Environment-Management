@@ -1,0 +1,27 @@
+name: EHS journal layout isolated checks
+on:
+  push:
+    branches: [fix/ehs-journal-local-period-filter]
+  pull_request:
+    paths:
+      - 'public/index.html'
+      - 'public/app.js'
+      - 'tests/ehs-journal-filters.test.mjs'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: JavaScript syntax
+        run: node --check public/app.js
+      - name: Journal, UI and financial regressions
+        run: |
+          node --test tests/ehs-journal-filters.test.mjs
+          node --test tests/ehs-ui.test.mjs
+          node --test tests/ehs-qr-finance.test.mjs
+          node --experimental-default-type=module --test tests/ehs-finance.test.mjs
