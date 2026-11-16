@@ -10,6 +10,20 @@ service cloud.firestore {
   function role() { return get(memberPath()).data.role; }
   function admin() { return activeMember() && role() == 'admin'; }
   function editor() { return activeMember() && role() in ['admin','editor']; }
+  function permissionsPath() { return /databases/$(database)/documents/settings/ehs_permissions; }
+  function allowed(action) {
+    return admin() || (activeMember() && role() == 'editor' &&
+      (!exists(permissionsPath()) ||
+       get(permissionsPath()).data.get('editor', {}).get(action, true) == true));
+  }
+  function canReadEhs() {
+    return activeMember() &&
+      (admin() || !exists(permissionsPath()) ||
+       get(permissionsPath()).data.get(role(), {}).get('dashboard', true) == true ||
+       get(permissionsPath()).data.get(role(), {}).get('journal', true) == true ||
+       get(permissionsPath()).data.get(role(), {}).get('reports', true) == true ||
+       get(permissionsPath()).data.get(role(), {}).get('compliance', true) == true);
+  }
   function validRole(r) { return r in ['admin','editor','viewer']; }
   function validKind(k) { return k in ['waste','water_in','water_out','stock_in','stock_out','cost','revenue']; }
   function validEntry(d) {
@@ -103,8 +117,13 @@ service cloud.firestore {
 
 
   match /operations/{id} {
-    allow read: if activeMember();
-    allow create: if editor()
+    allow read: if canReadEhs();
+    allow create: if (
+      (request.resource.data.sourceFile == 'QR scan' && request.resource.data.kind == 'stock_in' && allowed('qr_in')) ||
+      (request.resource.data.sourceFile == 'QR scan' && request.resource.data.kind == 'stock_out' && allowed('qr_out')) ||
+      (request.resource.data.sourceFile == 'Nhập tay' && allowed('manual_entry')) ||
+      (request.resource.data.sourceFile != 'QR scan' && request.resource.data.sourceFile != 'Nhập tay' && allowed('excel_import'))
+    )
       && request.resource.data.keys().hasOnly([
         'date','kind','quantity','unit','name','code','spec','worker','note',
         'price','amount','previous','meter','group','nameZh','sourceSheet',
@@ -142,7 +161,7 @@ service cloud.firestore {
       && request.resource.data.createdBy == request.auth.uid
       && request.resource.data.createdAt == request.time;
     // Reimport changed Excel cells in place; source identity remains immutable.
-    allow update: if editor()
+    allow update: if allowed('excel_import')
       && resource.data.sourceFile != 'Nhập tay'
       && request.resource.data.sourceFile == resource.data.sourceFile
       && request.resource.data.sourceSheet == resource.data.sourceSheet
@@ -167,16 +186,16 @@ service cloud.firestore {
   }
 
   match /records/{id} {
-    allow read: if activeMember();
-    allow create: if editor()
+    allow read: if canReadEhs();
+    allow create: if allowed('excel_import')
       && request.resource.data.keys().hasOnly(['date','kind','value','unit','name','note','source','createdBy','createdAt'])
       && validEntry(request.resource.data);
     allow update: if false;
     allow delete: if admin();
   }
   match /reviews/{id} {
-    allow read: if activeMember();
-    allow create: if editor()
+    allow read: if canReadEhs();
+    allow create: if allowed('manual_entry')
       && request.resource.data.keys().hasOnly(['date','kind','value','unit','name','note','source','createdBy','createdAt','status'])
       && request.resource.data.status == 'pending'
       && validEntry(request.resource.data);
@@ -210,7 +229,7 @@ service cloud.firestore {
 
   match /ghg_activities/{id} {
     allow read: if activeMember();
-    allow create: if editor()
+    allow create: if allowed('ghg_write')
       && request.resource.data.keys().hasOnly([
         'date','scope','activity','quantity','unit','factor','factorYear',
         'factorSource','createdBy','createdAt'
