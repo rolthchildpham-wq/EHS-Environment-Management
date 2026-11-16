@@ -1,11 +1,7 @@
 name: Deploy EHS Firestore Rules (Spark)
+# Rules are published before Hosting in firebase-hosting.yml.
+# Manual workflow remains available for authorized recovery.
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'firestore.rules'
-      - 'tests/firestore-rules.test.mjs'
-      - '.github/workflows/firebase-backend.yml'
   workflow_dispatch:
 permissions:
   contents: read
@@ -23,7 +19,7 @@ jobs:
           test -n "$FIREBASE_SERVICE_ACCOUNT"
       - name: Validate Firestore rules structure
         run: node --test tests/firestore-rules.test.mjs
-      - name: Deploy Firestore rules (no Cloud Functions)
+      - name: Deploy Firestore rules via Firebase Rules REST (manual recovery)
         env:
           FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
@@ -31,5 +27,6 @@ jobs:
           printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/ehs-sa.json"
           chmod 600 "$RUNNER_TEMP/ehs-sa.json"
           export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/ehs-sa.json"
-          npm install -g firebase-tools@14
-          firebase deploy --only firestore:rules --project "$FIREBASE_PROJECT_ID" --non-interactive
+          trap 'rm -f "$RUNNER_TEMP/ehs-sa.json"' EXIT
+          npm install --no-save --no-audit --no-fund google-auth-library@9
+          node scripts/deploy-ehs-rules-rest.mjs

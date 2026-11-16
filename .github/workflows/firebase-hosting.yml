@@ -6,6 +6,8 @@ on:
       - 'public/**'
       - 'tests/**'
       - 'firebase.json'
+      - 'firestore.rules'
+      - 'scripts/deploy-ehs-rules-rest.mjs'
       - '.github/workflows/firebase-hosting.yml'
   workflow_dispatch:
 permissions:
@@ -51,11 +53,26 @@ jobs:
           node --check public/ehs-public-viewer.js
           node --check public/ehs-qr-stock.js
           node --check public/ehs-simple-finance.js
+          node --check public/ehs-permissions.js
+          node --check scripts/deploy-ehs-rules-rest.mjs
           node --experimental-default-type=module --test tests/ehs-finance.test.mjs
           node --experimental-default-type=module --test tests/ehs-ui.test.mjs
           node --test tests/firestore-rules.test.mjs
           node --test tests/ehs-public.test.mjs
           node --test tests/ehs-qr-finance.test.mjs
+          node --test tests/ehs-permissions.test.mjs
+          node --test tests/ehs-journal-filters.test.mjs
+      - name: Publish and verify Firestore Rules before Hosting
+        env:
+          FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/ehs-rules-account.json"
+          chmod 600 "$RUNNER_TEMP/ehs-rules-account.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/ehs-rules-account.json"
+          trap 'rm -f "$RUNNER_TEMP/ehs-rules-account.json"' EXIT
+          npm install --no-save --no-audit --no-fund google-auth-library@9
+          node scripts/deploy-ehs-rules-rest.mjs
       - name: Install Firebase CLI
         run: npm install -g firebase-tools@14
       - name: Deploy Hosting only

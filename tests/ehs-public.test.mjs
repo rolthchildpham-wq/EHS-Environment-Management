@@ -18,8 +18,9 @@ test('Firestore public read excludes raw records and membership',()=>{
  assert.match(pub,/allow get: if admin\(\) \|\| resource\.data\.get\('published', false\) == true/);
  assert.match(pub,/allow list: if false;/);
  assert.match(pub,/allow create, update: if admin\(\)/);
- assert.match(rules,/match \/operations\/\{id\} \{\s*allow read: if activeMember\(\)/);
- assert.match(rules,/match \/records\/\{id\} \{\s*allow read: if activeMember\(\)/);
+ assert.match(rules,/function canReadEhs\(\) \{\s*return activeMember\(\)/);
+ assert.match(rules,/match \/operations\/\{id\} \{\s*allow read: if canReadEhs\(\)/);
+ assert.match(rules,/match \/records\/\{id\} \{\s*allow read: if canReadEhs\(\)/);
 });
 test('Excel reimport does not silently skip changed records',()=>{
  const ops=read('public/ehs-operations.js');
