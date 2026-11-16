@@ -279,7 +279,7 @@ function report(){
    x.hasWaterCost&&x.waterOut?n(x.waterCost/x.waterOut):'—',x.hasGreenCost?n(x.greenCost):'—',n(x.revenue)]);
  }).join('');
  const inventory={};
- for(const x of operations.filter(x=>x.date<=to&&['stock_in','stock_out','stock_opening'].includes(x.kind))){
+ for(const x of operations.filter(x=>x.date<=to&&['stock_in','stock_out'].includes(x.kind))){
   const key=[x.code||x.name,x.unit].join('|');
   if(!inventory[key])inventory[key]={code:x.code,name:x.name,unit:x.unit,qty:0,opening:0,in:0,out:0,amount:0};
   inventory[key].qty+=Number(x.quantity)*(x.kind==='stock_out'?-1:1);
