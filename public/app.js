@@ -203,7 +203,15 @@ const navIcons={dashboard:'◫',records:'≡',finance:'◈',map:'⌖',import:'�
 el('tabs').innerHTML=Object.entries(labels).map(([id,title],i)=>
  '<button data-tab="'+id+'" class="'+(i===0?'active':'')+'"><span class="nav-ico" aria-hidden="true">'+(navIcons[id]||'•')+'</span><span>'+t(title)+'</span></button>'
 ).join('');
-document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{document.querySelectorAll('section').forEach(s=>s.classList.toggle('active',s.id===b.dataset.tab));document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b))});
+document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{
+ document.querySelectorAll('main > section').forEach(s=>s.classList.toggle('active',s.id===b.dataset.tab));
+ document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));
+});
+const requestedTab=new URLSearchParams(location.search).get('tab');
+if(requestedTab&&Object.hasOwn(labels,requestedTab)){
+ const target=[...document.querySelectorAll('[data-tab]')].find(b=>b.dataset.tab===requestedTab);
+ if(target)target.click();
+}
 el('dashboardYear').onchange=()=>{
  const y=Number(el('dashboardYear').value);if(!Number.isFinite(y))return;
  el('from').value=y+'-01-01';el('to').value=y+'-12-31';
@@ -223,9 +231,9 @@ initFactoryMap();initCompliance();initCostExplorer();initSimpleFinance();
 const syncReportMode=()=>{
  const mode=el('reportViewMode')?.value||'overview';
  const specific=mode==='water'||mode==='green';
- el('simpleFinanceMount').hidden=specific;
- el('costExplorerMount').hidden=!specific;
- el('reportItemSearchLabel').hidden=!specific;
+ const summary=el('simpleFinanceMount'),details=el('costExplorerMount'),searchLabel=el('reportItemSearchLabel');
+ if(!summary||!details||!searchLabel)return;
+ summary.hidden=specific;details.hidden=!specific;searchLabel.hidden=!specific;
  if(specific){
   setCostExplorerView(mode,el('reportItemSearch')?.value||'');
   const year=el('simpleFinanceYear')?.value||el('dashboardYear')?.value||'';
