@@ -1,0 +1,38 @@
+name: EHS permission matrix isolated gate
+on:
+  push:
+    branches:
+      - fix/ehs-admin-permission-matrix
+  pull_request:
+    paths:
+      - 'public/ehs-permissions.js'
+      - 'public/ehs-qr-stock.js'
+      - 'public/app.js'
+      - 'public/index.html'
+      - 'firestore.rules'
+      - 'tests/ehs-permissions.test.mjs'
+permissions:
+  contents: read
+jobs:
+  permission_gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: JavaScript syntax
+        run: |
+          node --check public/app.js
+          node --check public/ehs-qr-stock.js
+          node --check public/ehs-permissions.js
+      - name: Permission and existing UI tests
+        run: |
+          node --test tests/ehs-permissions.test.mjs
+          node --test tests/firestore-rules.test.mjs
+          node --test tests/ehs-qr-finance.test.mjs
+          node --test tests/ehs-ui.test.mjs
+      - name: Firebase Firestore Rules compiler check
+        run: |
+          npm install --no-audit --no-fund -g firebase-tools@14
+          firebase emulators:exec --project demo-ehs-permission-gate --only firestore "node -e \"console.log('Firestore emulator parsed rules')\"" --config firebase.json
