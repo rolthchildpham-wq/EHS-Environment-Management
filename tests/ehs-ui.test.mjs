@@ -35,7 +35,7 @@ test('cost explorer is prominent and connected to authenticated operations',()=>
  assert.match(html,/Thiết kế bởi BacPham/);
  assert.match(app,/initCostExplorer\(\)/);
  assert.match(app,/setCostExplorerRecords\(getAllOperations\(\)\)/);
- for(const term of ['costDashboardPeriod','costDashboardwater','costDashboardgreen','consumedQuantity','consumedUnit','Xuất Excel','TỔNG CỘNG','ehs-excel-group'])
+ for(const term of ['costDashboardPeriod','ehs-cost-dual',"'costDashboard'+type",'consumedQuantity','consumedUnit','Xuất Excel','TỔNG CỘNG','ehs-excel-group'])
   assert.ok(explorer.includes(term),term);
  assert.match(html,/ehs-extra-reports/);
  assert.match(explorer,/function presentRows/);
