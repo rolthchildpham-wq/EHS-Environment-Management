@@ -1,3 +1,4 @@
+import {loadEhsPermissions,may,applyRights} from './ehs-permissions.js?v=20261116reconciled';
 import {mountQrStock,unmountQrStock} from './ehs-qr-stock.js?v=20261116fixnull';
 import {initSimpleFinance,setSimpleFinanceRecords} from './ehs-simple-finance.js?v=20261116fa';
 import {mountPublicPublisher} from './ehs-public-publish.js?v=20261116a';
@@ -220,6 +221,7 @@ el('tabs').innerHTML=Object.entries(labels).map(([id,title],i)=>
  '<button data-tab="'+id+'" class="'+(i===0?'active':'')+'"><span class="nav-ico" aria-hidden="true">'+(navIcons[id]||'•')+'</span><span>'+t(title)+'</span></button>'
 ).join('');
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{
+ if(!may(({dashboard:'dashboard',records:'journal',map:'map',import:'excel_import',reports:'reports',admin:'users_manage',compliance:'compliance'})[b.dataset.tab]))return;
  document.querySelectorAll('main > section').forEach(s=>s.classList.toggle('active',s.id===b.dataset.tab));
  document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));
 });
@@ -240,7 +242,7 @@ const syncYear=()=>{
 };
 el('from').onchange=syncYear;el('to').onchange=syncYear;
 document.addEventListener('ehs-language-change',()=>{render();renderOperationsReport()});
-el('refresh').onclick=async()=>{await reload();};el('recordYear').onchange=()=>{el('recordMonth').value='all';render()};el('recordMonth').onchange=render;el('kind').onchange=render;el('recordItem').onchange=render;el('recordUnit').onchange=render;el('exportExcel').onclick=()=>xlsxExport('EHS_du_lieu.xlsx');el('reportExcel').onclick=()=>xlsxExport('EHS_bao_cao.xlsx');
+el('refresh').onclick=async()=>{await reload();};el('recordYear').onchange=()=>{el('recordMonth').value='all';render()};el('recordMonth').onchange=render;el('kind').onchange=render;el('recordItem').onchange=render;el('recordUnit').onchange=render;el('exportExcel').onclick=()=>{if(!may('report_export'))return alert('Không có quyền xuất báo cáo.');xlsxExport('EHS_du_lieu.xlsx')};el('reportExcel').onclick=()=>{if(!may('report_export'))return alert('Không có quyền xuất báo cáo.');xlsxExport('EHS_bao_cao.xlsx')};
 el('printReport').onclick=()=>{const w=window.open('','_blank');if(!w)return alert('Bật popup để in');w.document.write('<html><head><meta charset="utf-8"><style>body{font-family:Arial;padding:30px;font-size:12px}table{width:100%;border-collapse:collapse;page-break-inside:auto}tr{page-break-inside:avoid}td,th{border:1px solid #ddd;padding:6px}button,.controls{display:none}</style></head><body><h1>BÁO CÁO EHS</h1>'+el('reportBody').innerHTML+el('opsReport').innerHTML+'</body></html>');w.document.close();w.print()};
 el('reportPpt').onclick=()=>{if(!window.pptxgen)return alert('Không tải được PowerPoint');const p=new window.pptxgen();p.layout='LAYOUT_WIDE';const s=p.addSlide();s.addText('BÁO CÁO MÔI TRƯỜNG EHS',{x:.6,y:.6,w:11,h:.7,fontSize:27,bold:true});s.addText(el('from').value+' – '+el('to').value,{x:.6,y:1.5,w:10,h:.5,fontSize:18});['waste','water_in','water_out','cost','revenue'].forEach((k,i)=>s.addText(names[k]+': '+fmt(sum(current(),k)),{x:.7,y:2.2+i*.7,w:10,h:.5,fontSize:18}));p.writeFile({fileName:'EHS_bao_cao.pptx'})};
 initFactoryMap();initCompliance();initCostExplorer();initSimpleFinance();
@@ -264,12 +266,12 @@ for(const id of ['simpleFinanceYear','simpleFinanceMonth']){
 }
 syncReportMode();
 el('parseExcel').onclick=async()=>{const f=el('excelFile').files[0];if(!f)return alert('Chọn file Excel');try{if(!window.XLSX)throw Error('Không tải được XLSX');const book=XLSX.read(await f.arrayBuffer(),{type:'array',cellDates:true});pending=book.SheetNames.flatMap(n=>parseSheet(XLSX.utils.sheet_to_json(book.Sheets[n],{defval:null})));preview();el('importStatus').textContent='Đọc được '+pending.length+' dòng hợp lệ. Chỉ hỗ trợ định dạng cột chuẩn.'}catch(e){el('importStatus').textContent=e.message}};
-el('saveImport').onclick=async()=>{if(!pending.length)return alert('Chưa có dữ liệu');if(!db||!user||!['admin','editor'].includes(role))return alert('Bạn cần quyền editor/admin');if(!confirm('Lưu '+pending.length+' dòng?'))return;try{for(const x of pending)await addDoc(collection(db,'records'),{...x,createdBy:user.uid,createdAt:serverTimestamp()});pending=[];preview();await reload()}catch(e){alert(e.message)}};
+el('saveImport').onclick=async()=>{if(!pending.length)return alert('Chưa có dữ liệu');if(!db||!user||!may('excel_import'))return alert('Chưa được cấp quyền nhập Excel.');if(!confirm('Lưu '+pending.length+' dòng?'))return;try{for(const x of pending)await addDoc(collection(db,'records'),{...x,createdBy:user.uid,createdAt:serverTimestamp()});pending=[];preview();await reload()}catch(e){alert(e.message)}};
 el('aiRead').disabled=true;
 el('aiRead').textContent='AI cần backend riêng';
 el('aiStatus').textContent='Spark: chưa hỗ trợ AI tự động. Vui lòng nhập thủ công số liệu từ ảnh để quản trị viên kiểm duyệt.';
 el('submitEvidence').onclick=async()=>{
- if(!user||!['admin','editor'].includes(role))return alert('Cần đăng nhập và quyền editor/admin.');
+ if(!user||!may('manual_entry'))return alert('Không có quyền nhập thủ công.');
  const x=norm({
    date:el('evidenceDate').value,
    kind:el('evidenceField').value,
@@ -305,5 +307,5 @@ el('login').onclick=()=>auth&&signInWithPopup(auth,new GoogleAuthProvider()).cat
 el('logout').onclick=()=>auth&&signOut(auth);
 if(window.EHS_FIREBASE_CONFIG){
  const app=initializeApp(window.EHS_FIREBASE_CONFIG);auth=getAuth(app);db=getFirestore(app);
- onAuthStateChanged(auth,async u=>{user=u;role=null;el('login').classList.toggle('hide',!!u);el('logout').classList.toggle('hide',!u);if(!u){el('mode').textContent='Chưa đăng nhập';unmountQrStock();mountMemberAdmin(db,null,null);mountPublicPublisher(db,null,null,()=>[]);mountDataReset(db,null,null,null);unmountOperations();setCostExplorerRecords([]);await configureCostExplorer(null,null);await mountFactoryMap(db,null,null);await mountCompliance(db,null,null,getAllOperations);data=[];reviewData=[];render();return}try{const membership=await resolveMember(db,u);role=membership?.role||null;mountMemberAdmin(db,u,role);mountPublicPublisher(db,u,role,()=>({operations:getAllOperations(),costs:getCostReportRows(String(el('publicPublishYear')?.value||new Date().getFullYear()))}));mountDataReset(db,u,role,reload);if(role){mountOperations(db,u,role,reload);try{mountQrStock(db,u,role,getAllOperations,reload)}catch(error){console.error('QR initialization failed',error)}}else{unmountOperations();unmountQrStock();}await mountFactoryMap(db,u,role);await mountCompliance(db,u,role,getAllOperations);el('mode').textContent=u.email+' · '+(role||'chưa cấp quyền');if(role){await reload();await configureCostExplorer(db,role);}else notice('Chưa được cấp quyền; tạo members/'+u.uid+' trong Firestore Console.')}catch(e){notice(e.message)}});
+ onAuthStateChanged(auth,async u=>{user=u;role=null;el('login').classList.toggle('hide',!!u);el('logout').classList.toggle('hide',!u);if(!u){await loadEhsPermissions(null,null,null);el('mode').textContent='Chưa đăng nhập';unmountQrStock();mountMemberAdmin(db,null,null);mountPublicPublisher(db,null,null,()=>[]);mountDataReset(db,null,null,null);unmountOperations();setCostExplorerRecords([]);await configureCostExplorer(null,null);await mountFactoryMap(db,null,null);await mountCompliance(db,null,null,getAllOperations);data=[];reviewData=[];render();return}try{const membership=await resolveMember(db,u);role=membership?.role||null;await loadEhsPermissions(db,u,role);mountMemberAdmin(db,u,role);mountPublicPublisher(db,u,role,()=>({operations:getAllOperations(),costs:getCostReportRows(String(el('publicPublishYear')?.value||new Date().getFullYear()))}));mountDataReset(db,u,role,reload);if(role){mountOperations(db,u,role,reload);try{mountQrStock(db,u,role,getAllOperations,reload)}catch(error){console.error('QR initialization failed',error)}}else{unmountOperations();unmountQrStock();}await mountFactoryMap(db,u,role);await mountCompliance(db,u,role,getAllOperations);el('mode').textContent=u.email+' · '+(role||'chưa cấp quyền');if(role){await reload();await configureCostExplorer(db,role);applyRights();}else notice('Chưa được cấp quyền; tạo members/'+u.uid+' trong Firestore Console.')}catch(e){notice(e.message)}});
 }else{el('mode').textContent='Chưa cấu hình Firebase';el('login').classList.add('hide');render();notice('Chưa kết nối Firebase Web App. Thêm cấu hình từ Project settings để kích hoạt.')}
