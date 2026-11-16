@@ -66,7 +66,7 @@ function stopCamera(){
  scanLoop++;
  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
  const video=$('qrStockVideo');if(video){video.pause();video.srcObject=null;video.hidden=true}
- $('qrStockStop').hidden=true;
+ const stop=$('qrStockStop');if(stop)stop.hidden=true;
 }
 async function startCamera(){
  if(!('BarcodeDetector' in window)){status('Trình duyệt này chưa hỗ trợ quét QR trực tiếp. Dùng ô nhập/dán mã QR hoặc trình duyệt Chrome hỗ trợ BarcodeDetector.',true);return}
