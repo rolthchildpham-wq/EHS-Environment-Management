@@ -23,5 +23,6 @@ td:not(:first-child){text-align:right;font-variant-numeric:tabular-nums}
 <main><div class="toolbar"><label>Năm <select id="year"></select></label><label>Tháng <select id="month"></select></label><span id="updated"></span></div>
 <p id="status">Đang kiểm tra dữ liệu đã công bố...</p>
 <div class="metrics"><div class="metric"><span>Rác thải</span><strong id="mWaste">—</strong></div><div class="metric"><span>Nước thải đầu ra</span><strong id="mWater">—</strong></div><div class="metric"><span>Chi phí nước thải</span><strong id="mWaterCost">—</strong></div><div class="metric"><span>Chi phí cây xanh</span><strong id="mGreenCost">—</strong></div></div>
+<section class="panel" style="margin-bottom:14px"><h2>Xu hướng vận hành theo tháng</h2><div id="monthly" class="scroll"></div></section>
 <div class="two"><div class="panel"><h2>A.3 · Chi phí xử lý nước thải</h2><div id="water" class="scroll"></div></div><div class="panel"><h2>C · Chi phí cây xanh</h2><div id="green" class="scroll"></div></div></div>
 </main><script src="firebase-config.js"></script><script type="module" src="ehs-public-viewer.js"></script></body></html>
