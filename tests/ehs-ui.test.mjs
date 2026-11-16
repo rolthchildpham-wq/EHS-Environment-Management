@@ -35,8 +35,11 @@ test('cost explorer is prominent and connected to authenticated operations',()=>
  assert.match(html,/Thiết kế bởi BacPham/);
  assert.match(app,/initCostExplorer\(\)/);
  assert.match(app,/setCostExplorerRecords\(getAllOperations\(\)\)/);
- for(const term of ['costExplorerMonth','costExplorerType','costExplorerRows','consumedQuantity','consumedUnit','Xuất chi tiết A.3'])
+ for(const term of ['costDashboardPeriod','costDashboardwater','costDashboardgreen','consumedQuantity','consumedUnit','Xuất Excel','TỔNG CỘNG','ehs-excel-group'])
   assert.ok(explorer.includes(term),term);
+ assert.match(html,/ehs-extra-reports/);
+ assert.match(explorer,/function presentRows/);
+ assert.match(explorer,/function officialTotal/);
 });
 test('financial source parser preserves amount and monthly quantity units',()=>{
  const adapter=read('public/ehs-excel-adapters.js'),rules=read('firestore.rules'),ops=read('public/ehs-operations.js');
