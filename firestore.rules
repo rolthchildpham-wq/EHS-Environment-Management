@@ -246,6 +246,35 @@ service cloud.firestore {
     allow update, delete: if false;
   }
 
+  // Public snapshots are expressly published by an ADMIN; raw records stay private.
+  match /public_reports/{year} {
+    allow get: if admin() || (resource.data.get('published', false) == true);
+    allow list: if false;
+    allow create, update: if admin()
+      && request.resource.data.published == true
+      && request.resource.data.updatedAt == request.time
+      && ((year == 'catalog'
+        && request.resource.data.keys().hasOnly(['published','years','updatedAt'])
+        && request.resource.data.years is list
+        && request.resource.data.years.size() <= 30)
+      || (year.matches('^[0-9]{4}
+    allow read: if activeMember();
+    allow write: if admin();
+  }
+  match /{document=**} { allow read, write: if false; }
+ }
+}
+)
+        && request.resource.data.keys().hasOnly(['published','year','monthly','water','green','updatedAt'])
+        && request.resource.data.year == year
+        && request.resource.data.monthly is list
+        && request.resource.data.water is list
+        && request.resource.data.green is list
+        && request.resource.data.monthly.size() <= 12
+        && request.resource.data.water.size() <= 1200
+        && request.resource.data.green.size() <= 1200));
+    allow delete: if admin();
+  }
   match /settings/{id} {
     allow read: if activeMember();
     allow write: if admin();
