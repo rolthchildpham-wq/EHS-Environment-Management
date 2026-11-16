@@ -108,6 +108,19 @@ function renderExecutiveInsights(rows){
   '</span><div><h4>'+esc(x.title)+'</h4><p>'+esc(x.detail)+'</p></div></article>').join('');
 }
 
+function selectedRecords(){
+ const kind=el('kind')?.value||'all',item=el('recordItem')?.value||'all',unit=el('recordUnit')?.value||'all';
+ return current().filter(x=>(kind==='all'||x.kind===kind)&&(item==='all'||String(x.name||'')===item)&&(unit==='all'||String(x.unit||'')===unit));
+}
+function refreshRecordChoices(){
+ const kind=el('kind')?.value||'all',base=current().filter(x=>kind==='all'||x.kind===kind);
+ for(const [id,key] of [['recordItem','name'],['recordUnit','unit']]){
+  const sel=el(id);if(!sel)continue;const old=sel.value;
+  const vals=[...new Set(base.map(x=>String(x[key]||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'vi'));
+  sel.innerHTML='<option value="all">Tất cả</option>'+vals.map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join('');
+  sel.value=vals.includes(old)?old:'all';
+ }
+}
 function render(){
  const year=el('dashboardYear')?.value||'2026';
  for(const id of ['chartYearWaste','chartYearWater','chartYearCategory','chartYearMoney']){
@@ -123,7 +136,14 @@ function render(){
  const top=Object.entries(groups).sort((a,b)=>b[1]-a[1]).slice(0,8);
  chart('categoryChart','doughnut',top.map(x=>x[0]),[{data:top.map(x=>x[1])}]);
  chart('moneyChart','bar',months,[{label:t('Chi phí'),data:monthly(r,'cost'),backgroundColor:'#d18c52'},{label:t('Doanh thu'),data:monthly(r,'revenue'),backgroundColor:'#128e77'}]);
- el('recordRows').innerHTML=r.filter(x=>el('kind').value==='all'||x.kind===el('kind').value).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,1500).map(x=>'<tr><td>'+esc(x.date)+'</td><td>'+esc(names[x.kind])+'</td><td>'+esc(x.name)+'</td><td>'+fmt(x.value)+'</td><td>'+esc(x.unit)+'</td><td>'+esc(x.source)+'</td></tr>').join('');
+ refreshRecordChoices();
+ const filtered=selectedRecords().sort((a,b)=>b.date.localeCompare(a.date));
+ el('recordRows').innerHTML=filtered.slice(0,1500).map(x=>'<tr><td>'+esc(x.date)+'</td><td>'+esc(names[x.kind])+'</td><td>'+esc(x.name)+'</td><td>'+fmt(x.value)+'</td><td>'+esc(x.unit)+'</td><td>'+esc(x.source)+'</td></tr>').join('');
+ if(el('recordCount'))el('recordCount').textContent='Hiển thị '+Math.min(filtered.length,1500)+'/'+filtered.length+' dòng';
+ const totals=new Map();
+ for(const x of filtered){const unit=String(x.unit||'').trim()||'không có ĐVT';totals.set(unit,(totals.get(unit)||0)+Number(x.value||0))}
+ if(el('recordTotals'))el('recordTotals').textContent=filtered.length?'TỔNG THEO ĐƠN VỊ: '+[...totals].map(([u,v])=>fmt(v)+' '+u).join(' · '):'Không có dữ liệu theo bộ lọc.';
+
  const cost=sum(r,'cost'),revenue=sum(r,'revenue');
  const wc=r.filter(x=>x.kind==='cost'&&x.name==='water_cost').reduce((s,x)=>s+x.value,0);
  const water=sum(r,'water_out');
@@ -132,7 +152,7 @@ function render(){
  el('reportBody').innerHTML='<h3>Kỳ: '+esc(el('from').value)+' – '+esc(el('to').value)+'</h3><table><thead><tr><th>Chỉ tiêu</th><th>Kỳ này</th><th>Kỳ so sánh</th><th>Thay đổi</th></tr></thead><tbody>'+Object.keys(names).map(k=>{const a=sum(r,k),b=sum(p,k);return '<tr><td>'+esc(names[k])+'</td><td>'+fmt(a)+'</td><td>'+fmt(b)+'</td><td>'+(b?fmt((a-b)/b*100)+'%':'Thiếu dữ liệu')+'</td></tr>'}).join('')+'</tbody></table><p class="muted">Không cộng các vật tư khác đơn vị để tính tồn kho.</p>';
 }
 function preview(){el('preview').innerHTML=pending.slice(0,500).map(x=>'<tr><td>'+esc(x.date)+'</td><td>'+esc(names[x.kind])+'</td><td>'+esc(x.name)+'</td><td>'+fmt(x.value)+'</td><td>'+esc(x.unit)+'</td><td>'+esc(x.note)+'</td></tr>').join('')}
-function rows(){return current().map(x=>({'Ngày':x.date,'Loại':names[x.kind],'Tên':x.name,'Số lượng':x.value,'Đơn vị':x.unit,'Ghi chú':x.note,'Nguồn':x.source}))}
+function rows(){return selectedRecords().map(x=>({'Ngày':x.date,'Loại':names[x.kind],'Tên':x.name,'Số lượng':x.value,'Đơn vị':x.unit,'Ghi chú':x.note,'Nguồn':x.source}))}
 function xlsxExport(filename){if(!window.XLSX)return alert('Không tải được XLSX');const book=XLSX.utils.book_new();XLSX.utils.book_append_sheet(book,XLSX.utils.json_to_sheet(rows()),'Du lieu');XLSX.writeFile(book,filename)}
 function parseSheet(rows){
  const dict={'rac':'waste','rac thai':'waste','nuoc vao':'water_in','nuoc ra':'water_out','nhap vat tu':'stock_in','xuat vat tu':'stock_out','chi phi':'cost','doanh thu':'revenue'};
@@ -193,7 +213,7 @@ const syncYear=()=>{
 };
 el('from').onchange=syncYear;el('to').onchange=syncYear;
 document.addEventListener('ehs-language-change',()=>{render();renderOperationsReport()});
-el('refresh').onclick=async()=>{await reload();};el('kind').onchange=render;el('exportExcel').onclick=()=>xlsxExport('EHS_du_lieu.xlsx');el('reportExcel').onclick=()=>xlsxExport('EHS_bao_cao.xlsx');
+el('refresh').onclick=async()=>{await reload();};el('kind').onchange=render;el('recordItem').onchange=render;el('recordUnit').onchange=render;el('exportExcel').onclick=()=>xlsxExport('EHS_du_lieu.xlsx');el('reportExcel').onclick=()=>xlsxExport('EHS_bao_cao.xlsx');
 el('printReport').onclick=()=>{const w=window.open('','_blank');if(!w)return alert('Bật popup để in');w.document.write('<html><head><meta charset="utf-8"><style>body{font-family:Arial;padding:30px;font-size:12px}table{width:100%;border-collapse:collapse;page-break-inside:auto}tr{page-break-inside:avoid}td,th{border:1px solid #ddd;padding:6px}button,.controls{display:none}</style></head><body><h1>BÁO CÁO EHS</h1>'+el('reportBody').innerHTML+el('opsReport').innerHTML+'</body></html>');w.document.close();w.print()};
 el('reportPpt').onclick=()=>{if(!window.pptxgen)return alert('Không tải được PowerPoint');const p=new window.pptxgen();p.layout='LAYOUT_WIDE';const s=p.addSlide();s.addText('BÁO CÁO MÔI TRƯỜNG EHS',{x:.6,y:.6,w:11,h:.7,fontSize:27,bold:true});s.addText(el('from').value+' – '+el('to').value,{x:.6,y:1.5,w:10,h:.5,fontSize:18});['waste','water_in','water_out','cost','revenue'].forEach((k,i)=>s.addText(names[k]+': '+fmt(sum(current(),k)),{x:.7,y:2.2+i*.7,w:10,h:.5,fontSize:18}));p.writeFile({fileName:'EHS_bao_cao.pptx'})};
 initFactoryMap();initCompliance();initCostExplorer();
