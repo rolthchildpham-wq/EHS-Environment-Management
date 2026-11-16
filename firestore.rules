@@ -246,9 +246,9 @@ service cloud.firestore {
     allow update, delete: if false;
   }
 
-  // Public snapshots are expressly published by an ADMIN; raw records stay private.
+  // Public snapshots are explicitly published by an admin; private records remain restricted.
   match /public_reports/{year} {
-    allow get: if admin() || (resource.data.get('published', false) == true);
+    allow get: if admin() || resource.data.get('published', false) == true;
     allow list: if false;
     allow create, update: if admin()
       && request.resource.data.published == true
@@ -257,14 +257,7 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly(['published','years','updatedAt'])
         && request.resource.data.years is list
         && request.resource.data.years.size() <= 30)
-      || (year.matches('^[0-9]{4}
-    allow read: if activeMember();
-    allow write: if admin();
-  }
-  match /{document=**} { allow read, write: if false; }
- }
-}
-)
+      || (year.matches('^[0-9]{4}$')
         && request.resource.data.keys().hasOnly(['published','year','monthly','water','green','updatedAt'])
         && request.resource.data.year == year
         && request.resource.data.monthly is list
