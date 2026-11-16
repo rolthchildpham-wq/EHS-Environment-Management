@@ -1,4 +1,4 @@
-import {initCostExplorer,setCostExplorerRecords} from './ehs-cost-detail.js?v=20261116b';
+import {initCostExplorer,setCostExplorerRecords} from './ehs-cost-detail.js?v=20261116dashboard';
 import {initFactoryMap,mountFactoryMap} from './factory-map.js?v=20261112f';
 import {initCompliance,mountCompliance,refreshCompliance} from './ehs-compliance.js?v=20261112f';
 import {installI18n,t} from './i18n.js?v=20261112f';
