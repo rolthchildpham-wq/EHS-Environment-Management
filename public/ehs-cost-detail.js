@@ -8,7 +8,7 @@ const fmt=v=>v===null||v===undefined||!Number.isFinite(Number(v))?'—':Number(v
 const money=x=>Number(x.amount??x.quantity??0);
 const period=x=>String(x.date||'').slice(0,7);
 const kinds={water:{kind:'water_cost_month',total:'waterCost',title:'A.3 · Chi phí xử lý nước thải',filename:'A3 Nuoc thai'},green:{kind:'green_cost_detail',total:'greenCost',title:'C · Chi phí chăm sóc cây xanh',filename:'C Cay xanh'}};
-let records=[],chosen='',mappingDb=null,mappingRole=null,mappings=[];
+let records=[],chosen='',mappingDb=null,mappingRole=null,mappings=[],visibleType='water',term='';
 function preferred(rows){
  const v3=rows.filter(x=>x.spec==='cost-detail-v3'),pool=v3.length?v3:rows;
  const unique=new Map();
@@ -125,7 +125,7 @@ function officialTotal(type,scope){
  return values.length?values.reduce((a,b)=>a+Number(b),0):null;
 }
 function renderTable(type){
- const rows=presentRows(type,chosen),root=$('costDashboard'+type),meta=$('costDashboardMeta'+type);
+ const rows=presentRows(type,chosen).filter(x=>!term||[name(x),group(x),x.consumedUnit].some(v=>String(v||'').toLocaleLowerCase('vi').includes(term))),root=$('costDashboard'+type),meta=$('costDashboardMeta'+type);
  if(!root)return;
  const total=rows.reduce((a,b)=>a+money(b),0),official=officialTotal(type,chosen);
  let html='<table class="ehs-excel-cost"><thead><tr><th>Hạng mục chi phí / 费用项目</th><th>ĐVT</th><th>Đơn giá (VND)</th><th>Tiêu thụ</th><th>Thành tiền (VND)</th></tr></thead><tbody>';
@@ -141,20 +141,24 @@ function renderTable(type){
  if(!rows.length)html+='<tr><td colspan="5" class="ehs-empty-report">Chưa có dữ liệu chi tiết A.3 / C đã nhập cho kỳ này.</td></tr>';
  html+='<tr class="ehs-excel-grand"><td colspan="4">TỔNG CỘNG / 总费用</td><td>'+fmt(rows.length?total:null)+'</td></tr></tbody></table>';
  root.innerHTML=html;
- const reconciled=official!==null&&rows.length&&Math.abs(official-total)<=1;
- meta.textContent=rows.length?(official===null?'Dữ liệu chi tiết: '+rows.length+' hạng mục. Chưa có tổng chính thức để đối chiếu.':reconciled?'Đã khớp với tổng chính thức: '+fmt(official)+' VND':'Tổng gốc '+fmt(official)+' VND · Chênh lệch '+fmt(official-total)+' VND, cần kiểm tra Excel gốc'):'Chưa có dữ liệu của kỳ đã chọn';
+ const reconciled=!term&&official!==null&&rows.length&&Math.abs(official-total)<=1;
+ meta.textContent=rows.length?(term?'Đang lọc '+rows.length+' hạng mục · Tổng sau lọc '+fmt(total)+' VND':official===null?'Dữ liệu chi tiết: '+rows.length+' hạng mục. Chưa có tổng chính thức để đối chiếu.':reconciled?'Đã khớp với tổng chính thức: '+fmt(official)+' VND':'Tổng gốc '+fmt(official)+' VND · Chênh lệch '+fmt(official-total)+' VND, cần kiểm tra Excel gốc'):'Không có hạng mục phù hợp trong kỳ này';
  meta.dataset.ok=reconciled?'true':'false';
  return {rows,totals,total};
 }
 function render(){
  if(!$('costDashboardPeriod'))return;
- for(const type of Object.keys(kinds))renderTable(type);
+ for(const type of Object.keys(kinds)){
+  const panel=$('costDashboard'+type)?.closest('.ehs-cost-panel');
+  if(panel)panel.hidden=type!==visibleType;
+  if(type===visibleType)renderTable(type);
+ }
 }
 function exportExcel(){
  if(!window.XLSX)return alert('Thư viện xuất Excel chưa tải được.');
  const book=window.XLSX.utils.book_new();
- for(const type of Object.keys(kinds)){
-  const rows=presentRows(type,chosen),sum=rows.reduce((a,x)=>a+money(x),0);
+ for(const type of [visibleType]){
+  const rows=presentRows(type,chosen).filter(x=>!term||[name(x),group(x)].some(v=>String(v||'').toLocaleLowerCase('vi').includes(term))),sum=rows.reduce((a,x)=>a+money(x),0);
   const data=[['Hạng mục chi phí','ĐVT','Đơn giá (VND)','Tiêu thụ','Thành tiền (VND)','Nhóm','Ô nguồn']];
   let g=null,partial=0;
   for(const x of rows){
@@ -183,6 +187,17 @@ export function initCostExplorer(){
  $('costMapSave').onclick=saveMapping;
  document.addEventListener('ehs-language-change',render);
  choosePeriods();renderMapping();render();
+}
+export function setCostExplorerView(type,search=''){
+ visibleType=type==='green'?'green':'water';
+ term=String(search||'').trim().toLocaleLowerCase('vi');
+ render();
+}
+export function setCostExplorerPeriod(scope){
+ const sel=$('costDashboardPeriod');
+ if(!sel)return;
+ const value=String(scope||'');
+ if([...sel.options].some(o=>o.value===value)){chosen=value;sel.value=value;render()}
 }
 export function setCostExplorerRecords(rows){
  records=Array.isArray(rows)?rows.slice():[];
