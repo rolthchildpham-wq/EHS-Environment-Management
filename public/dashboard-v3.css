@@ -443,3 +443,16 @@ body:has(#reports.active) main > .controls{display:none}
 #records .qr-qr-link p{margin:5px 0 0}
 #records #qrLinkText{font-size:12px;max-width:240px;overflow-wrap:anywhere;color:#116d77}
 #records #qrLinkImage{flex:0 0 auto}
+
+/* Administrator-controlled EHS capability matrix. */
+.ehs-permission-panel{margin:18px 0;padding:20px}
+.ehs-permission-panel h2{font-size:20px;margin:0 0 6px}
+.ehs-permission-table{width:100%;border-collapse:collapse;min-width:590px}
+.ehs-permission-table th,.ehs-permission-table td{padding:10px 12px;border-bottom:1px solid #e5edf0}
+.ehs-permission-table th:first-child,.ehs-permission-table td:first-child{text-align:left}
+.ehs-permission-table th:not(:first-child),.ehs-permission-table td:not(:first-child){text-align:center;width:120px}
+.ehs-permission-table input[type=checkbox]{width:20px;height:20px;accent-color:#0b9687;cursor:pointer}
+.ehs-permission-table input:disabled{opacity:.65;cursor:not-allowed}
+.ehs-permission-panel .controls{display:flex;flex-wrap:wrap;gap:12px;margin-top:14px}
+.ehs-permission-panel .controls button{min-height:44px}
+#ehsRightsStatus{font-size:12px;margin-top:12px}
