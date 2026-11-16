@@ -381,3 +381,6 @@ details summary{font-weight:760;color:#425d71}
  #reports .ehs-dashboard-actions select{width:100%;min-width:0}
  #reports .ehs-excel-cost{min-width:500px}
 }
+
+/* Reports use their own single period selector; hide redundant global report filters. */
+body:has(#reports.active) main > .controls{display:none}
