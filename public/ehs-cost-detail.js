@@ -197,7 +197,13 @@ export function setCostExplorerPeriod(scope){
  const sel=$('costDashboardPeriod');
  if(!sel)return;
  const value=String(scope||'');
- if([...sel.options].some(o=>o.value===value)){chosen=value;sel.value=value;render()}
+ if(!value)return;
+ if(![...sel.options].some(o=>o.value===value)){
+  const option=document.createElement('option');option.value=value;
+  option.textContent=value.length===7?'Tháng '+value.slice(5,7)+'/'+value.slice(0,4):'Cả năm '+value;
+  sel.append(option);
+ }
+ chosen=value;sel.value=value;render();
 }
 export function setCostExplorerRecords(rows){
  records=Array.isArray(rows)?rows.slice():[];
