@@ -1,3 +1,4 @@
+import {may} from './ehs-permissions.js?v=ehs-permissions-1';
 import {collection,doc,serverTimestamp,setDoc} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -100,7 +101,7 @@ async function startCamera(){
 function localDay(){const d=new Date(),pad=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
 async function submit(e){
  e.preventDefault();
- if(locked||!db||!user||!['admin','editor'].includes(role)){status('Chỉ Admin/Editor được ghi nhập xuất.',true);return}
+ if(locked||!db||!user||!may($('qrStockKind').value==='stock_in'?'qr_in':'qr_out')){status('Bạn chưa được Admin cấp quyền cho loại giao dịch này.',true);return}
  const code=$('qrStockItem').value,kind=$('qrStockKind').value,qty=Number($('qrStockQuantity').value);
  const item=catalog().find(x=>x.code===code);
  if(!item||!['stock_in','stock_out'].includes(kind)||!Number.isFinite(qty)||qty<=0||!item.unit){status('Chọn vật tư có đơn vị, loại giao dịch và số lượng lớn hơn 0.',true);return}
@@ -130,7 +131,7 @@ export function mountQrStock(database,actor,memberRole,rows,onUpdate){
  db=database;user=actor;role=memberRole;getRows=rows||(()=>[]);onSaved=onUpdate||(()=>{});
  const mount=$('qrStockMount');if(!mount)return;
  stopCamera();
- if(!user||!['admin','editor'].includes(role)){mount.innerHTML='<div class="panel"><h2>Quét QR · Vật tư</h2><p>Chỉ Admin/Editor có quyền nhập, xuất vật tư. Viewer chỉ được xem báo cáo.</p></div>';return}
+ if(!user||!(may('qr_in')||may('qr_out'))){mount.innerHTML='<div class="panel"><h2>Quét QR · Vật tư</h2><p>Chưa được cấp quyền giao dịch vật tư QR. Liên hệ Admin để thiết lập.</p></div>';return}
  mount.innerHTML='<div class="panel qr-stock-panel"><div class="qr-stock-heading"><div><h2>Quét QR · Nhập / Xuất vật tư</h2><p class="muted">Quét mã QR trên vật tư; dùng danh mục đã có ở sheet Nhập/Xuất. Tự lưu thời gian giao dịch bằng Firebase.</p></div><span class="qr-tag">Giao dịch thực tế</span></div>'+
  '<form id="qrStockForm"><div class="qr-stock-controls"><label>Loại giao dịch<select id="qrStockKind"><option value="stock_out">Xuất / sử dụng</option><option value="stock_in">Nhập kho</option></select></label>'+
  '<div class="qr-category-picker" role="group" aria-label="Chọn nơi sử dụng vật tư"><label><input type="checkbox" id="qrStockWater" checked> XLNT</label><label><input type="checkbox" id="qrStockGreen"> Cây xanh</label></div>'+ 
@@ -162,6 +163,8 @@ export function mountQrStock(database,actor,memberRole,rows,onUpdate){
   if(typeof window.QRCode==='function')new window.QRCode(target,{text:url.href,width:160,height:160,correctLevel:window.QRCode.CorrectLevel.M});
   else status('Không tải được thư viện tạo QR. Có thể sao chép liên kết Nhật ký.',true);
  };
+ if(!may('qr_in'))$('qrStockKind').querySelector('[value="stock_in"]').remove();
+ if(!may('qr_out'))$('qrStockKind').querySelector('[value="stock_out"]').remove();
  refresh();
 }
 export function unmountQrStock(){stopCamera();db=null;user=null;role=null;const mount=$('qrStockMount');if(mount)mount.innerHTML=''}
