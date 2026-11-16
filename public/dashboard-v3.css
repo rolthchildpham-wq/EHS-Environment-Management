@@ -283,3 +283,50 @@ details summary{font-weight:760;color:#425d71}
   header .account-meta { margin-left: 0; }
   header #mode { max-width: 190px; }
 }
+
+/* Horizontal compact filters for cost and operations reports. */
+#costExplorerMount .ehs-compact-filters,
+#opsReport .ehs-ops-filterbar {
+ display:flex;align-items:end;flex-wrap:nowrap;gap:9px;
+ width:100%;overflow-x:auto;padding:9px 0 11px;
+ scrollbar-width:thin;
+}
+#costExplorerMount .ehs-compact-filters label,
+#opsReport .ehs-ops-filterbar label {
+ display:flex;flex:0 0 auto;flex-direction:column;gap:4px;
+ font-size:11px;font-weight:700;white-space:nowrap;color:#456172;
+}
+#costExplorerMount .ehs-compact-filters select,
+#costExplorerMount .ehs-compact-filters input,
+#opsReport .ehs-ops-filterbar select,
+#opsReport .ehs-ops-filterbar input {
+ width:auto;min-width:120px;max-width:220px;height:40px;
+ padding:7px 10px;font-size:12px;border:1px solid #cfdee7;border-radius:8px;
+}
+#costExplorerMount #costExplorerType {min-width:165px;max-width:220px}
+#costExplorerMount #costExplorerGroup,
+#costExplorerMount #costExplorerItem {min-width:155px}
+#costExplorerMount .ehs-compact-filters button {flex:0 0 auto;min-height:40px;white-space:nowrap}
+#costExplorerMount .ehs-cost-group th {
+ position:static;background:#e3f1f3;color:#115968;
+ text-align:left;font-size:12px;padding:12px 14px;
+}
+#costExplorerMount .ehs-cost-subtotal td {
+ background:#f1f7f7;color:#245768;font-weight:750;
+ border-top:1px solid #cbdfe4;
+}
+#costExplorerMount .ehs-cost-grand-total td,
+#opsReport .ehs-ops-total td {
+ background:#e0f2ec;color:#07594e;font-weight:850;
+ border-top:2px solid #14a493;
+}
+#opsReport .ehs-ops-filterbar{justify-content:flex-start;margin-top:3px;padding-top:5px}
+#opsReport .ehs-ops-filterbar .muted{align-self:center;white-space:nowrap}
+#opsReport .scroll{margin-bottom:14px}
+#opsReport tbody tr[hidden]{display:none!important}
+@media(max-width:620px){
+ #costExplorerMount .ehs-compact-filters{flex-wrap:nowrap;padding-bottom:12px}
+ #costExplorerMount .ehs-compact-filters label{flex:0 0 auto;min-width:115px}
+ #costExplorerMount .ehs-compact-filters select,
+ #costExplorerMount .ehs-compact-filters input{width:auto;min-width:115px}
+}
