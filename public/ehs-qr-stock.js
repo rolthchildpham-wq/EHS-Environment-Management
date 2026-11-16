@@ -5,12 +5,22 @@ const fmt=n=>Number(n||0).toLocaleString('vi-VN',{maximumFractionDigits:3});
 let db=null,user=null,role=null,getRows=()=>[],onSaved=()=>{},stream=null,scanner=null,scanLoop=0,locked=false;
 const operational=x=>['stock_in','stock_out'].includes(x.kind);
 function catalog(){
+ const source=getRows().filter(operational);
+ const category=$('qrStockGreen')?.checked?'Cây xanh':'XLNT';
  const map=new Map();
- for(const r of getRows().filter(operational)){
+ const classified=new Map();
+ for(const r of source){
+  const code=String(r.code||'').trim(),group=String(r.group||'').trim();
+  if(code&&['XLNT','Cây xanh'].includes(group))classified.set(code,group);
+ }
+ for(const r of source){
   const code=String(r.code||'').trim();
   if(!code)continue;
+  const assigned=classified.get(code);
+  // Untagged Excel materials remain selectable until categorized by a real QR issue.
+  if(assigned&&assigned!==category)continue;
   const previous=map.get(code);
-  if(!previous||r.kind==='stock_in')map.set(code,{code,name:String(r.name||previous?.name||code),unit:String(r.unit||previous?.unit||''),price:Number(r.price||previous?.price||0)});
+  if(!previous||r.kind==='stock_in')map.set(code,{code,name:String(r.name||previous?.name||code),unit:String(r.unit||previous?.unit||''),price:Number(r.price||previous?.price||0),unassigned:!assigned});
  }
  return [...map.values()].sort((a,b)=>a.name.localeCompare(b.name,'vi'));
 }
@@ -129,15 +139,24 @@ export function mountQrStock(database,actor,memberRole,rows,onUpdate){
  '<label>Số lượng<input id="qrStockQuantity" type="number" min="0.001" step="any" inputmode="decimal" required placeholder="0"></label>'+
  '<label>Ghi chú (không bắt buộc)<input id="qrStockNote" maxlength="1000" placeholder="Bộ phận / mục đích sử dụng"></label>'+
  '<button id="qrStockSave" class="primary" type="submit">Lưu giao dịch</button></div></form>'+
+ '<div class="qr-qr-link"><div><strong>QR mở Nhật ký trên điện thoại</strong><p class="muted">Chỉ tài khoản Admin/Editor được ghi; vật tư sẽ được chọn trên điện thoại.</p></div><button id="qrLinkCreate" type="button">Tạo QR link</button><a id="qrLinkText" href="?tab=records" target="_blank" rel="noopener">Mở liên kết Nhật ký</a><div id="qrLinkImage" aria-label="Mã QR mở Nhật ký"></div></div>'+
  '<div class="qr-stock-utility"><button id="qrStockStart" type="button">Mở camera quét QR</button><button id="qrStockStop" type="button" hidden>Dừng camera</button>'+
  '<label>Nhập mã QR thủ công<input id="qrStockCode" placeholder="Mã vật tư từ QR"></label><button id="qrStockApply" type="button">Chọn mã</button></div>'+
  '<video id="qrStockVideo" playsinline muted hidden></video><p id="qrStockBalance" class="muted"></p>'+
  '<p id="qrStockStatus" role="status" aria-live="polite">Chưa ghi giao dịch.</p>'+
  '<details><summary>8 giao dịch gần nhất</summary><div class="scroll"><table><thead><tr><th>Thời gian</th><th>Loại</th><th>Vật tư</th><th>Số lượng</th></tr></thead><tbody id="qrStockRecent"></tbody></table></div></details></div>';
+ $('qrStockGreen').onchange=()=>{ $('qrStockSearch').value='';refresh() };
  $('qrStockForm').onsubmit=submit;$('qrStockItem').onchange=()=>{const x=catalog().find(x=>x.code===$('qrStockItem').value);$('qrStockSearch').value=x?x.code+' · '+x.name:'';updateStock()};
  $('qrStockSearch').oninput=suggestMaterial;$('qrStockSearch').onchange=applyMaterialSearch;
  $('qrStockStart').onclick=startCamera;$('qrStockStop').onclick=stopCamera;
  $('qrStockApply').onclick=()=>selectCode($('qrStockCode').value);
+ $('qrLinkCreate').onclick=()=>{
+  const url=new URL(location.pathname,location.origin);url.searchParams.set('tab','records');
+  $('qrLinkText').href=url.href;$('qrLinkText').textContent=url.href;
+  const target=$('qrLinkImage');target.innerHTML='';
+  if(typeof window.QRCode==='function')new window.QRCode(target,{text:url.href,width:160,height:160,correctLevel:window.QRCode.CorrectLevel.M});
+  else status('Không tải được thư viện tạo QR. Có thể sao chép liên kết Nhật ký.',true);
+ };
  refresh();
 }
 export function unmountQrStock(){stopCamera();db=null;user=null;role=null;const mount=$('qrStockMount');if(mount)mount.innerHTML=''}
