@@ -17,7 +17,8 @@ const fields=[
  ['code','Mã vật tư','text'],['nameZh','Tên tiếng Trung','text'],['group','Nhóm rác / nhóm chi phí','text'],
  ['quantity','Số lượng / m³ trong ngày','number'],['unit','Đơn vị','text'],['meter','Chỉ số đồng hồ hiện tại','number'],
  ['previous','Chỉ số đồng hồ trước','number'],['spec','Quy cách','text'],['worker','Nhân viên','text'],
- ['price','Đơn giá (VND)','number'],['amount','Thành tiền (VND)','number'],['note','Ghi chú','text']
+ ['price','Đơn giá (VND)','number'],['amount','Thành tiền (VND)','number'],
+ ['consumedQuantity','Tiêu thụ / khối lượng','number'],['consumedUnit','Đơn vị tiêu thụ','text'],['costGroup','Nhóm chi phí','text'],['note','Ghi chú','text']
 ];
 function manualModel(){
  const kind=el('opsKind').value;
@@ -29,9 +30,9 @@ function manualModel(){
    stock_in:['date','kind','code','name','spec','quantity','unit','worker','price','amount','note'],
    stock_opening:['date','kind','code','name','spec','quantity','unit','note'],
    stock_out:['date','kind','code','name','spec','quantity','unit','worker','note'],
-   water_cost_month:['date','kind','name','quantity','unit','price','note'],
+   water_cost_month:['date','kind','name','costGroup','quantity','unit','price','consumedQuantity','consumedUnit','note'],
    water_cost_total:['date','kind','quantity','unit','note'],
-   green_cost_detail:['date','kind','name','quantity','unit','price','note'],
+   green_cost_detail:['date','kind','name','costGroup','quantity','unit','price','consumedQuantity','consumedUnit','note'],
    green_cost_total:['date','kind','quantity','unit','note'],
    waste_finance_month:['date','kind','name','quantity','unit','note']
   };return map[kind]?.includes(name);
@@ -48,7 +49,7 @@ function formRecord(){
  const kind=el('opsKind').value,obj={kind,quantity:NaN,sourceFile:'Nhập tay',sourceSheet:'Manual',sourceRow:Date.now(),year:0};
  el('opsManualFields').querySelectorAll('[data-op-field]').forEach(x=>{
   const k=x.dataset.opField;
-  obj[k]=['quantity','meter','previous','price','amount'].includes(k)?(x.value.trim()===''?null:Number(x.value)):x.value.trim();
+  obj[k]=['quantity','meter','previous','price','amount','consumedQuantity'].includes(k)?(x.value.trim()===''?null:Number(x.value)):x.value.trim();
  });
  if((kind==='water_in'||kind==='water_out')&&obj.quantity===null&&Number.isFinite(obj.meter)&&Number.isFinite(obj.previous))obj.quantity=obj.meter-obj.previous;
  if(kind==='stock_in'&&obj.amount===null&&Number.isFinite(obj.price)&&Number.isFinite(obj.quantity))obj.amount=obj.quantity*obj.price;
