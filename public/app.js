@@ -111,12 +111,27 @@ function renderExecutiveInsights(rows){
   '</span><div><h4>'+esc(x.title)+'</h4><p>'+esc(x.detail)+'</p></div></article>').join('');
 }
 
+function journalRows(){
+ const year=el('recordYear')?.value||'all',month=el('recordMonth')?.value||'all';
+ return [...data,...reviewData].filter(x=>(year==='all'||x.date.slice(0,4)===year)&&(month==='all'||x.date.slice(5,7)===month));
+}
+function refreshJournalPeriods(){
+ const yearSelect=el('recordYear'),monthSelect=el('recordMonth');
+ if(!yearSelect||!monthSelect)return;
+ const all=[...data,...reviewData],oldYear=yearSelect.value||'all',oldMonth=monthSelect.value||'all';
+ const years=[...new Set(all.map(x=>x.date.slice(0,4)).filter(y=>/^\d{4}$/.test(y)))].sort().reverse();
+ yearSelect.innerHTML='<option value="all">Tất cả các năm</option>'+years.map(y=>'<option value="'+y+'">'+y+'</option>').join('');
+ yearSelect.value=years.includes(oldYear)?oldYear:'all';
+ const months=[...new Set(all.filter(x=>yearSelect.value==='all'||x.date.startsWith(yearSelect.value)).map(x=>x.date.slice(5,7)))].sort();
+ monthSelect.innerHTML='<option value="all">Tất cả các tháng</option>'+months.map(m=>'<option value="'+m+'">Tháng '+m+'</option>').join('');
+ monthSelect.value=months.includes(oldMonth)?oldMonth:'all';
+}
 function selectedRecords(){
  const kind=el('kind')?.value||'all',item=el('recordItem')?.value||'all',unit=el('recordUnit')?.value||'all';
- return current().filter(x=>(kind==='all'||x.kind===kind)&&(item==='all'||String(x.name||'')===item)&&(unit==='all'||String(x.unit||'')===unit));
+ return journalRows().filter(x=>(kind==='all'||x.kind===kind)&&(item==='all'||String(x.name||'')===item)&&(unit==='all'||String(x.unit||'')===unit));
 }
 function refreshRecordChoices(){
- const kind=el('kind')?.value||'all',base=current().filter(x=>kind==='all'||x.kind===kind);
+ const kind=el('kind')?.value||'all',base=journalRows().filter(x=>kind==='all'||x.kind===kind);
  for(const [id,key] of [['recordItem','name'],['recordUnit','unit']]){
   const sel=el(id);if(!sel)continue;const old=sel.value;
   const vals=[...new Set(base.map(x=>String(x[key]||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'vi'));
@@ -140,8 +155,9 @@ function render(){
  chart('categoryChart','doughnut',top.map(x=>x[0]),[{data:top.map(x=>x[1])}]);
  chart('moneyChart','bar',months,[{label:t('Chi phí'),data:monthly(r,'cost'),backgroundColor:'#d18c52'},{label:t('Doanh thu'),data:monthly(r,'revenue'),backgroundColor:'#128e77'}]);
  refreshRecordChoices();
+ refreshJournalPeriods();
  const filtered=selectedRecords().sort((a,b)=>b.date.localeCompare(a.date));
- el('recordRows').innerHTML=filtered.slice(0,1500).map(x=>'<tr><td>'+esc(x.date)+'</td><td>'+esc(names[x.kind])+'</td><td>'+esc(x.name)+'</td><td>'+fmt(x.value)+'</td><td>'+esc(x.unit)+'</td><td>'+esc(x.source)+'</td></tr>').join('');
+ el('recordRows').innerHTML=filtered.slice(0,1500).map(x=>'<tr><td>'+esc(x.date)+'</td><td>'+esc(x.date.slice(5,7))+'</td><td>'+esc(x.date.slice(0,4))+'</td><td>'+esc(names[x.kind])+'</td><td>'+esc(x.name)+'</td><td>'+fmt(x.value)+'</td><td>'+esc(x.unit)+'</td><td>'+esc(x.source)+'</td></tr>').join('');
  if(el('recordCount'))el('recordCount').textContent='Hiển thị '+Math.min(filtered.length,1500)+'/'+filtered.length+' dòng';
  const totals=new Map();
  for(const x of filtered){const unit=String(x.unit||'').trim()||'không có ĐVT';totals.set(unit,(totals.get(unit)||0)+Number(x.value||0))}
@@ -224,7 +240,7 @@ const syncYear=()=>{
 };
 el('from').onchange=syncYear;el('to').onchange=syncYear;
 document.addEventListener('ehs-language-change',()=>{render();renderOperationsReport()});
-el('refresh').onclick=async()=>{await reload();};el('kind').onchange=render;el('recordItem').onchange=render;el('recordUnit').onchange=render;el('exportExcel').onclick=()=>xlsxExport('EHS_du_lieu.xlsx');el('reportExcel').onclick=()=>xlsxExport('EHS_bao_cao.xlsx');
+el('refresh').onclick=async()=>{await reload();};el('recordYear').onchange=()=>{el('recordMonth').value='all';render()};el('recordMonth').onchange=render;el('kind').onchange=render;el('recordItem').onchange=render;el('recordUnit').onchange=render;el('exportExcel').onclick=()=>xlsxExport('EHS_du_lieu.xlsx');el('reportExcel').onclick=()=>xlsxExport('EHS_bao_cao.xlsx');
 el('printReport').onclick=()=>{const w=window.open('','_blank');if(!w)return alert('Bật popup để in');w.document.write('<html><head><meta charset="utf-8"><style>body{font-family:Arial;padding:30px;font-size:12px}table{width:100%;border-collapse:collapse;page-break-inside:auto}tr{page-break-inside:avoid}td,th{border:1px solid #ddd;padding:6px}button,.controls{display:none}</style></head><body><h1>BÁO CÁO EHS</h1>'+el('reportBody').innerHTML+el('opsReport').innerHTML+'</body></html>');w.document.close();w.print()};
 el('reportPpt').onclick=()=>{if(!window.pptxgen)return alert('Không tải được PowerPoint');const p=new window.pptxgen();p.layout='LAYOUT_WIDE';const s=p.addSlide();s.addText('BÁO CÁO MÔI TRƯỜNG EHS',{x:.6,y:.6,w:11,h:.7,fontSize:27,bold:true});s.addText(el('from').value+' – '+el('to').value,{x:.6,y:1.5,w:10,h:.5,fontSize:18});['waste','water_in','water_out','cost','revenue'].forEach((k,i)=>s.addText(names[k]+': '+fmt(sum(current(),k)),{x:.7,y:2.2+i*.7,w:10,h:.5,fontSize:18}));p.writeFile({fileName:'EHS_bao_cao.pptx'})};
 initFactoryMap();initCompliance();initCostExplorer();initSimpleFinance();
