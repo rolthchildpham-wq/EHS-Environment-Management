@@ -39,3 +39,18 @@ test('Journal contains QR entry and reports open in financial overview',()=>{
  assert.match(app,/mountQrStock\(db,user,role,getAllOperations,reload\)/);
  assert.match(app,/initSimpleFinance\(\)/);
 });
+
+test('QR journal cleanup is safe before the QR form is mounted',()=>{
+ const code=r('public/ehs-qr-stock.js');
+ assert.match(code,/const stop=\$\('qrStockStop'\);if\(stop\)stop\.hidden=true/);
+ assert.match(code,/id="qrStockWater" checked/);
+ assert.match(code,/id="qrStockGreen"/);
+ assert.match(code,/qrLinkCreate/);
+ assert.match(code,/searchParams\.set\('tab','records'\)/);
+});
+test('Login navigation opens journal and keeps report controls guarded',()=>{
+ const app=r('public/app.js'),html=r('public/index.html');
+ assert.match(app,/requestedTab=new URLSearchParams\(location\.search\)\.get\('tab'\)/);
+ assert.match(app,/if\(!summary\|\|!details\|\|!searchLabel\)return/);
+ assert.match(html,/id="qrStockMount"/);
+});
