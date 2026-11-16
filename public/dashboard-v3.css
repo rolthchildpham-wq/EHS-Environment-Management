@@ -337,3 +337,47 @@ details summary{font-weight:760;color:#425d71}
 #records .ehs-compact-filters button{flex:0 0 auto;min-height:40px}
 #records .ehs-compact-filters .muted{align-self:center;white-space:nowrap}
 #recordTotals{font-weight:750;background:#eaf7f2;border-radius:8px;padding:10px 12px;color:#185d4c;margin:10px 0 0}
+
+/* One-screen Excel-like report: one period selector, two immediate tables. */
+#reports .ehs-one-dashboard{display:block;min-width:0}
+#reports .ehs-dashboard-toolbar{
+ display:flex;align-items:center;justify-content:space-between;gap:14px;
+ padding:14px 18px;background:#fff;border:1px solid #e1eaf0;border-radius:12px;margin-bottom:14px;
+}
+#reports .ehs-dashboard-toolbar h2{font-size:19px;line-height:1.25;margin:0 0 4px;color:#12384a}
+#reports .ehs-dashboard-toolbar span{font-size:12px;color:#607986}
+#reports .ehs-dashboard-actions{display:flex;align-items:end;gap:9px;flex-wrap:nowrap}
+#reports .ehs-dashboard-actions label{display:flex;flex-direction:row;align-items:center;gap:9px;white-space:nowrap;font-size:12px}
+#reports .ehs-dashboard-actions select{height:42px;min-width:152px;font-weight:700}
+#reports .ehs-dashboard-actions button{height:42px;white-space:nowrap;padding:8px 14px}
+#reports .ehs-cost-dual{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
+#reports .ehs-cost-panel{display:block;min-width:0;background:#fff;border:1px solid #e1eaf0;border-radius:13px;overflow:hidden}
+#reports .ehs-cost-heading{padding:13px 15px 10px;border-bottom:1px solid #e1eaf0}
+#reports .ehs-cost-heading h3{font-size:15px;font-weight:850;color:#0f5e69;margin:0 0 5px}
+#reports .ehs-cost-heading .muted{display:block;font-size:11px;line-height:1.4}
+#reports .ehs-cost-heading [data-ok="true"]{color:#157c61}
+#reports .ehs-cost-tablewrap{overflow-x:auto;width:100%}
+#reports .ehs-excel-cost{width:100%;border-collapse:collapse;border-spacing:0;font-size:11.5px;min-width:510px}
+#reports .ehs-excel-cost th,#reports .ehs-excel-cost td{padding:9px 10px;border-bottom:1px solid #e6edf2;vertical-align:middle}
+#reports .ehs-excel-cost thead th{position:static;background:#edf5f8;font-size:11px;line-height:1.35;color:#25485a;white-space:normal;text-align:right}
+#reports .ehs-excel-cost thead th:first-child{text-align:left;width:43%}
+#reports .ehs-excel-cost td{white-space:nowrap;text-align:right;color:#304c5b;font-variant-numeric:tabular-nums}
+#reports .ehs-excel-cost td:first-child{text-align:left;white-space:normal;min-width:170px}
+#reports .ehs-excel-cost .ehs-excel-group th{position:static;text-align:left;background:#dfeaf2;color:#204c63;font-size:11.5px;padding:9px 10px}
+#reports .ehs-excel-cost .ehs-excel-subtotal td{background:#f3f7fa;color:#20485b;font-weight:750}
+#reports .ehs-excel-cost .ehs-excel-grand td{background:#e0f5eb;font-weight:850;color:#0b6658;border-top:2px solid #15a68c;font-size:12px}
+#reports .ehs-excel-cost .ehs-empty-report{text-align:center;color:#778896;padding:24px 10px}
+#reports .ehs-extra-reports{margin-top:16px;padding:0;background:transparent;border:0}
+#reports .ehs-extra-reports>summary{list-style:revert;cursor:pointer;font-size:12px;color:#526e80;font-weight:750;padding:12px 14px;border:1px solid #e1eaf0;border-radius:9px;background:#fff}
+#reports .ehs-extra-reports[open]>summary{margin-bottom:12px}
+@media(max-width:1200px){
+ #reports .ehs-cost-dual{grid-template-columns:1fr}
+ #reports .ehs-excel-cost{min-width:0}
+}
+@media(max-width:650px){
+ #reports .ehs-dashboard-toolbar{padding:12px;flex-direction:column;align-items:stretch}
+ #reports .ehs-dashboard-actions{justify-content:space-between}
+ #reports .ehs-dashboard-actions label{flex:1}
+ #reports .ehs-dashboard-actions select{width:100%;min-width:0}
+ #reports .ehs-excel-cost{min-width:500px}
+}
