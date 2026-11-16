@@ -1,4 +1,4 @@
-import {mountQrStock,unmountQrStock} from './ehs-qr-stock.js?v=20261116qrc';
+import {mountQrStock,unmountQrStock} from './ehs-qr-stock.js?v=20261116fixnull';
 import {initSimpleFinance,setSimpleFinanceRecords} from './ehs-simple-finance.js?v=20261116fa';
 import {mountPublicPublisher} from './ehs-public-publish.js?v=20261116a';
 import {initCostExplorer,setCostExplorerRecords,configureCostExplorer,getCostReportRows,setCostExplorerView,setCostExplorerPeriod} from './ehs-cost-detail.js?v=20261116drill2';
