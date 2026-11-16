@@ -133,7 +133,7 @@ export function mountQrStock(database,actor,memberRole,rows,onUpdate){
  if(!user||!['admin','editor'].includes(role)){mount.innerHTML='<div class="panel"><h2>Quét QR · Vật tư</h2><p>Chỉ Admin/Editor có quyền nhập, xuất vật tư. Viewer chỉ được xem báo cáo.</p></div>';return}
  mount.innerHTML='<div class="panel qr-stock-panel"><div class="qr-stock-heading"><div><h2>Quét QR · Nhập / Xuất vật tư</h2><p class="muted">Quét mã QR trên vật tư; dùng danh mục đã có ở sheet Nhập/Xuất. Tự lưu thời gian giao dịch bằng Firebase.</p></div><span class="qr-tag">Giao dịch thực tế</span></div>'+
  '<form id="qrStockForm"><div class="qr-stock-controls"><label>Loại giao dịch<select id="qrStockKind"><option value="stock_out">Xuất / sử dụng</option><option value="stock_in">Nhập kho</option></select></label>'+
- '<label class="qr-category-check"><input type="checkbox" id="qrStockGreen"> Dùng cho Cây xanh <small>(bỏ tick = XLNT)</small></label>'+ 
+ '<div class="qr-category-picker" role="group" aria-label="Chọn nơi sử dụng vật tư"><label><input type="checkbox" id="qrStockWater" checked> XLNT</label><label><input type="checkbox" id="qrStockGreen"> Cây xanh</label></div>'+ 
  '<label>Tìm vật tư theo tên / mã<input id="qrStockSearch" list="qrStockSuggestions" autocomplete="off" placeholder="Gõ tên để hiện gợi ý..."><datalist id="qrStockSuggestions"></datalist></label>'+ 
  '<label>Loại vật tư<select id="qrStockItem" required></select></label>'+
  '<label>Số lượng<input id="qrStockQuantity" type="number" min="0.001" step="any" inputmode="decimal" required placeholder="0"></label>'+
@@ -145,7 +145,12 @@ export function mountQrStock(database,actor,memberRole,rows,onUpdate){
  '<video id="qrStockVideo" playsinline muted hidden></video><p id="qrStockBalance" class="muted"></p>'+
  '<p id="qrStockStatus" role="status" aria-live="polite">Chưa ghi giao dịch.</p>'+
  '<details><summary>8 giao dịch gần nhất</summary><div class="scroll"><table><thead><tr><th>Thời gian</th><th>Loại</th><th>Vật tư</th><th>Số lượng</th></tr></thead><tbody id="qrStockRecent"></tbody></table></div></details></div>';
- $('qrStockGreen').onchange=()=>{ $('qrStockSearch').value='';refresh() };
+ const changeCategory=green=>{
+  $('qrStockGreen').checked=green;$('qrStockWater').checked=!green;
+  $('qrStockSearch').value='';refresh();
+ };
+ $('qrStockWater').onchange=()=>changeCategory(false);
+ $('qrStockGreen').onchange=()=>changeCategory(true);
  $('qrStockForm').onsubmit=submit;$('qrStockItem').onchange=()=>{const x=catalog().find(x=>x.code===$('qrStockItem').value);$('qrStockSearch').value=x?x.code+' · '+x.name:'';updateStock()};
  $('qrStockSearch').oninput=suggestMaterial;$('qrStockSearch').onchange=applyMaterialSearch;
  $('qrStockStart').onclick=startCamera;$('qrStockStop').onclick=stopCamera;
