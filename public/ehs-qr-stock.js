@@ -26,7 +26,7 @@ function refresh(){
  const before=select.value;
  select.innerHTML='<option value="">Chọn vật tư...</option>'+list.map(x=>'<option value="'+esc(x.code)+'">'+esc(x.code+' · '+x.name+' ('+x.unit+')')+'</option>').join('');
  select.value=list.some(x=>x.code===before)?before:'';
- updateStock();
+ suggestMaterial();updateStock();
  const history=getRows().filter(r=>operational(r)).sort((a,b)=>
   (b.createdAt?.seconds||0)-(a.createdAt?.seconds||0)).slice(0,8);
  $('qrStockRecent').innerHTML=history.map(r=>'<tr><td>'+esc(r.createdAt?.toDate?.().toLocaleString('vi-VN')||r.date||'')+'</td><td>'+esc(r.kind==='stock_in'?'Nhập':'Xuất')+'</td><td>'+esc(r.name||r.code)+'</td><td>'+fmt(r.quantity)+' '+esc(r.unit||'')+'</td></tr>').join('')||'<tr><td colspan="4">Chưa có giao dịch nhập/xuất.</td></tr>';
@@ -34,6 +34,19 @@ function refresh(){
 function updateStock(){
  const code=$('qrStockItem')?.value||'',item=catalog().find(x=>x.code===code);
  $('qrStockBalance').textContent=item?'Tồn theo giao dịch Nhập/Xuất đã lưu: '+fmt(balance(code))+' '+item.unit:'Chọn một mã vật tư để xem tồn';
+}
+function suggestMaterial(){
+ const q=String($('qrStockSearch')?.value||'').toLocaleLowerCase('vi').trim();
+ const options=catalog().filter(x=>!q||[x.name,x.code].some(z=>z.toLocaleLowerCase('vi').includes(q))).slice(0,30);
+ $('qrStockSuggestions').innerHTML=options.map(x=>'<option value="'+esc(x.code+' · '+x.name)+'"></option>').join('');
+ const exact=catalog().find(x=>x.code+' · '+x.name===$('qrStockSearch').value||x.code===$('qrStockSearch').value);
+ if(exact){$('qrStockItem').value=exact.code;updateStock()}
+}
+function applyMaterialSearch(){
+ const term=String($('qrStockSearch')?.value||'').trim();
+ const found=catalog().find(x=>x.code+' · '+x.name===term||x.code===term||x.name.toLocaleLowerCase('vi')===term.toLocaleLowerCase('vi'));
+ if(!found){status('Chưa có vật tư phù hợp. Hãy chọn một dòng gợi ý hoặc quét QR.',true);return}
+ $('qrStockItem').value=found.code;updateStock();status('Đã chọn '+found.name+' ('+found.code+').');
 }
 function readCode(raw){
  const s=String(raw||'').trim();
@@ -47,7 +60,7 @@ function readCode(raw){
 function selectCode(raw){
  const code=readCode(raw),list=catalog();
  if(!list.some(x=>x.code===code)){status('Mã QR '+(code||'không hợp lệ')+' chưa có trong danh mục nhập/xuất thực tế. Hãy chọn vật tư có sẵn hoặc nhập mã đúng.',true);return}
- $('qrStockItem').value=code;updateStock();status('Đã nhận dạng mã '+code+'. Chọn Nhập hoặc Xuất và điền số lượng.');
+ $('qrStockItem').value=code;$('qrStockSearch').value=code+' · '+catalog().find(x=>x.code===code).name;updateStock();status('Đã nhận dạng mã '+code+'. Chọn Nhập hoặc Xuất và điền số lượng.');
 }
 function stopCamera(){
  scanLoop++;
@@ -86,17 +99,18 @@ async function submit(e){
  locked=true;$('qrStockSave').disabled=true;
  try{
   const now=new Date(),note=String($('qrStockNote').value||'').trim().slice(0,1000);
+  const category=$('qrStockGreen')?.checked?'Cây xanh':'XLNT';
   const payload={
    date:localDay(),kind,quantity:qty,unit:item.unit,name:item.name,code:item.code,
    spec:'',worker:'',note,price:kind==='stock_in'&&item.price>0?item.price:null,
    amount:kind==='stock_in'&&item.price>0?Number((item.price*qty).toFixed(2)):null,
-   previous:null,meter:null,group:'',nameZh:'',sourceSheet:'QR',sourceRow:now.getTime(),
+   previous:null,meter:null,group:category,nameZh:'',sourceSheet:'QR',sourceRow:now.getTime(),
    sourceFile:'QR scan',year:now.getFullYear(),consumedQuantity:null,consumedUnit:'',
    costGroup:'',nameVi:'',importId:'qr_'+now.getTime(),createdBy:user.uid,createdAt:serverTimestamp()
   };
   await setDoc(doc(collection(db,'operations')),payload);
   $('qrStockQuantity').value='';$('qrStockNote').value='';
-  status('Đã lưu '+(kind==='stock_in'?'NHẬP':'XUẤT')+' '+fmt(qty)+' '+item.unit+' · '+item.name+'. Thời gian do Firebase ghi tự động.');
+  status('Đã lưu '+(kind==='stock_in'?'NHẬP':'XUẤT')+' '+fmt(qty)+' '+item.unit+' · '+item.name+' · '+category+'. Thời gian do Firebase ghi tự động.');
   await onSaved();
   refresh();$('qrStockItem').value=code;updateStock();
  }catch(error){status('Lưu thất bại: '+error.message,true)}
@@ -109,6 +123,8 @@ export function mountQrStock(database,actor,memberRole,rows,onUpdate){
  if(!user||!['admin','editor'].includes(role)){mount.innerHTML='<div class="panel"><h2>Quét QR · Vật tư</h2><p>Chỉ Admin/Editor có quyền nhập, xuất vật tư. Viewer chỉ được xem báo cáo.</p></div>';return}
  mount.innerHTML='<div class="panel qr-stock-panel"><div class="qr-stock-heading"><div><h2>Quét QR · Nhập / Xuất vật tư</h2><p class="muted">Quét mã QR trên vật tư; dùng danh mục đã có ở sheet Nhập/Xuất. Tự lưu thời gian giao dịch bằng Firebase.</p></div><span class="qr-tag">Giao dịch thực tế</span></div>'+
  '<form id="qrStockForm"><div class="qr-stock-controls"><label>Loại giao dịch<select id="qrStockKind"><option value="stock_out">Xuất / sử dụng</option><option value="stock_in">Nhập kho</option></select></label>'+
+ '<label class="qr-category-check"><input type="checkbox" id="qrStockGreen"> Dùng cho Cây xanh <small>(bỏ tick = XLNT)</small></label>'+ 
+ '<label>Tìm vật tư theo tên / mã<input id="qrStockSearch" list="qrStockSuggestions" autocomplete="off" placeholder="Gõ tên để hiện gợi ý..."><datalist id="qrStockSuggestions"></datalist></label>'+ 
  '<label>Loại vật tư<select id="qrStockItem" required></select></label>'+
  '<label>Số lượng<input id="qrStockQuantity" type="number" min="0.001" step="any" inputmode="decimal" required placeholder="0"></label>'+
  '<label>Ghi chú (không bắt buộc)<input id="qrStockNote" maxlength="1000" placeholder="Bộ phận / mục đích sử dụng"></label>'+
@@ -118,7 +134,8 @@ export function mountQrStock(database,actor,memberRole,rows,onUpdate){
  '<video id="qrStockVideo" playsinline muted hidden></video><p id="qrStockBalance" class="muted"></p>'+
  '<p id="qrStockStatus" role="status" aria-live="polite">Chưa ghi giao dịch.</p>'+
  '<details><summary>8 giao dịch gần nhất</summary><div class="scroll"><table><thead><tr><th>Thời gian</th><th>Loại</th><th>Vật tư</th><th>Số lượng</th></tr></thead><tbody id="qrStockRecent"></tbody></table></div></details></div>';
- $('qrStockForm').onsubmit=submit;$('qrStockItem').onchange=updateStock;
+ $('qrStockForm').onsubmit=submit;$('qrStockItem').onchange=()=>{const x=catalog().find(x=>x.code===$('qrStockItem').value);$('qrStockSearch').value=x?x.code+' · '+x.name:'';updateStock()};
+ $('qrStockSearch').oninput=suggestMaterial;$('qrStockSearch').onchange=applyMaterialSearch;
  $('qrStockStart').onclick=startCamera;$('qrStockStop').onclick=stopCamera;
  $('qrStockApply').onclick=()=>selectCode($('qrStockCode').value);
  refresh();
