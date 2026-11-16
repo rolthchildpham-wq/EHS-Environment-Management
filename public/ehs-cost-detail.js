@@ -40,7 +40,7 @@ function mappedRows(type,scope){
   const unit=String(config.unit||'').trim();
   if(unit&&x.consumedUnit&&unit!==String(x.consumedUnit).trim())continue;
   const used=outs.reduce((a,r)=>a+Number(r.quantity||0),0);
-  const inputs=records.filter(r=>r.kind==='stock_in'&&String(r.code||r.name||'')===config.code&&r.date<=x.date)
+  const inputs=records.filter(r=>r.kind==='stock_in'&&String(r.code||r.name||'')===config.code&&r.date<=period(x)+'-31')
    .sort((a,b)=>String(b.date).localeCompare(String(a.date)));
   const price=Number(x.price)>0?Number(x.price):Number(inputs.find(r=>Number(r.price)>0)?.price||0);
   x.consumedQuantity=used;x.consumedUnit=unit||x.consumedUnit;
