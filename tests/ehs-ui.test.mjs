@@ -31,7 +31,9 @@ test('greenhouse gas reporting requires traceable user supplied emission factor'
 
 test('cost explorer is prominent and connected to authenticated operations',()=>{
  const html=read('public/index.html'),app=read('public/app.js'),explorer=read('public/ehs-cost-detail.js');
- assert.match(html,/<section id="reports"><div id="simpleFinanceMount"><\/div>/);
+ assert.match(html,/<section id="reports"><div class="ehs-report-selector">/);
+ assert.match(html,/id="simpleFinanceMount"/);
+ assert.match(html,/id="reportViewMode"/);
  assert.match(html,/id="costExplorerMount"/);
  assert.match(html,/id="qrStockMount"/);
  assert.match(html,/Thiết kế bởi BacPham/);
