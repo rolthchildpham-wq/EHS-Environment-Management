@@ -1,7 +1,7 @@
-import {mountQrStock,unmountQrStock} from './ehs-qr-stock.js?v=20261116qrb';
+import {mountQrStock,unmountQrStock} from './ehs-qr-stock.js?v=20261116qrc';
 import {initSimpleFinance,setSimpleFinanceRecords} from './ehs-simple-finance.js?v=20261116fa';
 import {mountPublicPublisher} from './ehs-public-publish.js?v=20261116a';
-import {initCostExplorer,setCostExplorerRecords,configureCostExplorer,getCostReportRows} from './ehs-cost-detail.js?v=20261116mapping';
+import {initCostExplorer,setCostExplorerRecords,configureCostExplorer,getCostReportRows} from './ehs-cost-detail.js?v=20261116qrc';
 import {initFactoryMap,mountFactoryMap} from './factory-map.js?v=20261112f';
 import {initCompliance,mountCompliance,refreshCompliance} from './ehs-compliance.js?v=20261112f';
 import {installI18n,t} from './i18n.js?v=20261112f';
@@ -199,7 +199,7 @@ async function reviews(){
 }
 
 installI18n();
-const navIcons={stockqr:'scan-line',dashboard:'◫',records:'≡',finance:'◈',map:'⌖',import:'↥',reports:'▤',admin:'⚙',compliance:'✧'};
+const navIcons={stockqr:'▣',dashboard:'◫',records:'≡',finance:'◈',map:'⌖',import:'↥',reports:'▤',admin:'⚙',compliance:'✧'};
 el('tabs').innerHTML=Object.entries(labels).map(([id,title],i)=>
  '<button data-tab="'+id+'" class="'+(i===0?'active':'')+'"><span class="nav-ico" aria-hidden="true">'+(navIcons[id]||'•')+'</span><span>'+t(title)+'</span></button>'
 ).join('');
