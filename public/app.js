@@ -1,7 +1,7 @@
 import {mountQrStock,unmountQrStock} from './ehs-qr-stock.js?v=20261116qrc';
 import {initSimpleFinance,setSimpleFinanceRecords} from './ehs-simple-finance.js?v=20261116fa';
 import {mountPublicPublisher} from './ehs-public-publish.js?v=20261116a';
-import {initCostExplorer,setCostExplorerRecords,configureCostExplorer,getCostReportRows} from './ehs-cost-detail.js?v=20261116qrc';
+import {initCostExplorer,setCostExplorerRecords,configureCostExplorer,getCostReportRows,setCostExplorerView,setCostExplorerPeriod} from './ehs-cost-detail.js?v=20261116drill';
 import {initFactoryMap,mountFactoryMap} from './factory-map.js?v=20261112f';
 import {initCompliance,mountCompliance,refreshCompliance} from './ehs-compliance.js?v=20261112f';
 import {installI18n,t} from './i18n.js?v=20261112f';
@@ -15,7 +15,7 @@ const el=id=>document.getElementById(id);
 const fmt=v=>Number(v||0).toLocaleString('vi-VN',{maximumFractionDigits:2});
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const names={waste:'Rác thải',water_in:'Nước vào',water_out:'Nước ra',stock_in:'Nhập vật tư',stock_out:'Xuất vật tư',cost:'Chi phí',revenue:'Doanh thu'};
-const labels={dashboard:'Tổng quan',stockqr:'QR vật tư',records:'Nhật ký',map:'Bản đồ',import:'Nhập liệu & Excel',reports:'Báo cáo',admin:'Quản trị',compliance:'Chỉ số EHS & ISO'};
+const labels={dashboard:'Tổng quan',records:'Nhật ký',map:'Bản đồ',import:'Nhập liệu & Excel',reports:'Báo cáo',admin:'Quản trị',compliance:'Chỉ số EHS & ISO'};
 let data=[],pending=[],reviewData=[],user=null,role=null,db=null,auth=null,charts={};
 const notice=s=>el('notice').textContent=s;
 const date=x=>String(x||'').slice(0,10);
@@ -199,7 +199,7 @@ async function reviews(){
 }
 
 installI18n();
-const navIcons={stockqr:'▣',dashboard:'◫',records:'≡',finance:'◈',map:'⌖',import:'↥',reports:'▤',admin:'⚙',compliance:'✧'};
+const navIcons={dashboard:'◫',records:'≡',finance:'◈',map:'⌖',import:'↥',reports:'▤',admin:'⚙',compliance:'✧'};
 el('tabs').innerHTML=Object.entries(labels).map(([id,title],i)=>
  '<button data-tab="'+id+'" class="'+(i===0?'active':'')+'"><span class="nav-ico" aria-hidden="true">'+(navIcons[id]||'•')+'</span><span>'+t(title)+'</span></button>'
 ).join('');
@@ -220,6 +220,25 @@ el('refresh').onclick=async()=>{await reload();};el('kind').onchange=render;el('
 el('printReport').onclick=()=>{const w=window.open('','_blank');if(!w)return alert('Bật popup để in');w.document.write('<html><head><meta charset="utf-8"><style>body{font-family:Arial;padding:30px;font-size:12px}table{width:100%;border-collapse:collapse;page-break-inside:auto}tr{page-break-inside:avoid}td,th{border:1px solid #ddd;padding:6px}button,.controls{display:none}</style></head><body><h1>BÁO CÁO EHS</h1>'+el('reportBody').innerHTML+el('opsReport').innerHTML+'</body></html>');w.document.close();w.print()};
 el('reportPpt').onclick=()=>{if(!window.pptxgen)return alert('Không tải được PowerPoint');const p=new window.pptxgen();p.layout='LAYOUT_WIDE';const s=p.addSlide();s.addText('BÁO CÁO MÔI TRƯỜNG EHS',{x:.6,y:.6,w:11,h:.7,fontSize:27,bold:true});s.addText(el('from').value+' – '+el('to').value,{x:.6,y:1.5,w:10,h:.5,fontSize:18});['waste','water_in','water_out','cost','revenue'].forEach((k,i)=>s.addText(names[k]+': '+fmt(sum(current(),k)),{x:.7,y:2.2+i*.7,w:10,h:.5,fontSize:18}));p.writeFile({fileName:'EHS_bao_cao.pptx'})};
 initFactoryMap();initCompliance();initCostExplorer();initSimpleFinance();
+const syncReportMode=()=>{
+ const mode=el('reportViewMode')?.value||'overview';
+ const specific=mode==='water'||mode==='green';
+ el('simpleFinanceMount').hidden=specific;
+ el('costExplorerMount').hidden=!specific;
+ el('reportItemSearchLabel').hidden=!specific;
+ if(specific){
+  setCostExplorerView(mode,el('reportItemSearch')?.value||'');
+  const year=el('simpleFinanceYear')?.value||el('dashboardYear')?.value||'';
+  const month=el('simpleFinanceMonth')?.value||'all';
+  setCostExplorerPeriod(month==='all'?year:year+'-'+month);
+ }
+};
+el('reportViewMode').onchange=()=>{el('reportItemSearch').value='';syncReportMode()};
+el('reportItemSearch').oninput=syncReportMode;
+for(const id of ['simpleFinanceYear','simpleFinanceMonth']){
+ el(id).addEventListener('change',syncReportMode);
+}
+syncReportMode();
 el('parseExcel').onclick=async()=>{const f=el('excelFile').files[0];if(!f)return alert('Chọn file Excel');try{if(!window.XLSX)throw Error('Không tải được XLSX');const book=XLSX.read(await f.arrayBuffer(),{type:'array',cellDates:true});pending=book.SheetNames.flatMap(n=>parseSheet(XLSX.utils.sheet_to_json(book.Sheets[n],{defval:null})));preview();el('importStatus').textContent='Đọc được '+pending.length+' dòng hợp lệ. Chỉ hỗ trợ định dạng cột chuẩn.'}catch(e){el('importStatus').textContent=e.message}};
 el('saveImport').onclick=async()=>{if(!pending.length)return alert('Chưa có dữ liệu');if(!db||!user||!['admin','editor'].includes(role))return alert('Bạn cần quyền editor/admin');if(!confirm('Lưu '+pending.length+' dòng?'))return;try{for(const x of pending)await addDoc(collection(db,'records'),{...x,createdBy:user.uid,createdAt:serverTimestamp()});pending=[];preview();await reload()}catch(e){alert(e.message)}};
 el('aiRead').disabled=true;
