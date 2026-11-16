@@ -10,7 +10,7 @@ const actions=[
  ['reports','Xem báo cáo tài chính, XLNT và Cây xanh','view'],
  ['report_export','Xuất Excel, PDF, PowerPoint','write'],
  ['map','Xem bản đồ nhà máy','view'],
- ['map_edit','Chỉnh sửa bản đồ và vị trí','write'],
+ ['map_edit','Chỉnh sửa bản đồ và vị trí','admin'],
  ['compliance','Xem chỉ số EHS & ISO','view'],
  ['ghg_write','Nhập dữ liệu phát thải','write'],
  ['review_approve','Phê duyệt chứng từ','admin'],
