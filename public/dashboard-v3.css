@@ -426,7 +426,7 @@ body:has(#reports.active) main > .controls{display:none}
 #reports #costExplorerMount .ehs-cost-panel{width:100%}
 #reports #costExplorerMount .ehs-dashboard-toolbar{padding:9px 12px;margin:0 0 10px}
 #reports #costExplorerMount .ehs-dashboard-toolbar>div:first-child{display:none}
-#reports #costExplorerMount .ehs-dashboard-actions label{display:none}
+#reports #costExplorerMount .ehs-dashboard-actions label{display:flex;font-size:12px}
 #reports #costExplorerMount .ehs-dashboard-actions{margin-left:auto}
 #reports #costExplorerMount .ehs-excel-cost{min-width:0;font-size:12px}
 #records #qrStockMount{margin-bottom:12px}
