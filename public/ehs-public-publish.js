@@ -39,6 +39,17 @@ export async function publishPublicReport(db,input,year,actor){
     price:x.price==null?null:num(x.price),amount:num(x.amount??x.quantity)
   }));
  }
+ const mismatches=[];
+ for(const m of monthly){
+  for(const [type,key] of [['water','waterCost'],['green','greenCost']]){
+   const detail=lines[type].filter(x=>x.month===m.month);
+   if(m[key]!==null&&m[key]!==undefined){
+    const actual=detail.reduce((a,x)=>a+Number(x.amount||0),0);
+    if(Math.abs(actual-Number(m[key]))>1)mismatches.push(m.month+' '+(type==='water'?'A.3':'C')+': tổng gốc '+num(m[key])+' / chi tiết '+actual);
+   }
+  }
+ }
+ if(mismatches.length)throw Error('Chưa thể công bố vì tổng và chi tiết không khớp: '+mismatches.slice(0,4).join('; ')+'. Hãy nhập lại Excel hoặc bổ sung hạng mục thủ công.');
  if(!monthly.length&&!lines.water.length&&!lines.green.length)throw Error('Chưa có dữ liệu thực để công bố năm '+year);
  if(lines.water.length+lines.green.length>1200)throw Error('Dữ liệu chi tiết quá lớn để công bố trong một tài liệu');
  const payload={published:true,year:String(year),monthly,water:lines.water,green:lines.green,updatedAt:serverTimestamp()};
