@@ -24,7 +24,7 @@ export const defaultMatrix=()=>Object.fromEntries(['editor','viewer'].map(role=>
 ]));
 let matrix=defaultMatrix(),currentRole=null,currentUser=null,currentDb=null;
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
-export const may=action=>currentRole==='admin'||Boolean(currentRole&&matrix[currentRole]?.[action]===true);
+export const may=action=>currentRole==='admin'||Boolean(matrix[currentRole||'viewer']?.[action]===true);
 export const rights=()=>JSON.parse(JSON.stringify(matrix));
 export function applyRights(){
  const page={dashboard:'dashboard',records:'journal',map:'map',import:'excel_import',reports:'reports',admin:'users_manage',compliance:'compliance'};
