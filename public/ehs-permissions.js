@@ -35,6 +35,7 @@ export function applyRights(){
  block('qrStockMount','journal');block('publicPublisherMount','public_publish');
  block('memberAdminMount','users_manage');block('resetDataMount','data_reset');
  block('exportExcel','report_export');block('reportExcel','report_export');
+ for(const id of ['costDashboardExport','simpleFinanceExport','opsExportAll','opsExportMonth'])block(id,'report_export');
  block('printReport','report_export');block('reportPpt','report_export');
  block('parseExcel','excel_import');block('saveImport','excel_import');
  block('submitEvidence','manual_entry');
