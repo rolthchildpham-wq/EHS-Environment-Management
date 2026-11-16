@@ -106,10 +106,11 @@ function paint(){
  el('opsWarnings').innerHTML=lastWarning.slice(0,12).map(s=>'<div>⚠ '+safe(s)+'</div>').join('')+
   (lastWarning.length>12?'<div>…và '+(lastWarning.length-12)+' cảnh báo khác.</div>':'');
 }
-function recordToDb(x,importId){
+function recordToDb(x,importId,prior=null){
  const keys=['date','kind','quantity','unit','name','code','spec','worker','note','price','amount','previous','meter','group','nameZh','sourceSheet','sourceRow','sourceFile','year','consumedQuantity','consumedUnit','costGroup','nameVi'];
  const obj={};for(const k of keys){const val=x[k];if(val!==undefined)obj[k]=val===null?null:val;}
  for(const k of ['unit','name','code','note','sourceFile','sourceSheet'])if(typeof obj[k]!=='string')obj[k]=String(obj[k]??'');
+ if(prior)return {...prior,...obj,importId,updatedBy:user.uid,updatedAt:serverTimestamp()};
  return {...obj,importId,createdBy:user.uid,createdAt:serverTimestamp()};
 }
 async function stableId(x){
@@ -122,10 +123,10 @@ async function save(){
  if(!pending.length)return notify('Chưa có dữ liệu chờ lưu.');
  const invalid=pending.map((r,i)=>[i+1,validate(r)]).filter(([,e])=>e);
  if(invalid.length)return notify('Có '+invalid.length+' dòng lỗi. Ví dụ dòng '+invalid[0][0]+': '+invalid[0][1]);
- if(!confirm('Lưu '+pending.length+' dòng lên Firestore? Trùng bản ghi Excel sẽ được bỏ qua.'))return;
+ if(!confirm('Lưu '+pending.length+' dòng lên Firestore? Các ô Excel thay đổi sẽ được cập nhật, các ô không đổi được giữ nguyên.'))return;
  el('opsSave').disabled=true;
  try{
-  let saved=0,duplicates=0;
+  let saved=0,updated=0,duplicates=0;
   const importId=new Date().toISOString();
   // 250 writes per atomic batch. Deterministic Excel IDs and read-before-create avoid duplicate imports.
   for(let i=0;i<pending.length;i+=250){
@@ -135,23 +136,29 @@ async function save(){
     r.sourceFile==='Nhập tay'?doc(collection(db,'operations')):doc(db,'operations',await stableId(r))
    ));
    // Resolve duplicate IDs concurrently in small groups, not one network round-trip per row.
-   const exists=new Array(chunk.length).fill(false);
+   const previousDocs=new Array(chunk.length).fill(null);
    for(let j=0;j<chunk.length;j+=25){
     const checks=await Promise.all(chunk.slice(j,j+25).map((r,k)=>
-     r.sourceFile==='Nhập tay'?Promise.resolve(false):getDoc(refs[j+k]).then(d=>d.exists())
+     r.sourceFile==='Nhập tay'?Promise.resolve(null):getDoc(refs[j+k]).then(d=>d.exists()?d.data():null)
     ));
-    checks.forEach((value,k)=>{exists[j+k]=value});
+    checks.forEach((value,k)=>{previousDocs[j+k]=value});
    }
    chunk.forEach((r,j)=>{
-    if(exists[j]){duplicates++;return}
+    const prior=previousDocs[j];
+    if(prior){
+     const fields=['quantity','unit','price','amount','consumedQuantity','consumedUnit','costGroup','note','nameVi','nameZh','group','spec','worker','meter','previous','year'];
+     const changed=fields.some(k=>JSON.stringify(prior[k]??null)!==JSON.stringify(r[k]??null));
+     if(!changed){duplicates++;return}
+     batch.set(refs[j],recordToDb(r,importId,prior));updated++;chunkCount++;return;
+    }
     batch.set(refs[j],recordToDb(r,importId));chunkCount++;
    });
    if(chunkCount){await batch.commit();saved+=chunkCount}
-   notify('Đã lưu '+saved+'/'+pending.length+' dòng; bỏ qua '+duplicates+' dòng đã tồn tại.');
+   notify('Đã lưu '+saved+'/'+pending.length+' dòng; cập nhật '+updated+' dòng; giữ nguyên '+duplicates+' dòng.');
   }
   pending=[];lastWarning=[];paint();
   if(refreshFn)await refreshFn();else await loadOperations();
-  notify('Hoàn tất: '+saved+' dòng được lưu, '+duplicates+' dòng trùng. Các số liệu đã đồng bộ.');
+  notify('Hoàn tất: '+saved+' dòng ghi, trong đó '+updated+' dòng cập nhật, '+duplicates+' dòng không đổi. Các số liệu đã đồng bộ.');
  }catch(e){notify('Lưu chưa hoàn tất: '+e.message+'. Những lô đã lưu trước đó vẫn giữ nguyên; hãy nhập lại file để bỏ qua bản ghi trùng.')}
  finally{el('opsSave').disabled=false}
 }
