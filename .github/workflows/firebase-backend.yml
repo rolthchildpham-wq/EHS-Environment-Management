@@ -1,5 +1,11 @@
 name: Deploy EHS Firestore Rules (Spark)
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'firestore.rules'
+      - 'tests/firestore-rules.test.mjs'
+      - '.github/workflows/firebase-backend.yml'
   workflow_dispatch:
 permissions:
   contents: read
@@ -15,6 +21,8 @@ jobs:
         run: |
           test "$FIREBASE_PROJECT_ID" = "ehs-environment-management"
           test -n "$FIREBASE_SERVICE_ACCOUNT"
+      - name: Validate Firestore rules structure
+        run: node --test tests/firestore-rules.test.mjs
       - name: Deploy Firestore rules (no Cloud Functions)
         env:
           FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
