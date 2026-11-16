@@ -17,10 +17,11 @@ function latestByMonth(rows) {
   return [...batches.values()].sort((a,b)=>b.time-a.time)[0]?.rows||[];
  });
 }
-export async function publishPublicReport(db,rows,year,actor){
+export async function publishPublicReport(db,input,year,actor){
  if(!/^\d{4}$/.test(String(year)))throw Error('Năm không hợp lệ');
  if(!actor)throw Error('Chỉ quản trị viên được công bố báo cáo');
- const source=Array.isArray(rows)?rows:[];
+ const source=Array.isArray(input)?input:(input?.operations||[]);
+ const costs=Array.isArray(input)?null:(input?.costs||null);
  const financial=reconcile(source,year+'-01-01',year+'-12-31');
  const monthly=financial.months.map(m=>({
   month:m.month,wasteKg:num(m.wasteKg),waterIn:num(m.waterIn),waterOut:num(m.waterOut),
@@ -30,7 +31,7 @@ export async function publishPublicReport(db,rows,year,actor){
  }));
  const lines={water:[],green:[]};
  for(const [type,kind] of [['water','water_cost_month'],['green','green_cost_detail']]){
-  lines[type]=latestByMonth(source.filter(r=>r.kind===kind&&period(r).startsWith(year))).map(x=>({
+  lines[type]=(costs?.[type]||latestByMonth(source.filter(r=>r.kind===kind&&period(r).startsWith(year)))).map(x=>({
     month:period(x),group:String(x.costGroup||'Chưa phân nhóm').slice(0,90),
     name:String(x.nameVi||x.name||'').split(/\r?\n/)[0].slice(0,180),
     unit:String(x.consumedUnit||'').slice(0,32),
