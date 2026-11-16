@@ -41,17 +41,24 @@ function rowsFor(type){
 }
 function getRows(){return rowsFor(selected)}
 function filteredRows(type=selected){
- const group=$('costExplorerGroup')?.value||'all',source=$('costExplorerSource')?.value||'all',filter=normalize($('costItemSearch')?.value||'');
- return rowsFor(type).filter(x=>(group==='all'||x.costGroup===group)&&(source==='all'||x.sourceSheet===source)
-  &&(!filter||[x.name,x.nameVi,x.nameZh,x.costGroup,x.sourceSheet].some(v=>normalize(v).includes(filter))));
+ const group=$('costExplorerGroup')?.value||'all',item=$('costExplorerItem')?.value||'all',filter=normalize($('costItemSearch')?.value||'');
+ return rowsFor(type).filter(x=>(group==='all'||x.costGroup===group)&&(item==='all'||costName(x)===item)
+  &&(!filter||[x.name,x.nameVi,x.nameZh,x.costGroup].some(v=>normalize(v).includes(filter))));
+}
+const costName=x=>String(x.nameVi||x.name||'').split(/\r?\n/)[0].trim();
+function setFilterOptions(id,values){
+ const e=$(id);if(!e)return;const old=e.value;
+ const vals=[...new Set(values.map(v=>String(v||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'vi'));
+ e.innerHTML='<option value="all">Tất cả</option>'+vals.map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join('');
+ e.value=vals.includes(old)?old:'all';
+}
+function updateItems(){
+ const group=$('costExplorerGroup')?.value||'all';
+ setFilterOptions('costExplorerItem',getRows().filter(x=>group==='all'||x.costGroup===group).map(costName));
 }
 function updateCategories(){
- const rows=getRows();
- for(const [id,k] of [['costExplorerGroup','costGroup'],['costExplorerSource','sourceSheet']]){
-  const e=$(id);if(!e)continue;const old=e.value,vals=[...new Set(rows.map(x=>String(x[k]||'').trim()).filter(Boolean))].sort();
-  e.innerHTML='<option value="all">Tất cả</option>'+vals.map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join('');
-  e.value=vals.includes(old)?old:'all';
- }
+ setFilterOptions('costExplorerGroup',getRows().map(x=>x.costGroup));
+ updateItems();
 }
 function updateMonths(){
  const sel=$('costExplorerMonth');if(!sel)return;
@@ -78,16 +85,22 @@ function render(){
  const fullSum=rows.reduce((a,x)=>a+Number(x.amount??x.quantity??0),0);
  const delta=total===null||full.length!==rows.length?null:total-fullSum;
  const columns=['Tháng',t('Nhóm chi phí'),t('Hạng mục'),t('Lượng tiêu thụ'),t('Đơn vị gốc'),t('Đơn giá (VND)'),t('Thành tiền (VND)'),t('Ô Excel'),t('Tên gốc Việt / Trung')];
- $('costExplorerRows').innerHTML=full.length?full.map(x=>'<tr>'+
- [
- month(x),x.costGroup||'—',
- displaySourceName(x,lang),
- n(consumedQuantity(x)),consumedUnit(x),
- n(x.price),n(x.amount??x.quantity),
- x.sourceSheet+'!'+x.sourceRow,
- x.name||''
- ].map((v,i)=>'<td '+(i===8?'data-no-translate':'')+'>'+esc(v)+'</td>').join('')+'</tr>').join(''):
- '<tr><td colspan="9">'+esc(t('Chưa có dòng chi tiết. Hãy nhập lại workbook chứa sheet A.3 và C.'))+'</td></tr>';
+ const ordered=full.slice().sort((a,b)=>String(a.costGroup||'').localeCompare(String(b.costGroup||''),'vi')||month(a).localeCompare(month(b))||costName(a).localeCompare(costName(b),'vi'));
+ const tableRows=[];let currentGroup=null,bucket=[];
+ const addSubtotal=()=>{
+  if(!bucket.length)return;
+  const count=bucket.length,amt=bucket.reduce((sum,x)=>sum+Number(x.amount??x.quantity??0),0);
+  tableRows.push('<tr class="ehs-cost-subtotal"><td colspan="6">Cộng nhóm '+esc(currentGroup)+' ('+count+' dòng)</td><td>'+esc(n(amt))+'</td><td colspan="2">VND</td></tr>');
+ };
+ for(const x of ordered){
+  const g=x.costGroup||'Chưa phân nhóm';
+  if(g!==currentGroup){addSubtotal();bucket=[];currentGroup=g;tableRows.push('<tr class="ehs-cost-group"><th colspan="9">'+esc(g)+'</th></tr>')}
+  bucket.push(x);
+  tableRows.push('<tr>'+[month(x),g,displaySourceName(x,lang),n(consumedQuantity(x)),consumedUnit(x),n(x.price),n(x.amount??x.quantity),x.sourceSheet+'!'+x.sourceRow,x.name||''].map((v,i)=>'<td '+(i===8?'data-no-translate':'')+'>'+esc(v)+'</td>').join('')+'</tr>');
+ }
+ addSubtotal();
+ if(ordered.length)tableRows.push('<tr class="ehs-cost-grand-total"><td colspan="6">TỔNG CỘNG ('+ordered.length+' dòng)</td><td>'+esc(n(lineSum))+'</td><td colspan="2">VND</td></tr>');
+ $('costExplorerRows').innerHTML=tableRows.join('')||'<tr><td colspan="9">Không có dữ liệu theo bộ lọc đang chọn.</td></tr>';
  $('costExplorerHead').innerHTML=columns.map(h=>'<th>'+esc(h)+'</th>').join('');
  $('costExplorerType').value=selected;
  const missing=translationState().missing.length;
@@ -99,7 +112,7 @@ function render(){
 function exportRows(){
  if(!window.XLSX)return alert('Không tải được công cụ xuất Excel.');
  const wb=window.XLSX.utils.book_new();
- const groups=[{type:'water',name:'A3 nuoc thai'},{type:'green',name:'C cay xanh'}];
+ const groups=[{type:selected,name:selected==='water'?'A3 nuoc thai':'C cay xanh'}];
  for(const {type,name} of groups){
   const lines=filteredRows(type);
   const data=lines.map(x=>({
@@ -145,10 +158,10 @@ export function initCostExplorer(){
  const mount=$('costExplorerMount');if(!mount)return;
  mount.innerHTML='<div class="panel" style="margin-bottom:16px;border:1px solid #b5d5d8"><h2>'+esc(t('Sổ chi tiết A.3 nước thải và C cây xanh'))+'</h2>'+
  '<p class="muted">'+esc(t('Hiển thị chi tiết theo tháng: hạng mục, lượng tiêu thụ, đơn vị gốc, đơn giá, thành tiền, nguồn Excel. Giá trị gốc không bị dịch hoặc sửa.'))+'</p>'+
- '<div class="controls"><label>'+esc(t('Loại báo cáo'))+'<select id="costExplorerType"><option value="water">'+esc(t(types.water.label))+'</option><option value="green">'+esc(t(types.green.label))+'</option></select></label>'+
+ '<div class="controls ehs-compact-filters"><label>'+esc(t('Loại báo cáo'))+'<select id="costExplorerType"><option value="water">'+esc(t(types.water.label))+'</option><option value="green">'+esc(t(types.green.label))+'</option></select></label>'+
  '<label>Năm<select id="costExplorerYear"></select></label><label>Tháng<select id="costExplorerMonth"></select></label>'+
  '<label>Nhóm chi phí<select id="costExplorerGroup"><option value="all">Tất cả</option></select></label>'+
- '<label>Sheet nguồn<select id="costExplorerSource"><option value="all">Tất cả</option></select></label>'+
+ '<label>Tên loại chi phí<select id="costExplorerItem"><option value="all">Tất cả</option></select></label>'+
  '<label>'+esc(t('Tìm hạng mục'))+'<input id="costItemSearch" placeholder="PAC, NaOH, nhân công, phân bón..."></label>'+
  '<button id="costExcelExport">'+esc(t('Xuất chi tiết A.3 & C (Excel)'))+'</button><button id="costTranslate">'+esc(t('Dịch tên hạng mục trên thiết bị'))+'</button>'+
  '<button id="costManualTranslate">'+esc(t('Hiệu chỉnh bản dịch'))+'</button></div>'+
@@ -157,8 +170,8 @@ export function initCostExplorer(){
  $('costExplorerType').onchange=()=>{selected=$('costExplorerType').value;updateCategories();render()};
  $('costExplorerYear').onchange=()=>{updateMonths();render()};
  $('costExplorerMonth').onchange=()=>{updateCategories();render()};
- $('costExplorerGroup').onchange=render;
- $('costExplorerSource').onchange=render;
+ $('costExplorerGroup').onchange=()=>{updateItems();render()};
+ $('costExplorerItem').onchange=render;
  $('costItemSearch').oninput=render;
  $('costExcelExport').onclick=exportRows;
  $('costTranslate').onclick=translateMissing;
