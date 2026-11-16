@@ -35,4 +35,4 @@ jobs:
       - name: Firebase Firestore Rules compiler check
         run: |
           npm install --no-audit --no-fund -g firebase-tools@14
-          firebase emulators:exec --project demo-ehs-permission-gate --only firestore "node -e \"console.log('Firestore emulator parsed rules')\"" --config firebase.json
+          firebase emulators:exec --project demo-ehs-permission-gate --only firestore "node -e \"console.log('Firestore emulator parsed rules')\"" --config tests/ehs-permissions-firebase.json
