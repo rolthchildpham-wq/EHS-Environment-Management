@@ -47,6 +47,8 @@ jobs:
           node --check public/ehs-compliance.js
           node --check public/source-terms.js
           node --check public/ehs-cost-detail.js
+          node --check public/ehs-public-publish.js
+          node --check public/ehs-public-viewer.js
           node --experimental-default-type=module --test tests/ehs-finance.test.mjs
           node --experimental-default-type=module --test tests/ehs-ui.test.mjs
           node --test tests/firestore-rules.test.mjs
