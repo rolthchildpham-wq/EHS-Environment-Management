@@ -117,3 +117,17 @@ test('Dosing and sludge routing additions are present and guarded by EHS rights'
  assert.match(guard,/protect\(simFns,'wwtp_simulate'\)/);
  assert.match(guard,/protect\(adminFns,'wwtp_design'\)/);
 });
+
+test('P&ID v3.5 branding and visible PM-203 route selection remain permission guarded',()=>{
+ const html=file('public/wwtp/index.html');
+ const auth=file('public/wwtp/ehs-auth-guard.js');
+ assert.match(html,/id="topkeyBrandLogo"[^>]*src="\.\.\/assets\/topkey-logo\.png"/);
+ assert.match(html,/id="topkey-wwtp-pid-v35"/);
+ assert.match(html,/id="pidRouteQuickSelect" onchange="setSludgeRoute\(this\.value\)"/);
+ assert.match(html,/id="pidRouteQuickState"/);
+ assert.match(html,/function setPidMobileDetail\(enabled\)/);
+ assert.match(html,/route-selected/);
+ assert.match(html,/pipe-pm203-return-aerotank/);
+ assert.match(auth,/routeSelect\.disabled=!admin/);
+ assert.match(auth,/protect\(adminFns,'wwtp_design'\)/);
+});

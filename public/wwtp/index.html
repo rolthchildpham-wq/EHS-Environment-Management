@@ -1784,6 +1784,41 @@ body.pid-immersive-open{overflow:hidden!important}
 #ehsWwtpBackBar span{font-weight:500}
 @media(max-width:600px){#ehsWwtpBackBar{padding:8px 12px}#ehsWwtpBackBar span{font-size:10px}}
 </style>
+<style id="topkey-wwtp-pid-v35">
+/* SCADA P&ID v3.5: responsive overview, accessible route selection, reduced clutter. */
+.topkey-brand-logo{display:block;width:156px;height:40px;object-fit:contain;flex-shrink:0}
+#pidRouteQuick{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 16px;background:#081a29;border-bottom:1px solid #2d536d}
+#pidRouteQuick label{font-size:12px;color:#d6edfa;font-weight:700;min-width:0}
+#pidRouteQuick select{background:#0d2637;color:#eaf8ff;border:1px solid #58a6ca;border-radius:8px;padding:9px 11px;min-height:44px;max-width:100%;font:600 12px system-ui}
+#pidRouteQuick select:disabled{opacity:.6;cursor:not-allowed}
+#pidRouteQuickState{font:700 12px system-ui;color:#d2e4f0;padding:7px 10px;border-radius:7px;background:#0d2231;border:1px solid #32506b}
+#pidRouteQuickState[data-state="run"]{color:#5ff2c4;border-color:#12b886}
+#pidRouteQuickState[data-state="fault"]{color:#ff8994;border-color:#f87171}
+#pidOverviewControls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-left:auto}
+#pidOverviewControls button{background:#123047;border:1px solid #3d7494;color:#e8f7ff;min-height:42px;padding:7px 12px;border-radius:9px;font:700 12px system-ui}
+#pidOverviewControls button:focus-visible,#pidRouteQuick select:focus-visible{outline:3px solid #67e8f9;outline-offset:2px}
+#pidSvg #pipe-pm203.route-selected.pipe-paused{stroke:#e99a42;stroke-width:4;stroke-dasharray:9 7;opacity:.9}
+#pidSvg #pipe-pm203-return-aerotank.route-selected.pipe-paused{stroke:#b9a0ff;stroke-width:4;stroke-dasharray:9 7;opacity:.9}
+#pidSvg #pipe-pm203.route-selected.pipe-sludge-active{stroke:#ffb347;stroke-width:5;filter:drop-shadow(0 0 5px #ff8e3a)}
+#pidSvg #pipe-pm203-return-aerotank.route-selected.pipe-sludge-active{stroke:#c4a4ff;stroke-width:5;filter:drop-shadow(0 0 5px #ad86ff)}
+#pidSvg #pipe-pm203:not(.route-selected),#pidSvg #pipe-pm203-return-aerotank:not(.route-selected){opacity:.28}
+#pidSvg .pid-route-label{paint-order:stroke fill;stroke:#07101d;stroke-width:3;stroke-linejoin:round;font-size:11px;font-weight:750}
+#pidViewport{width:100%;max-width:100%;box-sizing:border-box}
+#pidSvg{max-width:none}
+@media(max-width:700px){
+ .topkey-brand-logo{width:125px;height:auto;max-height:34px}
+ #pidRouteQuick{padding:10px;gap:9px}
+ #pidRouteQuick label{flex:1 1 100%}
+ #pidRouteQuick select{flex:1 1 100%;width:100%}
+ #pidRouteQuickState{flex:1 1 100%;overflow-wrap:anywhere}
+ #pidOverviewControls{width:100%;margin:0}
+ #pidOverviewControls button{flex:1 1 0}
+ #pidFullscreenBox:not(:fullscreen):not(.pid-fallback-fullscreen) #pidViewport{overflow-x:auto}
+ #pidFullscreenBox:not(:fullscreen):not(.pid-fallback-fullscreen) #pidSvg{width:100%!important;min-width:0!important;height:auto!important}
+ #pidFullscreenBox:not(:fullscreen):not(.pid-fallback-fullscreen).pid-detail-zoom #pidSvg{width:1200px!important;min-width:1200px!important}
+ #pidFullscreenBox:not(:fullscreen):not(.pid-fallback-fullscreen):not(.pid-detail-zoom) .live-status{display:none}
+}
+</style>
 </head>
 <body class="min-h-screen flex flex-col bg-scada-bg text-slate-200 selection:bg-cyan-500/30">
 <nav id="ehsWwtpBackBar" aria-label="Điều hướng EHS"><a href="../" id="ehsBackHub">← TRỞ VỀ HUB EHS</a><span>HỆ THỐNG VẬN HÀNH XLNT · SCADA toàn trang · Không kết nối PLC production</span></nav>
@@ -1796,9 +1831,7 @@ body.pid-immersive-open{overflow:hidden!important}
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
       </button>
       <div class="flex items-center gap-2.5">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 via-blue-600 to-indigo-700 flex items-center justify-center shadow-lg shadow-cyan-500/20 border border-cyan-400/30 shrink-0">
-          <span class="font-mono font-extrabold text-white text-sm tracking-tighter">TK</span>
-        </div>
+        <img id="topkeyBrandLogo" src="../assets/topkey-logo.png" width="195" height="50" alt="TOPKEY" decoding="async" class="topkey-brand-logo shrink-0">
         <div>
           <div class="flex flex-wrap items-center gap-2">
             <span id="hdrTitle" class="font-extrabold tracking-wide text-xs sm:text-sm text-white">CÔNG TY TNHH TOPKEY (VIỆT NAM) CORP • 拓凱(越南)責任有限公司</span>
@@ -2077,9 +2110,18 @@ body.pid-immersive-open{overflow:hidden!important}
             <span style="font-size:10px;color:#849db4">Đường ống động là suy luận mô phỏng theo bơm, không phải cảm biến lưu lượng thực.</span>
           </div>
           <div id="pidEditorNotice" class="pid-editor-box hidden">CHỈNH SƠ ĐỒ (ADMIN DEMO): Kéo thả thiết bị; chọn ống để kéo điểm gấp. Bấm Lưu trong Cài đặt để giữ bố cục.</div>
+          <div id="pidRouteQuick" role="group" aria-label="Chọn tuyến bùn sinh học (mô phỏng)">
+  <label for="pidRouteQuickSelect">PM-203 • Hướng bùn sinh học (chỉ mô phỏng)</label>
+  <select id="pidRouteQuickSelect" onchange="setSludgeRoute(this.value)" aria-describedby="pidRouteQuickState">
+    <option value="sludge">→ TK-301 • Bể chứa bùn</option>
+    <option value="aerotank">→ TK-202A/B • Hồi lưu Aerotank</option>
+  </select>
+  <output id="pidRouteQuickState" role="status" aria-live="polite" data-state="off">PLC OFF • Chưa có dòng chảy mô phỏng</output>
+  <div id="pidOverviewControls"><button type="button" onclick="setPidMobileDetail(false)">Toàn sơ đồ</button><button type="button" onclick="setPidMobileDetail(true)">Xem chi tiết</button></div>
+</div>
           <!-- RESPONSIVE AS-BUILT SVG P&ID CANVAS -->
           <div id="pidViewport" class="p-2 sm:p-3 overflow-x-auto bg-[#070b12]">
-            <svg id="pidSvg" viewBox="0 0 1560 660" class="w-full min-w-[1180px] h-auto select-none">
+            <svg id="pidSvg" viewBox="-24 -22 1608 704" class="w-full min-w-[1180px] h-auto select-none">
               <defs>
                 <pattern id="scadaGrid" width="20" height="20" patternUnits="userSpaceOnUse">
                   <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#121b2e" stroke-width="0.6"/>
@@ -2153,7 +2195,8 @@ body.pid-immersive-open{overflow:hidden!important}
               <path id="pipe-pm105" d="M 850 180 L 850 545 L 250 545 L 250 555" stroke="#ea580c" stroke-width="3" fill="none" stroke-linejoin="round" class="pipe-sludge-active"/>
               <path id="pipe-pm203" d="M 1480 155 L 1525 155 L 1525 610 L 315 610" stroke="#ea580c" stroke-width="3" fill="none" stroke-linejoin="round" class="pipe-paused" aria-label="PM-203 → TK-301 Bể chứa bùn"/>
               <path id="pipe-pm203-return-aerotank" d="M 1480 155 L 1515 155 L 1515 205 L 1200 205 L 1200 185" stroke="#a78bfa" stroke-width="3.6" fill="none" stroke-linejoin="round" class="pipe-paused" aria-label="PM-203 → TK-202A/B Aerotank • hồi lưu bùn"/>
-              <text x="1260" y="199" fill="#c4b5fd" font-size="9" font-family="JetBrains Mono">RAS → AEROTANK (SIM)</text>
+              <text x="1240" y="195" class="pid-route-label" fill="#c4b5fd" font-family="JetBrains Mono">PM-203 → TK-202A/B • RAS (SIM)</text>
+              <text x="1225" y="598" class="pid-route-label" fill="#ffb86c" font-family="JetBrains Mono">PM-203 → TK-301 • WAS (SIM)</text>
               <path id="pipe-sludge-press" d="M 315 585 L 450 585" stroke="#ea580c" stroke-width="3.5" fill="none" class="pipe-sludge-active"/>
               <path id="pipe-return-existing" d="M 520 555 L 520 518 L 395 518 L 395 180" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
 
@@ -3277,6 +3320,15 @@ body.pid-immersive-open{overflow:hidden!important}
       const stateText=auto?`PM-101 AUTO RUN | pH ${Number.isFinite(ph)?ph.toFixed(2):'—'} | NaOH ${chemicalPumpActive(0)?'RUN':'STOP'} • H₂SO₄ ${chemicalPumpActive(1)?'RUN':'STOP'} • PAC / Polymer RUN`:d.autoOff;
       const status=document.getElementById('simChemLogicStatus');if(status)status.textContent=stateText;
       const sel=document.getElementById('v33SludgeRoute');if(sel&&sel.value!==state.sludgeRoute)sel.value=state.sludgeRoute;
+      const quick=document.getElementById('pidRouteQuickSelect');if(quick&&quick.value!==state.sludgeRoute)quick.value=state.sludgeRoute;
+      const quickState=document.getElementById('pidRouteQuickState');
+      if(quickState){
+        const pm203=state.equipment.PM203;
+        const run=state.simActive&&pm203?.status==='RUN',fault=state.simActive&&pm203?.status==='FAULT';
+        const dest=state.sludgeRoute==='aerotank'?'TK-202A/B • Aerotank':'TK-301 • Bể chứa bùn';
+        quickState.dataset.state=fault?'fault':run?'run':'off';
+        quickState.textContent=(fault?'SIM FAULT':run?'SIM RUN':'SIM STOP')+' • '+dest+' • PLC OFF';
+      }
       const target=state.sludgeRoute==='aerotank'?d.aero:d.sludge;
       const route=document.getElementById('simSludgeRouteStatus');if(route)route.textContent=`${d.routeTo} ${target} • ${state.simActive&&state.equipment.PM203?.status==='RUN'?d.routeRun:d.routeStop}`;
       const pid=document.getElementById('sludgeRouteStatus');if(pid)pid.textContent=`${d.routeTo} ${target} • ${state.simActive?'SIM':d.routeOff}`;
@@ -3975,6 +4027,12 @@ body.pid-immersive-open{overflow:hidden!important}
       pidZoom=Math.max(.5,Math.min(2,pidZoom+delta));
       const svg=document.getElementById('pidSvg');if(svg){svg.style.width=Math.round(1560*pidZoom)+'px';svg.style.minWidth='0';}
     }
+    function setPidMobileDetail(enabled){
+      const box=document.getElementById('pidFullscreenBox');if(!box)return;
+      box.classList.toggle('pid-detail-zoom',!!enabled);
+      const viewport=document.getElementById('pidViewport');
+      if(viewport&&!enabled)viewport.scrollLeft=0;
+    }
     function fitPid(){const svg=document.getElementById('pidSvg');if(svg){svg.style.width='100%';svg.style.minWidth='0';pidZoom=1;}}
     function syncPidFullscreenPresentation(){
       const node=document.getElementById('pidFullscreenBox');
@@ -4481,6 +4539,9 @@ body.pid-immersive-open{overflow:hidden!important}
       const routeStatus=sludgePump==='RUN'?'on':sludgePump==='FAULT'?'fault':'off';
       pipeMode('pipe-pm203',state.sludgeRoute==='sludge'?routeStatus:'off','pipe-sludge-active');
       pipeMode('pipe-pm203-return-aerotank',state.sludgeRoute==='aerotank'?routeStatus:'off','pipe-sludge-active');
+      for(const [id,selected] of [['pipe-pm203',state.sludgeRoute==='sludge'],['pipe-pm203-return-aerotank',state.sludgeRoute==='aerotank']]){
+        const el=document.getElementById(id);if(el)el.classList.toggle('route-selected',selected);
+      }
       for(const id of ['pipe-tk12-bio','pipe-anox-aero','pipe-aero-clar','pipe-clar-tk204'])
         pipeMode(id,state.simActive&&combined==='RUN'?'on':state.simActive&&combined==='FAULT'?'fault':'off');
       pipeMode('pipe-pm202b',simMotorStatus('BL202')==='RUN'&&combined==='RUN'?'on':'off');
