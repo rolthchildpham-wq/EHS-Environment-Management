@@ -1,0 +1,41 @@
+name: EHS Hub Preview (no production deploy)
+on:
+  pull_request:
+    paths:
+      - 'public/index.html'
+      - 'public/app.js'
+      - 'public/wwtp/**'
+      - 'tests/ehs-wwtp-hub.test.mjs'
+      - '.github/workflows/ehs-hub-preview.yml'
+permissions:
+  contents: read
+jobs:
+  preview:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify EHS/WWTP page routes and authorization contracts
+        run: |
+          node --check public/app.js
+          node --check public/wwtp/ehs-auth-guard.js
+          node --test tests/ehs-wwtp-hub.test.mjs
+          node --test tests/ehs-ui.test.mjs
+          node --test tests/ehs-permissions.test.mjs
+      - name: Deploy temporary Firebase Hosting preview only
+        env:
+          FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          CHANNEL_ID: wwtp-hub-pr${{ github.event.pull_request.number }}
+        run: |
+          test "$FIREBASE_PROJECT_ID" = "ehs-environment-management"
+          test -n "$FIREBASE_SERVICE_ACCOUNT" || { echo 'Firebase service account unavailable: preview not deployed'; exit 1; }
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-preview-account.json"
+          chmod 600 "$RUNNER_TEMP/firebase-preview-account.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase-preview-account.json"
+          trap 'rm -f "$RUNNER_TEMP/firebase-preview-account.json"' EXIT
+          npm install -g --no-audit --no-fund firebase-tools@14
+          firebase hosting:channel:deploy "$CHANNEL_ID" --expires 2d --project "$FIREBASE_PROJECT_ID" --non-interactive
