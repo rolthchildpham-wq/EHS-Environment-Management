@@ -1758,8 +1758,16 @@ body{background:#080c14;color:#e2e8f0}
 @media(max-width:1000px){.tk-sim-status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.tk-sim-status-grid{grid-template-columns:minmax(0,1fr)}.tk-sim-status-card{min-height:92px}}
 </style>
+<style id="ehsModuleNavStyles">
+#ehsWwtpBackBar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;min-height:46px;background:#07111f;border-bottom:1px solid #23465c;padding:7px 18px;color:#91b8c9;font:700 12px/1.4 system-ui,Arial,sans-serif}
+#ehsWwtpBackBar a{display:inline-flex;align-items:center;min-height:32px;border-radius:8px;padding:5px 12px;border:1px solid #2b6578;background:#123647;color:#a6ebf3;text-decoration:none}
+#ehsWwtpBackBar a:hover,#ehsWwtpBackBar a:focus-visible{background:#174b60;color:#fff}
+#ehsWwtpBackBar span{font-weight:500}
+@media(max-width:600px){#ehsWwtpBackBar{padding:8px 12px}#ehsWwtpBackBar span{font-size:10px}}
+</style>
 </head>
 <body class="min-h-screen flex flex-col bg-scada-bg text-slate-200 selection:bg-cyan-500/30">
+<nav id="ehsWwtpBackBar" aria-label="Điều hướng EHS"><a href="../" id="ehsBackHub">← TRỞ VỀ HUB EHS</a><span>HỆ THỐNG VẬN HÀNH XLNT · SCADA toàn trang · Không kết nối PLC production</span></nav>
 
   <!-- ================= TOP IGNITION PERSPECTIVE DOCKED HEADER ================= -->
   <header class="no-print sticky top-0 z-40 bg-[#0b111e]/95 backdrop-blur border-b border-scada-border px-3 lg:px-5 py-2.5 flex flex-wrap items-center justify-between gap-3">
