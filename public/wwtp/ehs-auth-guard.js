@@ -42,6 +42,7 @@ function markAccess(){
  const sim=ready&&may('wwtp_simulate');
  const rolePicker=document.getElementById('adminDemoRole');
  if(rolePicker&&!admin){rolePicker.value='viewer';rolePicker.disabled=true}
+ const routeSelect=document.getElementById('pidRouteQuickSelect');if(routeSelect)routeSelect.disabled=!admin;
  const adminStart=document.getElementById('adminStartEdit');
  if(adminStart&&!admin)adminStart.disabled=true;
  if(!sim&&document.getElementById('simModeBtn'))document.getElementById('simModeBtn').disabled=true;
