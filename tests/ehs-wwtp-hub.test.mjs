@@ -47,3 +47,19 @@ test('WWTP includes full offline HMI simulation, shift report and P&ID',()=>{
  assert.match(html,/setPumpCalibration/);
  assert.match(html,/ehs-auth-guard\.js/);
 });
+
+
+test('Simulation tab contains tank and pump calibration; report links back to one shared configuration',()=>{
+ const html=file('public/wwtp/index.html');
+ const simStart=html.indexOf('id="view-simulation"');
+ const equipmentStart=html.indexOf('id="view-equipment"');
+ const reportStart=html.indexOf('id="view-report"');
+ const calibrationStart=html.indexOf('id="simCalibrationSection"');
+ assert.ok(simStart>=0 && simStart<calibrationStart && calibrationStart<equipmentStart && equipmentStart<reportStart);
+ assert.equal((html.match(/id="tankCalibRows"/g)||[]).length,1);
+ assert.equal((html.match(/id="pumpCalibRows"/g)||[]).length,1);
+ assert.match(html,/function jumpToSimulationCalibration\(\)/);
+ assert.match(html,/function renderSimulationSummary\(\)/);
+ assert.match(html,/if\(tabName==='simulation'\)\{renderPlantCalibration\(\)/);
+ assert.match(html,/renderShiftReport\(\)/);
+});
