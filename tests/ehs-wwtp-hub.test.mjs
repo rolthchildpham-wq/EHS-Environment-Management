@@ -79,21 +79,21 @@ test('WWTP includes full offline HMI simulation, shift report and P&ID',()=>{
 });
 
 
-test('Simulation tab contains tank and pump calibration; report links back to one shared configuration',()=>{
+test('Calibration stays in the report tab and shares the simulation data model',()=>{
  const html=file('public/wwtp/index.html');
  const simStart=html.indexOf('id="view-simulation"');
  const equipmentStart=html.indexOf('id="view-equipment"');
  const reportStart=html.indexOf('id="view-report"');
- const calibrationStart=html.indexOf('id="simCalibrationSection"');
- assert.ok(simStart>=0 && simStart<calibrationStart && calibrationStart<equipmentStart && equipmentStart<reportStart);
+ const tankRows=html.indexOf('id="tankCalibRows"');
+ const pumpRows=html.indexOf('id="pumpCalibRows"');
+ assert.ok(simStart>=0 && simStart<equipmentStart && equipmentStart<reportStart && reportStart<tankRows && tankRows<pumpRows);
  assert.equal((html.match(/id="tankCalibRows"/g)||[]).length,1);
  assert.equal((html.match(/id="pumpCalibRows"/g)||[]).length,1);
- assert.match(html,/function jumpToSimulationCalibration\(\)/);
- assert.match(html,/function renderSimulationSummary\(\)/);
- assert.match(html,/if\(tabName==='simulation'\)\{renderPlantCalibration\(\)/);
+ assert.match(html,/function renderPlantCalibration\(\)/);
+ assert.match(html,/function savePlantCalibration\(\)/);
+ assert.match(html,/if\(tabName==='report'\)\{renderPlantCalibration\(\);renderShiftInputs\(\);renderShiftReport\(\);\}/);
  assert.match(html,/renderShiftReport\(\)/);
 });
-
 
 test('Immersive P&ID hides bars and retains a visible exit control on mobile',()=>{
  const html=file('public/wwtp/index.html');
