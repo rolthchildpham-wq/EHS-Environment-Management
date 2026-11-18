@@ -1819,7 +1819,22 @@ body.pid-immersive-open{overflow:hidden!important}
  #pidFullscreenBox:not(:fullscreen):not(.pid-fallback-fullscreen):not(.pid-detail-zoom) .live-status{display:none}
 }
 </style>
-</head>
+<style id="wwtp-unified-settings-v36">
+#wwtpModePicker{border:1px solid #355779;border-radius:12px;padding:12px;margin:14px 0;display:flex;gap:14px;flex-wrap:wrap;color:#e2f0fc}
+#wwtpModePicker legend{padding:0 8px;font-size:12px;font-weight:800;color:#9bdcf6}
+#wwtpModePicker label{display:flex;align-items:center;gap:8px;min-height:44px;padding:8px 12px;cursor:pointer;border:1px solid #42617a;border-radius:9px;font-size:13px}
+#wwtpModePicker input{accent-color:#16c0ba}
+#wwtpModeStatus{padding:10px 12px;background:#0e2439;border-left:3px solid #26d1c2;border-radius:8px;font-size:13px;margin:12px 0}
+#wwtpProductionProfile{background:#0f1d2d;border:1px solid #52718b;border-radius:12px;padding:18px;margin:12px 0}
+#wwtpProductionProfile h3,#wwtpSimulationProfile h3{font-weight:800;margin-bottom:9px}
+#wwtpProductionProfile p{color:#ffcf8b;font-size:13px}
+.wwtp-prod-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}
+.wwtp-prod-facts>div{background:#0b1828;border:1px solid #2b475f;border-radius:9px;padding:12px}
+.wwtp-prod-facts dt{font-size:12px;color:#9bc9d8}.wwtp-prod-facts dd{margin:5px 0 0;color:#f0faff;font-weight:700}
+#wwtpUnifiedCalibration>.bg-scada-panel{background:#081828;border:1px solid #28465a;padding:12px;border-radius:10px;margin-top:12px}
+#wwtpUnifiedSettings h2{line-height:1.4}
+@media(max-width:680px){.wwtp-prod-facts{grid-template-columns:1fr}#wwtpModePicker{flex-direction:column}#wwtpModePicker label{width:100%}}
+</style></head>
 <body class="min-h-screen flex flex-col bg-scada-bg text-slate-200 selection:bg-cyan-500/30">
 <nav id="ehsWwtpBackBar" aria-label="Điều hướng EHS"><a href="../" id="ehsBackHub">← TRỞ VỀ HUB EHS</a><span>HỆ THỐNG VẬN HÀNH XLNT · SCADA toàn trang · Không kết nối PLC production</span></nav>
 
@@ -1926,7 +1941,7 @@ body.pid-immersive-open{overflow:hidden!important}
         <button onclick="switchTab('equipment')" id="nav-equipment" class="nav-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-400 hover:bg-scada-panel hover:text-slate-200 transition text-left"><span class="text-cyan-400">⚙</span><span id="navText-equipment">Thiết bị vận hành</span></button>
         <button onclick="switchTab('report')" id="nav-report" class="nav-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-400 hover:bg-scada-panel hover:text-slate-200 transition text-left"><span class="text-cyan-400">▤</span><span id="navText-report">Báo cáo lưu lượng</span></button>
         <button onclick="switchTab('plc')" id="nav-plc" class="nav-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-400 hover:bg-scada-panel hover:text-slate-200 transition text-left"><span class="text-cyan-400">⛓</span><span id="navText-plc">Kết nối PLC</span></button>
-        <button onclick="switchTab('settings')" id="nav-settings" class="nav-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-400 hover:bg-scada-panel hover:text-slate-200 transition text-left"><span class="text-amber-300">✎</span><span id="navText-settings">Cài đặt sơ đồ (Admin Demo)</span></button>
+        <button onclick="switchTab('settings')" id="nav-settings" class="nav-btn w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-medium text-slate-400 hover:bg-scada-panel hover:text-slate-200 transition text-left"><span class="text-amber-300">✎</span><span id="navText-settings">Cài đặt vận hành</span></button>
         <button onclick="switchTab('alarms')" id="nav-alarms" class="nav-btn w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium text-slate-400 hover:bg-scada-panel hover:text-slate-200 transition text-left">
           <div class="flex items-center gap-2.5">
             <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
@@ -2642,14 +2657,6 @@ body.pid-immersive-open{overflow:hidden!important}
           <p class="tk-report-caution" id="flowReportCaution">Giờ chạy bơm × lưu lượng định mức chỉ là ước tính; thể tích bể chỉ dùng cho cân bằng tồn nước/HRT khi có kích thước lọt lòng và độ sâu hữu dụng. Số liệu chưa hiệu chuẩn không sử dụng để kê khai môi trường.</p>
         </section>
         <section class="bg-scada-panel border border-scada-border rounded-xl p-4 space-y-4">
-          <div class="tk-section-title"><div><h3 id="tankCalibTitle">Hiệu chỉnh lưu lượng & kích thước bể</h3><p id="tankCalibNote">Dữ liệu lưu trong trình duyệt. Số mẫu chỉ để kiểm tra thuật toán, không thay cho bản vẽ hoàn công/đo bơm.</p></div><span class="status-pill warning" id="calibStatus">CHƯA HIỆU CHUẨN</span></div>
-          <h4 id="tankDimsTitle" class="tk-mini-title">Kích thước lọt lòng và mực nước hữu dụng (m)</h4>
-          <div class="monitor-table-wrap"><table class="monitor-table tk-calib-table"><thead><tr><th>BỂ</th><th>Dài (m)</th><th>Rộng (m)</th><th>Sâu nước hữu dụng (m)</th><th>V hữu dụng (m³)</th><th>Trạng thái</th></tr></thead><tbody id="tankCalibRows"></tbody></table></div>
-          <h4 id="flowCalibTitle" class="tk-mini-title">Lưu lượng từng bơm (m³/h) • nhập theo đo/đường đặc tính đã xác nhận</h4>
-          <div class="monitor-table-wrap"><table class="monitor-table tk-calib-table"><thead><tr><th>BƠM</th><th>Vai trò</th><th>m³/h</th><th>Hiệu chuẩn</th><th>Nguồn</th></tr></thead><tbody id="pumpCalibRows"></tbody></table></div>
-          <div class="tk-report-actions"><button type="button" class="v3-action" onclick="savePlantCalibration()">✓ Lưu cấu hình</button><button type="button" class="tk-quiet-btn" onclick="exportPlantCalibration()">Xuất JSON hiệu chuẩn</button><span class="text-xs text-amber-300" id="calibMessage"></span></div>
-        </section>
-        <section class="bg-scada-panel border border-scada-border rounded-xl p-4 space-y-4">
           <div class="tk-section-title"><div><h3 id="manualDataTitle">Nhật ký ca thực tế • Nhập dữ liệu từ PLC / đồng hồ / hiện trường</h3><p id="manualDataNote">Các ô để trống = chưa có dữ liệu. Nhập 0 khi xác nhận thiết bị không chạy. File nhập không tự được xác nhận là dữ liệu đo đã kiểm định.</p></div><span class="status-pill unknown">OFF → NHẬP / TÍNH</span></div>
           <div class="tk-report-actions"><button type="button" class="tk-quiet-btn" onclick="downloadShiftTemplate()">↓ Mẫu JSON nhật ký</button><label class="tk-file-import" for="shiftImportFile">↑ Nhập JSON nhật ký<input id="shiftImportFile" type="file" accept=".json,application/json" onchange="importShiftLogFile(event)" hidden></label><button class="v3-action" onclick="saveShiftLog()">Lưu nhật ký ca</button></div>
           <h4 class="tk-mini-title" id="runtimeTitle">Thời gian chạy từng thiết bị trong ca (giờ)</h4>
@@ -2673,7 +2680,31 @@ body.pid-immersive-open{overflow:hidden!important}
         </section>
       </div>
       <div id="view-settings" class="hidden space-y-5">
-        <section class="admin-dash">
+        <section id="wwtpUnifiedSettings" class="admin-dash" aria-label="Cài đặt thông số vận hành tập trung">
+          <h2 style="font-size:19px;font-weight:850;color:#e6faff;margin-bottom:9px">⚙ Cài đặt thông số vận hành XLNT</h2>
+          <p style="color:#b4cadc;font-size:12px">Tất cả tham số hiệu chuẩn, hóa chất, hướng bùn và bố cục P&ID tập trung tại đây. Không có kết nối điều khiển PLC.</p>
+          <fieldset id="wwtpModePicker" class="wwtp-mode-picker">
+            <legend>Chọn bộ thông số hiển thị</legend>
+            <label><input type="radio" name="wwtpConfigMode" value="production" onchange="setWwtpConfigMode(this.value)"> Production • hồ sơ vận hành</label>
+            <label><input type="radio" name="wwtpConfigMode" value="simulation" checked onchange="setWwtpConfigMode(this.value)"> Mô phỏng • SIM</label>
+          </fieldset>
+          <div id="wwtpModeStatus" role="status" aria-live="polite" class="wwtp-mode-note">SIM • Các thay đổi chỉ áp dụng tại trình duyệt.</div>
+          <div class="wwtp-production-panel" id="wwtpProductionProfile" hidden>
+            <h3>Hồ sơ cấu hình Production (chỉ đọc / đối chiếu)</h3>
+            <p>Chưa xác minh tín hiệu PLC, cấu hình van, liên động an toàn và thông số đo hiện trường. Trang web không điều khiển bơm/van thực tế và không có nút áp dụng xuống PLC.</p>
+            <dl class="wwtp-prod-facts">
+              <div><dt>Trạng thái kết nối</dt><dd>PLC OFF • Không có dữ liệu live</dd></div>
+              <div><dt>Tuyến bùn sinh học</dt><dd>Chưa xác minh van chuyển tuyến thực tế</dd></div>
+              <div><dt>Ngưỡng hóa chất</dt><dd>Chưa hiệu chuẩn với PLC / phép đo</dd></div>
+              <div><dt>Hiệu chuẩn bể và bơm</dt><dd>Hồ sơ tham khảo trong trình duyệt, không phải giá trị sản xuất đã phê duyệt</dd></div>
+            </dl>
+          </div>
+          <div class="wwtp-simulation-panel" id="wwtpSimulationProfile">
+            <h3>Tham số mô phỏng</h3>
+            <p class="text-xs text-slate-400">pH, hướng bùn, điều kiện chạy thử chỉ ảnh hưởng P&ID và báo cáo SIM.</p>
+          </div>
+        </section>
+        <section class="admin-dash wwtp-sim-only">
           <h3 data-admin-i18n="title">✎ Cài đặt bố cục P&ID • Admin DEMO</h3>
           <p data-admin-i18n="intro">Chế độ dựng sơ đồ, không kết nối PLC. Quyền Admin bên dưới chỉ là tùy chọn thử giao diện, không phải đăng nhập/phân quyền thật.</p>
           <div class="admin-control-row">
@@ -2697,7 +2728,19 @@ body.pid-immersive-open{overflow:hidden!important}
           </div>
           <div class="admin-status" id="adminLayoutMessage" role="status">Vai trò hiện tại: Operator • Chưa bật chỉnh sơ đồ.</div>
         </section>
-        <section class="admin-dash v33-logic-config" id="v33LogicConfig">
+        <section id="wwtpUnifiedCalibration" class="admin-dash wwtp-sim-only">
+          <h3 style="font-size:16px;font-weight:750;color:#e8f9ff">Hiệu chuẩn bể, lưu lượng bơm và thể tích</h3>
+          <p class="text-xs text-slate-400">Phần hiệu chuẩn được chuyển từ Báo cáo về Cài đặt. Các giá trị vẫn lưu tại trình duyệt, không ghi PLC.</p>
+          <section class="bg-scada-panel border border-scada-border rounded-xl p-4 space-y-4">
+          <div class="tk-section-title"><div><h3 id="tankCalibTitle">Hiệu chỉnh lưu lượng & kích thước bể</h3><p id="tankCalibNote">Dữ liệu lưu trong trình duyệt. Số mẫu chỉ để kiểm tra thuật toán, không thay cho bản vẽ hoàn công/đo bơm.</p></div><span class="status-pill warning" id="calibStatus">CHƯA HIỆU CHUẨN</span></div>
+          <h4 id="tankDimsTitle" class="tk-mini-title">Kích thước lọt lòng và mực nước hữu dụng (m)</h4>
+          <div class="monitor-table-wrap"><table class="monitor-table tk-calib-table"><thead><tr><th>BỂ</th><th>Dài (m)</th><th>Rộng (m)</th><th>Sâu nước hữu dụng (m)</th><th>V hữu dụng (m³)</th><th>Trạng thái</th></tr></thead><tbody id="tankCalibRows"></tbody></table></div>
+          <h4 id="flowCalibTitle" class="tk-mini-title">Lưu lượng từng bơm (m³/h) • nhập theo đo/đường đặc tính đã xác nhận</h4>
+          <div class="monitor-table-wrap"><table class="monitor-table tk-calib-table"><thead><tr><th>BƠM</th><th>Vai trò</th><th>m³/h</th><th>Hiệu chuẩn</th><th>Nguồn</th></tr></thead><tbody id="pumpCalibRows"></tbody></table></div>
+          <div class="tk-report-actions"><button type="button" class="v3-action" onclick="savePlantCalibration()">✓ Lưu cấu hình</button><button type="button" class="tk-quiet-btn" onclick="exportPlantCalibration()">Xuất JSON hiệu chuẩn</button><span class="text-xs text-amber-300" id="calibMessage"></span></div>
+        </section>
+        </section>
+        <section class="admin-dash v33-logic-config wwtp-sim-only" id="v33LogicConfig">
           <h3 id="v33LogicTitle">⚙ Cài đặt logic mô phỏng hóa chất & hướng bùn</h3>
           <p id="v33LogicIntro" class="text-xs text-slate-400">Thiết lập chỉ quyết định animation và logic thử nghiệm. Chưa xác minh cấu hình Ladder, van hoặc địa chỉ PLC. Thay đổi không tác động hiện trường.</p>
           <div class="v33-config-grid">
@@ -3564,6 +3607,27 @@ body.pid-immersive-open{overflow:hidden!important}
       document.getElementById('mobileDrawer').classList.toggle('hidden');
     }
 
+    function setWwtpConfigMode(mode){
+      const chosen=mode==='production'?'production':'simulation';
+      const prod=document.getElementById('wwtpProductionProfile');
+      const sim=document.getElementById('wwtpSimulationProfile');
+      const notice=document.getElementById('wwtpModeStatus');
+      const allowed=window.__ehsWwtpAuth?.ready&&window.__ehsWwtpAuth?.can?.('wwtp_prod_view');
+      if(chosen==='production'&&!allowed){
+        document.querySelector('input[name="wwtpConfigMode"][value="simulation"]').checked=true;
+        if(notice)notice.textContent='Chưa có quyền xem hồ sơ Production. Vui lòng liên hệ Admin EHS.';
+        return false;
+      }
+      if(prod)prod.hidden=chosen!=='production';
+      if(sim)sim.hidden=chosen!=='simulation';
+      document.querySelectorAll('#view-settings .wwtp-sim-only').forEach(el=>{el.hidden=chosen!=='simulation';});
+      document.querySelectorAll('input[name="wwtpConfigMode"]').forEach(el=>el.checked=el.value===chosen);
+      if(notice)notice.textContent=chosen==='production'
+        ?'PRODUCTION • Chỉ đối chiếu hồ sơ; PLC chưa kết nối; không phát lệnh và không kích hoạt máy.'
+        :'SIMULATION • Cài đặt chỉ tác động mô phỏng; không phát lệnh PLC.';
+      if(chosen==='simulation')renderPlantCalibration();
+      return true;
+    }
     function switchTab(tabName) {
       ['pid', 'qcvn', 'alarms','simulation','equipment','report','plc','settings'].forEach(t => {
         document.getElementById(`view-${t}`).classList.add('hidden');
@@ -3576,6 +3640,7 @@ body.pid-immersive-open{overflow:hidden!important}
       if (tabName === 'qcvn') {renderMonitorRows(); if(state.simActive)renderHistorianChart();}
       renderExtraViews();
       if(tabName==='report'){renderPlantCalibration();renderShiftInputs();renderShiftReport();}
+      if(tabName==='settings')setWwtpConfigMode(document.querySelector('input[name="wwtpConfigMode"]:checked')?.value||'simulation');
     }
 
     function changeQCVNStandard() {

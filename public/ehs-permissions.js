@@ -2,10 +2,13 @@ import {doc,getDoc,setDoc,serverTimestamp} from 'https://www.gstatic.com/firebas
 const $=id=>document.getElementById(id);
 const actions=[
  ['hub_view','Truy cập Hub hệ thống','view'],
- ['wwtp_view','Xem hệ thống vận hành XLNT','view'],
- ['wwtp_simulate','Mô phỏng tín hiệu XLNT','write'],
- ['wwtp_reports','Xem báo cáo vận hành XLNT','view'],
- ['wwtp_design','Cài đặt và chỉnh P&ID XLNT','admin'],
+ ['wwtp_view','XLNT • Truy cập và xem P&ID','view'],
+ ['wwtp_simulate','XLNT • Bật/tắt và điều khiển mô phỏng','write'],
+ ['wwtp_sim_config','XLNT • Cài ngưỡng pH và hướng bùn SIM','write'],
+ ['wwtp_reports','XLNT • Xem báo cáo vận hành','view'],
+ ['wwtp_calibration','XLNT • Hiệu chuẩn bể và lưu lượng bơm (hồ sơ)','write'],
+ ['wwtp_prod_view','XLNT • Xem hồ sơ thông số Production (không điều khiển PLC)','view'],
+ ['wwtp_design','XLNT • Thiết kế bố cục P&ID','admin'],
  ['dashboard','Xem Tổng quan','view'],
  ['journal','Xem Nhật ký','view'],
  ['qr_in','Nhập vật tư bằng QR','write'],
@@ -53,7 +56,7 @@ function renderPanel(){
  mount.innerHTML='<div class="panel ehs-permission-panel"><h2>Phân quyền chi tiết EHS</h2>'+
  '<p class="muted">Admin đánh dấu quyền cho Nhân viên nhập liệu và Viewer. Quyền Admin cố định, không thể bỏ chọn. Nhấn Lưu để áp dụng cho tài khoản hiện có và người được mời.</p>'+
  '<div class="scroll"><table class="ehs-permission-table"><thead><tr><th>Chức năng</th><th>Admin</th><th>Nhập liệu (Editor)</th><th>Viewer</th></tr></thead><tbody>'+
- actions.map(([key,title,type])=>'<tr><td>'+esc(title)+'</td><td><input type="checkbox" checked disabled aria-label="Admin: '+esc(title)+'"></td>'+
+ actions.map(([key,title,type])=>'<tr'+(key.startsWith('wwtp_')?' class="ehs-wwtp-right-row"':'')+'><td>'+esc(title)+'</td><td><input type="checkbox" checked disabled aria-label="Admin: '+esc(title)+'"></td>'+
  ['editor','viewer'].map(role=>'<td><input type="checkbox" data-ehs-action="'+key+'" data-ehs-role="'+role+'" '+
  (matrix[role]?.[key]?'checked ':'')+(type==='admin'||role==='viewer'&&type!=='view'?'disabled ':'')+
  'aria-label="'+(role==='editor'?'Editor':'Viewer')+': '+esc(title)+'"></td>').join('')+'</tr>').join('')+
