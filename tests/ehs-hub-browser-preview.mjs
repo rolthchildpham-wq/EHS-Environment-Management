@@ -5,7 +5,7 @@ import {mkdirSync} from 'node:fs';
 const origin=(process.env.EHS_PREVIEW_URL||'').replace(/\/$/,'');
 assert.ok(origin.startsWith('https://ehs-environment-management--'),'Preview URL is required');
 mkdirSync('tests/artifacts',{recursive:true});
-const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+const browser=await chromium.launch({headless:true,executablePath:process.env.CHROME_BIN,args:['--no-sandbox']});
 try{
  for(const [device,viewport] of Object.entries({desktop:{width:1440,height:900},mobile:{width:390,height:844}})){
   const page=await browser.newPage({viewportSize:viewport});
