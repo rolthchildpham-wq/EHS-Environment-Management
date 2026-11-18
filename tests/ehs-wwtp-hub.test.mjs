@@ -150,3 +150,11 @@ test('WWTP granular EHS permissions and simulation/production settings are isola
  assert.match(guard,/protect\(calibrationFns,'wwtp_calibration'\)/);
  assert.match(guard,/routeSelect\.disabled=!simConfig/);
 });
+
+test('TOPKEY brand is visible on a white card at desktop and mobile sizes',()=>{
+ const html=file('public/wwtp/index.html');
+ assert.match(html,/<div class="topkey-logo-wrap"><img id="topkeyBrandLogo"[^>]+src="\.\.\/assets\/topkey-logo\.png"/);
+ assert.match(html,/\.topkey-logo-wrap\{[^}]*background:#fff/);
+ assert.match(html,/\.topkey-brand-logo\{[^}]*opacity:1/);
+ assert.match(html,/@media\(max-width:700px\)\{[\s\S]*?\.topkey-logo-wrap\{padding:8px 10px;border-radius:10px\}/);
+});
