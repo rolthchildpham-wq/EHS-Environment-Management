@@ -1825,6 +1825,7 @@ body.pid-immersive-open{overflow:hidden!important}
 #wwtpModePicker label{display:flex;align-items:center;gap:8px;min-height:44px;padding:8px 12px;cursor:pointer;border:1px solid #42617a;border-radius:9px;font-size:13px}
 #wwtpModePicker input{accent-color:#16c0ba}
 #wwtpModeStatus{padding:10px 12px;background:#0e2439;border-left:3px solid #26d1c2;border-radius:8px;font-size:13px;margin:12px 0}
+#view-settings .wwtp-sim-only[hidden],#wwtpProductionProfile[hidden],#wwtpSimulationProfile[hidden]{display:none!important}
 #wwtpProductionProfile{background:#0f1d2d;border:1px solid #52718b;border-radius:12px;padding:18px;margin:12px 0}
 #wwtpProductionProfile h3,#wwtpSimulationProfile h3{font-weight:800;margin-bottom:9px}
 #wwtpProductionProfile p{color:#ffcf8b;font-size:13px}
@@ -2636,7 +2637,7 @@ body.pid-immersive-open{overflow:hidden!important}
           <button type="button" onclick="toggleSimulationMode()" class="v3-action">BẬT / TẮT MÔ PHỎNG</button>
           <div id="levelSimControls" class="v3-level-grid"></div>
           <div class="v33-sim-controls">
-            <label for="simPh102"><span id="v33SimPhLabel">pH-102 (giá trị giả lập để thử bơm NaOH/H₂SO₄)</span><input id="simPh102" type="number" min="0" max="14" step="0.05" value="7.15" onchange="setSimulatedPH(this.value)"/></label>
+            
             <div class="v33-inline-caption" id="simChemLogicStatus">PM-101 OFF • Bơm định lượng theo AUTO (SIM)</div>
             <div class="v33-inline-caption" id="simSludgeRouteStatus">PM-203 → TK-301 (Mô phỏng)</div>
           </div>
@@ -2701,6 +2702,7 @@ body.pid-immersive-open{overflow:hidden!important}
           </div>
           <div class="wwtp-simulation-panel" id="wwtpSimulationProfile">
             <h3>Tham số mô phỏng</h3>
+            <div class="v33-sim-controls"><label for="simPh102"><span id="v33SimPhLabel">pH-102 (giá trị giả lập để thử bơm NaOH/H₂SO₄)</span><input id="simPh102" type="number" min="0" max="14" step="0.05" value="7.15" onchange="setSimulatedPH(this.value)"/></label></div>
             <p class="text-xs text-slate-400">pH, hướng bùn, điều kiện chạy thử chỉ ảnh hưởng P&ID và báo cáo SIM.</p>
           </div>
         </section>
