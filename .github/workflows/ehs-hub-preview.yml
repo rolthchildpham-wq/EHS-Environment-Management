@@ -9,6 +9,9 @@ on:
       - 'tests/ehs-hub-preview-smoke.mjs'
       - 'tests/ehs-hub-browser-preview.mjs'
       - '.github/workflows/ehs-hub-preview.yml'
+concurrency:
+  group: ehs-hub-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
@@ -50,7 +53,10 @@ jobs:
       - name: Install browser for visual layout test
         run: |
           npm install --no-save --no-audit --no-fund playwright@1.56.1
-          npx playwright install --with-deps chromium
+          CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$CHROME_BIN" || { echo 'System Chromium/Chrome unavailable on runner'; exit 1; }
+          echo "CHROME_BIN=$CHROME_BIN" >> "$GITHUB_ENV"
+          "$CHROME_BIN" --version
       - name: Desktop and mobile browser smoke on actual preview
         run: node tests/ehs-hub-browser-preview.mjs
       - name: Publish browser screenshots as PR artifact
