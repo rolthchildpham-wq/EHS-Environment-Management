@@ -93,3 +93,27 @@ test('Simulation tab contains tank and pump calibration; report links back to on
  assert.match(html,/if\(tabName==='simulation'\)\{renderPlantCalibration\(\)/);
  assert.match(html,/renderShiftReport\(\)/);
 });
+
+
+test('Immersive P&ID hides bars and retains a visible exit control on mobile',()=>{
+ const html=file('public/wwtp/index.html');
+ assert.match(html,/id="topkey-pid-immersive-v34"/);
+ assert.match(html,/id="pidFullscreenExit"/);
+ assert.match(html,/function syncPidFullscreenPresentation\(\)/);
+ assert.match(html,/#pidFullscreenBox:is\(:fullscreen,\.pid-fallback-fullscreen\)>:not\(#pidViewport\)/);
+ assert.match(html,/#pidFullscreenBox:is\(:fullscreen,\.pid-fallback-fullscreen\)>#pidViewport/);
+ assert.match(html,/height:100dvh!important/);
+ assert.match(html,/document\.addEventListener\('fullscreenchange',syncPidFullscreenPresentation\)/);
+ assert.match(html,/window\.addEventListener\('resize'/);
+ assert.match(html,/syncPidOverlayPlacement\(\)/);
+});
+test('Dosing and sludge routing additions are present and guarded by EHS rights',()=>{
+ const html=file('public/wwtp/index.html');
+ const guard=file('public/wwtp/ehs-auth-guard.js');
+ for(const marker of ['v33LogicConfig','v33SludgeRoute','simPh102','pipe-pm203-return-aerotank','chemChip-NaOH','chemChip-PAC','renderChemicalDiagramStatus'])
+  assert.ok(html.includes(marker),marker+' missing');
+ for(const name of ['setSimulatedPH','saveDosingSettings','setSludgeRoute'])
+  assert.ok(guard.includes("'"+name+"'"),name+' not EHS-guarded');
+ assert.match(guard,/protect\(simFns,'wwtp_simulate'\)/);
+ assert.match(guard,/protect\(adminFns,'wwtp_design'\)/);
+});
