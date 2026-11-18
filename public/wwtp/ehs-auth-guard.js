@@ -26,13 +26,13 @@ document.body.classList.add('ehsWwtpUnauthorized');
 function showGate(msg){gate.style.display='flex';document.body.classList.add('ehsWwtpUnauthorized');gate.querySelector('#ehsGateMsg').textContent=msg}
 function hideGate(){gate.style.display='none';document.body.classList.remove('ehsWwtpUnauthorized')}
 function deny(){if(typeof window.showToast==='function')window.showToast('Chức năng này chưa được cấp quyền trong EHS.','error');}
-const simFns=['toggleSimulationMode','toggleExceedanceSimulation','commandEquipment','setEquipmentMode','setSimLevel','toggleChemPump','openMixModal','applyMix','setShiftHours','setShiftTankLevel','saveEntryNumber','saveEntryText','saveChemHours','saveShiftLog','importShiftLogFile'];
+const simFns=['toggleSimulationMode','toggleExceedanceSimulation','commandEquipment','setEquipmentMode','setSimLevel','toggleChemPump','openMixModal','applyNewBatch','setPlantPhase','setShiftHours','setShiftTankLevel','saveEntryNumber','saveEntryText','saveChemHours','saveShiftLog','importShiftLogFile'];
 const adminFns=['setPidEditorRole','togglePidLayoutEdit','savePidLayout','startPidLayoutEditing','resetPidLayout','importPidLayoutFile','setTankCalibration','setPumpCalibration','savePlantCalibration','setMonitorConfig'];
 function protect(list,action){
  for(const name of list){
    const original=window[name];
    if(typeof original!=='function'||original.__ehsGuarded)continue;
-   const guarded=function(...args){if(!ready||!may(action)){deny();return}return original.apply(this,args)};
+   const guarded=function(...args){if(!ready||!may(action)){deny();return false}return original.apply(this,args)};
    guarded.__ehsGuarded=true;window[name]=guarded;
  }
 }
