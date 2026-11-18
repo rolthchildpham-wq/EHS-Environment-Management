@@ -16,7 +16,7 @@ const el=id=>document.getElementById(id);
 const fmt=v=>Number(v||0).toLocaleString('vi-VN',{maximumFractionDigits:2});
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const names={waste:'Rác thải',water_in:'Nước vào',water_out:'Nước ra',stock_in:'Nhập vật tư',stock_out:'Xuất vật tư',cost:'Chi phí',revenue:'Doanh thu'};
-const labels={portal:'Hệ thống Hub',wwtp:'Vận hành XLNT',dashboard:'Tổng quan',records:'Nhật ký',map:'Bản đồ',import:'Nhập liệu & Excel',reports:'Báo cáo',admin:'Quản trị',compliance:'Chỉ số EHS & ISO'};
+const labels={dashboard:'Tổng quan',records:'Nhật ký',map:'Bản đồ',import:'Nhập liệu & Excel',reports:'Báo cáo',admin:'Quản trị',compliance:'Chỉ số EHS & ISO'};
 let data=[],pending=[],reviewData=[],user=null,role=null,db=null,auth=null,charts={};
 const notice=s=>el('notice').textContent=s;
 const date=x=>String(x||'').slice(0,10);
@@ -216,28 +216,45 @@ async function reviews(){
 }
 
 installI18n();
-const navIcons={portal:'◉',wwtp:'≋',dashboard:'◫',records:'≡',finance:'◈',map:'⌖',import:'↥',reports:'▤',admin:'⚙',compliance:'✧'};
+const navIcons={dashboard:'◫',records:'≡',finance:'◈',map:'⌖',import:'↥',reports:'▤',admin:'⚙',compliance:'✧'};
 el('tabs').innerHTML=Object.entries(labels).map(([id,title],i)=>
  '<button data-tab="'+id+'" class="'+(i===0?'active':'')+'"><span class="nav-ico" aria-hidden="true">'+(navIcons[id]||'•')+'</span><span>'+t(title)+'</span></button>'
 ).join('');
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{
- if(!may(({portal:'hub_view',wwtp:'wwtp_view',dashboard:'dashboard',records:'journal',map:'map',import:'excel_import',reports:'reports',admin:'users_manage',compliance:'compliance'})[b.dataset.tab]))return;
+ if(!may(({dashboard:'dashboard',records:'journal',map:'map',import:'excel_import',reports:'reports',admin:'users_manage',compliance:'compliance'})[b.dataset.tab]))return;
  document.querySelectorAll('main > section').forEach(s=>s.classList.toggle('active',s.id===b.dataset.tab));
- if(b.dataset.tab==='wwtp'){
-   const frame=el('wwtpFrame');
-   if(frame&&!frame.dataset.loaded){frame.src='wwtp/index.html';frame.dataset.loaded='1';}
- }
  document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));
 });
-document.querySelectorAll('[data-hub]').forEach(button=>button.onclick=()=>{
- const target=document.querySelector('[data-tab="'+button.dataset.hub+'"]');
- if(target&&!target.hidden)target.click();
-});
-function syncEhsHub(signedIn=false){
- const cards=el('hubCards'),note=el('hubNotice');
- const can=signedIn&&may('hub_view');
- if(cards)cards.hidden=!can;
- if(note)note.textContent=can?'Bạn đã đăng nhập bằng quyền EHS. Chọn phân hệ cần sử dụng.':'Đăng nhập EHS và được cấp quyền để mở hai phân hệ.';
+const environmentMode=document.documentElement.classList.contains('ehs-environment-mode');
+if(environmentMode){
+ el('portal').classList.remove('active');
+ el('dashboard').classList.add('active');
+}else{
+ el('dashboard').classList.remove('active');
+ el('portal').classList.add('active');
+}
+el('hubLogin').onclick=()=>el('login').click();
+el('hubLogout').onclick=()=>el('logout').click();
+document.querySelectorAll('[data-hub]').forEach(link=>link.addEventListener('click',event=>{
+ const target=link.dataset.hub;
+ const allowed=!!user&&!!role&&may('hub_view')&&
+   (target==='wwtp'?may('wwtp_view'):
+    ['dashboard','journal','reports','map','compliance'].some(key=>may(key)));
+ if(allowed)return;
+ event.preventDefault();
+ const status=el('hubNotice');
+ status.textContent=!user?'Hãy đăng nhập Google để mở hệ thống.':
+    'Tài khoản EHS chưa được cấp quyền vào phân hệ này. Liên hệ Admin để cấp quyền.';
+ if(!user)el('hubLogin').focus();
+}));
+function syncEhsHub(){
+ const authenticated=!!user,can=authenticated&&!!role&&may('hub_view');
+ el('hubLogin').hidden=authenticated;
+ el('hubLogout').hidden=!authenticated;
+ el('hubIdentity').textContent=authenticated?(esc(user.email||'Tài khoản EHS')+(role?' · '+role.toUpperCase():' · chưa được cấp quyền')):'Chưa đăng nhập EHS';
+ el('hubNotice').textContent=can?'Bạn đã đăng nhập EHS. Chọn một trong hai hệ thống bên dưới để mở riêng toàn màn hình.':
+  authenticated?'Tài khoản chưa có quyền Hub. Liên hệ Admin để được cấp quyền.':
+  'Đăng nhập Google bằng tài khoản EHS đã được cấp quyền để truy cập các phân hệ.';
 }
 const requestedTab=new URLSearchParams(location.search).get('tab');
 if(requestedTab&&Object.hasOwn(labels,requestedTab)){
@@ -321,5 +338,5 @@ el('login').onclick=()=>auth&&signInWithPopup(auth,new GoogleAuthProvider()).cat
 el('logout').onclick=()=>auth&&signOut(auth);
 if(window.EHS_FIREBASE_CONFIG){
  const app=initializeApp(window.EHS_FIREBASE_CONFIG);auth=getAuth(app);db=getFirestore(app);
- onAuthStateChanged(auth,async u=>{user=u;role=null;syncEhsHub(false);if(!u){const f=el('wwtpFrame');if(f){f.removeAttribute('src');delete f.dataset.loaded;}}el('login').classList.toggle('hide',!!u);el('logout').classList.toggle('hide',!u);if(!u){await loadEhsPermissions(null,null,null);el('mode').textContent='Chưa đăng nhập';unmountQrStock();mountMemberAdmin(db,null,null);mountPublicPublisher(db,null,null,()=>[]);mountDataReset(db,null,null,null);unmountOperations();setCostExplorerRecords([]);await configureCostExplorer(null,null);await mountFactoryMap(db,null,null);await mountCompliance(db,null,null,getAllOperations);data=[];reviewData=[];render();return}try{const membership=await resolveMember(db,u);role=membership?.role||null;await loadEhsPermissions(db,u,role);syncEhsHub(!!role);mountMemberAdmin(db,u,role);mountPublicPublisher(db,u,role,()=>({operations:getAllOperations(),costs:getCostReportRows(String(el('publicPublishYear')?.value||new Date().getFullYear()))}));mountDataReset(db,u,role,reload);if(role){mountOperations(db,u,role,reload);try{mountQrStock(db,u,role,getAllOperations,reload)}catch(error){console.error('QR initialization failed',error)}}else{unmountOperations();unmountQrStock();}await mountFactoryMap(db,u,role);await mountCompliance(db,u,role,getAllOperations);el('mode').textContent=u.email+' · '+(role||'chưa cấp quyền');if(role){await reload();await configureCostExplorer(db,role);applyRights();}else notice('Chưa được cấp quyền; tạo members/'+u.uid+' trong Firestore Console.')}catch(e){notice(e.message)}});
+ onAuthStateChanged(auth,async u=>{user=u;role=null;syncEhsHub();el('login').classList.toggle('hide',!!u);el('logout').classList.toggle('hide',!u);if(!u){await loadEhsPermissions(null,null,null);el('mode').textContent='Chưa đăng nhập';unmountQrStock();mountMemberAdmin(db,null,null);mountPublicPublisher(db,null,null,()=>[]);mountDataReset(db,null,null,null);unmountOperations();setCostExplorerRecords([]);await configureCostExplorer(null,null);await mountFactoryMap(db,null,null);await mountCompliance(db,null,null,getAllOperations);data=[];reviewData=[];render();return}try{const membership=await resolveMember(db,u);role=membership?.role||null;await loadEhsPermissions(db,u,role);syncEhsHub();mountMemberAdmin(db,u,role);mountPublicPublisher(db,u,role,()=>({operations:getAllOperations(),costs:getCostReportRows(String(el('publicPublishYear')?.value||new Date().getFullYear()))}));mountDataReset(db,u,role,reload);if(role){mountOperations(db,u,role,reload);try{mountQrStock(db,u,role,getAllOperations,reload)}catch(error){console.error('QR initialization failed',error)}}else{unmountOperations();unmountQrStock();}await mountFactoryMap(db,u,role);await mountCompliance(db,u,role,getAllOperations);el('mode').textContent=u.email+' · '+(role||'chưa cấp quyền');if(role){await reload();await configureCostExplorer(db,role);applyRights();}else notice('Chưa được cấp quyền; tạo members/'+u.uid+' trong Firestore Console.')}catch(e){notice(e.message)}});
 }else{el('mode').textContent='Chưa cấu hình Firebase';el('login').classList.add('hide');render();notice('Chưa kết nối Firebase Web App. Thêm cấu hình từ Project settings để kích hoạt.')}

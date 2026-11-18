@@ -20,7 +20,7 @@ body.ehsWwtpUnauthorized{overflow:hidden!important}
 `;
 document.head.append(css);
 const gate=document.createElement('div');gate.id='ehsWwtpGate';gate.setAttribute('role','status');
-gate.innerHTML='<div class="gate-card"><strong>TOPKEY • EHS</strong><p id="ehsGateMsg">Đang xác minh phiên đăng nhập EHS…</p><a href="../index.html?tab=portal">Về Hub EHS / Đăng nhập</a></div>';
+gate.innerHTML='<div class="gate-card"><strong>TOPKEY • EHS</strong><p id="ehsGateMsg">Đang xác minh phiên đăng nhập EHS…</p><a href="../">Về Hub EHS / Đăng nhập</a></div>';
 document.body.append(gate);
 document.body.classList.add('ehsWwtpUnauthorized');
 function showGate(msg){gate.style.display='flex';document.body.classList.add('ehsWwtpUnauthorized');gate.querySelector('#ehsGateMsg').textContent=msg}
