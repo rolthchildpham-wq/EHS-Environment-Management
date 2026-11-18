@@ -1,6 +1,11 @@
 import {doc,getDoc,setDoc,serverTimestamp} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
 const $=id=>document.getElementById(id);
 const actions=[
+ ['hub_view','Truy cập Hub hệ thống','view'],
+ ['wwtp_view','Xem hệ thống vận hành XLNT','view'],
+ ['wwtp_simulate','Mô phỏng tín hiệu XLNT','write'],
+ ['wwtp_reports','Xem báo cáo vận hành XLNT','view'],
+ ['wwtp_design','Cài đặt và chỉnh P&ID XLNT','admin'],
  ['dashboard','Xem Tổng quan','view'],
  ['journal','Xem Nhật ký','view'],
  ['qr_in','Nhập vật tư bằng QR','write'],
@@ -24,10 +29,10 @@ export const defaultMatrix=()=>Object.fromEntries(['editor','viewer'].map(role=>
 ]));
 let matrix=defaultMatrix(),currentRole=null,currentUser=null,currentDb=null;
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
-export const may=action=>currentRole==='admin'||Boolean(matrix[currentRole||'viewer']?.[action]===true);
+export const may=action=>{if(action==='hub_view'||action.startsWith('wwtp_'))return Boolean(currentUser&&currentRole&&(currentRole==='admin'||matrix[currentRole]?.[action]===true));return currentRole==='admin'||Boolean(matrix[currentRole||'viewer']?.[action]===true)};
 export const rights=()=>JSON.parse(JSON.stringify(matrix));
 export function applyRights(){
- const page={dashboard:'dashboard',records:'journal',map:'map',import:'excel_import',reports:'reports',admin:'users_manage',compliance:'compliance'};
+ const page={portal:'hub_view',wwtp:'wwtp_view',dashboard:'dashboard',records:'journal',map:'map',import:'excel_import',reports:'reports',admin:'users_manage',compliance:'compliance'};
  document.querySelectorAll('[data-tab]').forEach(btn=>{const key=page[btn.dataset.tab];btn.hidden=!!key&&!may(key)});
  const active=document.querySelector('[data-tab].active');
  if(active?.hidden){const next=[...document.querySelectorAll('[data-tab]')].find(x=>!x.hidden);next?.click()}
