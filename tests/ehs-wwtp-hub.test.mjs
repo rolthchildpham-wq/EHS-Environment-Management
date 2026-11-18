@@ -130,7 +130,7 @@ test('P&ID v3.5 branding and visible PM-203 route selection remain permission gu
  assert.match(html,/function setPidMobileDetail\(enabled\)/);
  assert.match(html,/route-selected/);
  assert.match(html,/pipe-pm203-return-aerotank/);
- assert.match(auth,/routeSelect\.disabled=!admin/);
+ assert.match(auth,/routeSelect\.disabled=!simConfig/);
  assert.match(auth,/protect\(adminFns,'wwtp_design'\)/);
 });
 
