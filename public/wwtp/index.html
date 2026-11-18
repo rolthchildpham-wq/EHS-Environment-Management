@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TOPKEY HMI/SCADA DEMO | SCADA XLNT TOPKEY (VIỆT NAM) - 拓凱(越南)責任有限公司</title>
+  <title>TOPKEY HMI/SCADA v3.4 DEMO | SCADA XLNT TOPKEY (VIỆT NAM) - 拓凱(越南)責任有限公司</title>
 <style id="topkey-tailwind-offline">/*! tailwindcss v4.1.10 | MIT License | https://tailwindcss.com */
 @layer properties;
 @layer theme, base, components, utilities;
@@ -1746,17 +1746,36 @@ body{background:#080c14;color:#e2e8f0}
 .tk-entry-grid input{width:100%}.tk-source-panel{border:1px solid #285e75;border-radius:11px;background:#0a1b29;padding:17px}.tk-source-panel h3{font-size:13px;font-weight:850;color:#6be6f7;margin-bottom:9px}.tk-source-panel p{font-size:11px;color:#bdcbd9;line-height:1.65;margin-top:8px}
 @media(max-width:900px){.tk-entry-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:650px){.tk-entry-grid{grid-template-columns:1fr}.tk-report-actions>label{width:100%}.tk-report-actions button{flex:1}.tk-shift-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.tk-shift-card strong{font-size:17px}}
+
+/* v3.3 - logic and routing additions; preserve base Perspective layout */
+.v33-sim-controls,.v33-config-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;align-items:end}
+.v33-sim-controls{margin-top:14px;padding:14px;background:#0b1424;border:1px solid #25415a;border-radius:12px}
+.v33-sim-controls label,.v33-config-grid label{display:flex;flex-direction:column;gap:8px;color:#cad8ee;font-size:12px;font-weight:650}
+.v33-sim-controls input,.v33-config-grid input,.v33-config-grid select{width:100%;min-height:44px;border-radius:8px;background:#08131f;color:#ecfaff;padding:9px;border:1px solid #35607c;font:inherit}
+.v33-inline-caption{color:#7dd3fc;font-size:12px;padding:10px;border:1px solid #24415c;border-radius:8px;background:#0a1c29;min-height:44px}
+.v33-config-actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:10px 0}
+.v33-config-actions span{font-size:12px;color:#9bbed0}
+#sludgeRouteStatus{background:#2b1d49;border:1px solid #8068be;color:#e5d1ff;font-weight:850}
+#pidSvg #chemicalAutoOverlay g.run rect{stroke:#10b981;fill:#0a2a25;stroke-width:1.6}
+#pidSvg #chemicalAutoOverlay g.run circle{fill:#10b981}
+#pidSvg #chemicalAutoOverlay g.stop rect{stroke:#64748b;fill:#141d30}
+#pidSvg #chemicalAutoOverlay g.stop circle{fill:#64748b}
+#pidSvg #chemicalAutoOverlay g.fault rect{stroke:#f87171;fill:#3f1723}
+#pidSvg #chemicalAutoOverlay g.fault circle{fill:#ef4444}
+#pidSvg #pipe-pm203-return-aerotank.pipe-sludge-active{stroke:#a78bfa;filter:drop-shadow(0 0 5px #a78bfa99)}
+#pidSvg #pipe-pm203-return-aerotank.pipe-paused{stroke:#8a70ad}
 </style>
-<style id="topkey-v33-sim-calibration-style">
-.tk-sim-status-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}
-.tk-sim-status-card{min-width:0;min-height:118px;background:#08101e;border:1px solid #294159;border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:7px}
-.tk-sim-status-card small{font-weight:800;color:#a5d8ee;font-size:11px}
-.tk-sim-status-card strong{font:900 20px ui-monospace,Consolas,monospace;color:#b7c5d1;overflow-wrap:anywhere}
-.tk-sim-status-card strong.running{color:#39e1a3}.tk-sim-status-card strong.fault{color:#ff647a}.tk-sim-status-card strong.estimate{color:#ffd166}
-.tk-sim-status-card p{color:#8faec0;font-size:10px;line-height:1.5}
-#simCalibrationSection{scroll-margin-top:84px}
-@media(max-width:1000px){.tk-sim-status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:600px){.tk-sim-status-grid{grid-template-columns:minmax(0,1fr)}.tk-sim-status-card{min-height:92px}}
+<style id="topkey-pid-immersive-v34">
+/* P&ID immersive mobile mode: only the drawing remains visible while fullscreen. */
+#pidFullscreenExit{display:none;position:absolute;top:max(8px,env(safe-area-inset-top));right:max(8px,env(safe-area-inset-right));z-index:90;min-width:46px;min-height:46px;border:1px solid #3b647e;border-radius:12px;background:#07121de8;color:#e0faff;font:900 22px/1 system-ui,Arial;box-shadow:0 4px 20px #000b;align-items:center;justify-content:center;cursor:pointer}
+#pidFullscreenBox:is(:fullscreen,.pid-fallback-fullscreen){position:relative;width:100vw!important;height:100vh!important;height:100dvh!important;min-width:0!important;max-width:none!important;max-height:none!important;display:flex!important;align-items:stretch;justify-content:center;flex-direction:column;padding:0!important;margin:0!important;border:0!important;overflow:hidden!important;background:#070b12!important;border-radius:0!important}
+#pidFullscreenBox.pid-fallback-fullscreen{position:fixed!important;inset:0!important;z-index:99999!important}
+#pidFullscreenBox:is(:fullscreen,.pid-fallback-fullscreen)>:not(#pidViewport):not(#pidFullscreenExit):not(#equipmentModal):not(#mixModal):not(#reportModal):not(#toastContainer){display:none!important}
+#pidFullscreenBox:is(:fullscreen,.pid-fallback-fullscreen)>#pidFullscreenExit{display:flex!important}
+#pidFullscreenBox:is(:fullscreen,.pid-fallback-fullscreen)>#pidViewport{width:100%!important;height:100%!important;flex:1 1 auto!important;max-height:100%!important;min-height:0!important;min-width:0!important;max-width:100%!important;box-sizing:border-box!important;display:flex!important;align-items:center!important;justify-content:center!important;overflow:hidden!important;padding:0!important;margin:0!important;background:#070b12!important}
+#pidFullscreenBox:is(:fullscreen,.pid-fallback-fullscreen) #pidSvg{width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;max-width:100%!important;max-height:100%!important;display:block!important;overflow:visible!important;object-fit:contain;flex:none;touch-action:manipulation}
+body.pid-immersive-open{overflow:hidden!important}
+@media(max-width:700px){#pidFullscreenExit{top:max(4px,env(safe-area-inset-top));right:max(4px,env(safe-area-inset-right));min-width:42px;min-height:42px;background:#07121df5}}
 </style>
 <style id="ehsModuleNavStyles">
 #ehsWwtpBackBar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;min-height:46px;background:#07111f;border-bottom:1px solid #23465c;padding:7px 18px;color:#91b8c9;font:700 12px/1.4 system-ui,Arial,sans-serif}
@@ -1978,7 +1997,6 @@ body{background:#080c14;color:#e2e8f0}
             <span>pH-12: <strong id="val-ph12" class="text-slate-200">7.22</strong></span>
           </div>
         </div>
-
         <!-- KPI 5: Power Load SELEC MFM383A -->
         <div class="bg-scada-panel border border-scada-border rounded-xl p-3 flex flex-col justify-between">
           <div class="flex items-center justify-between text-[11px] text-slate-400">
@@ -2017,6 +2035,7 @@ body{background:#080c14;color:#e2e8f0}
 
         <!-- AS-BUILT VECTOR P&ID DIAGRAM (TOPKEY FULL ANTECH) -->
         <section id="pidFullscreenBox" class="bg-scada-panel border border-scada-border rounded-xl overflow-hidden shadow-2xl">
+          <button id="pidFullscreenExit" type="button" title="Thoát toàn màn hình" aria-label="Thoát toàn màn hình P&ID" onclick="togglePidFullscreen()">✕</button>
           <div class="px-4 py-3 border-b border-scada-border flex flex-wrap items-center justify-between gap-2 bg-[#0d1422]">
             <div class="flex items-center gap-2.5">
               <span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span>
@@ -2054,6 +2073,7 @@ body{background:#080c14;color:#e2e8f0}
           <div id="pidStatusStrip" class="pid-status-strip" aria-live="polite">
             <span style="font-size:10px;font-weight:900;color:#74d9e7;letter-spacing:.5px">TRẠNG THÁI P&ID • SIM</span>
             <span id="pidStateCounts" class="pid-status-summary"><span class="pid-status-pill unknown"><i></i>PLC OFF • CHƯA CÓ DỮ LIỆU</span></span>
+            <span id="sludgeRouteStatus" class="pid-status-pill unknown" aria-live="polite">PM-203 → TK-301 (SIM)</span>
             <span style="font-size:10px;color:#849db4">Đường ống động là suy luận mô phỏng theo bơm, không phải cảm biến lưu lượng thực.</span>
           </div>
           <div id="pidEditorNotice" class="pid-editor-box hidden">CHỈNH SƠ ĐỒ (ADMIN DEMO): Kéo thả thiết bị; chọn ống để kéo điểm gấp. Bấm Lưu trong Cài đặt để giữ bố cục.</div>
@@ -2131,9 +2151,18 @@ body{background:#080c14;color:#e2e8f0}
               <path id="pipe-bl202" d="M 1240 245 L 1240 185" stroke="#bae6fd" stroke-width="3" fill="none" class="pipe-air-active"/>
 
               <path id="pipe-pm105" d="M 850 180 L 850 545 L 250 545 L 250 555" stroke="#ea580c" stroke-width="3" fill="none" stroke-linejoin="round" class="pipe-sludge-active"/>
-              <path id="pipe-pm203" d="M 1480 155 L 1525 155 L 1525 610 L 315 610" stroke="#ea580c" stroke-width="3" fill="none" stroke-linejoin="round" class="pipe-sludge-active"/>
+              <path id="pipe-pm203" d="M 1480 155 L 1525 155 L 1525 610 L 315 610" stroke="#ea580c" stroke-width="3" fill="none" stroke-linejoin="round" class="pipe-paused" aria-label="PM-203 → TK-301 Bể chứa bùn"/>
+              <path id="pipe-pm203-return-aerotank" d="M 1480 155 L 1515 155 L 1515 205 L 1200 205 L 1200 185" stroke="#a78bfa" stroke-width="3.6" fill="none" stroke-linejoin="round" class="pipe-paused" aria-label="PM-203 → TK-202A/B Aerotank • hồi lưu bùn"/>
+              <text x="1260" y="199" fill="#c4b5fd" font-size="9" font-family="JetBrains Mono">RAS → AEROTANK (SIM)</text>
               <path id="pipe-sludge-press" d="M 315 585 L 450 585" stroke="#ea580c" stroke-width="3.5" fill="none" class="pipe-sludge-active"/>
               <path id="pipe-return-existing" d="M 520 555 L 520 518 L 395 518 L 395 180" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+
+              <g id="chemicalAutoOverlay" pointer-events="none" font-family="JetBrains Mono" font-size="9">
+                <g id="chemChip-NaOH" transform="translate(513 222)"><rect width="110" height="22" rx="6" fill="#17213a" stroke="#64748b"/><circle cx="10" cy="11" r="4" fill="#64748b"/><text x="19" y="14" fill="#e2e8f0">NaOH • SIM OFF</text></g>
+                <g id="chemChip-H2SO4" transform="translate(513 250)"><rect width="110" height="22" rx="6" fill="#17213a" stroke="#64748b"/><circle cx="10" cy="11" r="4" fill="#64748b"/><text x="19" y="14" fill="#e2e8f0">H2SO4 • SIM OFF</text></g>
+                <g id="chemChip-PAC" transform="translate(630 222)"><rect width="96" height="22" rx="6" fill="#17213a" stroke="#64748b"/><circle cx="10" cy="11" r="4" fill="#64748b"/><text x="19" y="14" fill="#e2e8f0">PAC • SIM OFF</text></g>
+                <g id="chemChip-POLYMER" transform="translate(733 222)"><rect width="111" height="22" rx="6" fill="#17213a" stroke="#64748b"/><circle cx="10" cy="11" r="4" fill="#64748b"/><text x="19" y="14" fill="#e2e8f0">POLYMER • SIM OFF</text></g>
+              </g>
 
               <!-- ==================== NHÁNH 1: NƯỚC THẢI SẢN XUẤT ==================== -->
               <g class="scada-node" onclick="openEquipmentModal('TK100')" transform="translate(70, 50)">
@@ -2544,30 +2573,15 @@ body{background:#080c14;color:#e2e8f0}
 
       <div id="view-simulation" class="hidden space-y-5">
         <section class="bg-scada-panel border border-scada-border rounded-xl p-4 space-y-3">
-          <div class="flex flex-wrap items-center justify-between gap-3"><h2 class="font-bold text-base text-white">◉ Mô phỏng tín hiệu & hiệu chỉnh bể / Signal Simulation / 訊號模擬</h2><span id="simTabStatus" class="status-pill unknown">OFF</span></div>
+          <div class="flex flex-wrap items-center justify-between gap-3"><h2 class="font-bold text-base text-white">◉ Phòng mô phỏng tín hiệu / Signal Simulation / 訊號模擬</h2><span id="simTabStatus" class="status-pill unknown">OFF</span></div>
           <p class="text-xs text-slate-400">Chỉ mô phỏng trong trình duyệt. Chỉnh mức bể, phao H/L và bật/tắt thiết bị để quan sát P&ID, không ghi lệnh vào PLC.</p>
           <button type="button" onclick="toggleSimulationMode()" class="v3-action">BẬT / TẮT MÔ PHỎNG</button>
           <div id="levelSimControls" class="v3-level-grid"></div>
-          <button type="button" class="tk-quiet-btn" onclick="document.getElementById('simCalibrationSection').scrollIntoView({behavior:'smooth',block:'start'})">↓ Đến bảng hiệu chỉnh bể và bơm</button>
-        </section>
-        <section class="bg-scada-panel border border-scada-border rounded-xl p-4 space-y-3" id="simStatusSummarySection">
-          <div class="tk-section-title"><div><h3>Trạng thái pH, bơm bùn và hóa chất (SIM / OFF)</h3><p>Thông tin chỉ xuất hiện trong mô phỏng, không phải tín hiệu PLC thực. Trạng thái bơm hóa chất dựa trên suy luận, cần xác minh mapping trước khi sử dụng thực tế.</p></div><span class="status-pill unknown" id="simStatusBadge">OFF</span></div>
-          <div class="tk-sim-status-grid">
-            <div class="tk-sim-status-card"><small>pH-102 (trung hòa hóa lý)</small><strong id="simCardPh102">—</strong><span id="simCardPh102Tag" class="tk-rep-src off">OFF</span></div>
-            <div class="tk-sim-status-card"><small>pH-12 (trung hòa tổng hợp)</small><strong id="simCardPh12">—</strong><span id="simCardPh12Tag" class="tk-rep-src off">OFF</span></div>
-            <div class="tk-sim-status-card"><small>Bơm bùn hóa lý PM-105</small><strong id="simCardPm105">OFF</strong><p>Chu kỳ tham chiếu: chờ 5 phút, chạy 5 phút sau khi PM-101 dừng. Kiểm tra trạng thái giả lập bên dưới.</p></div>
-            <div class="tk-sim-status-card"><small>Bơm bùn sinh học PM-203</small><strong id="simCardPm203">OFF</strong><p>Chu kỳ tham chiếu: 2 giờ chạy 1 lần, mỗi lần 10 phút. Chưa xác minh Ladder thực.</p></div>
-            <div class="tk-sim-status-card"><small>PAC / Polymer</small><strong id="simCardPac">OFF</strong><p>Đánh giá mô phỏng theo PM-101; không xác nhận bơm định lượng thật.</p></div>
-            <div class="tk-sim-status-card"><small>NaOH theo pH</small><strong id="simCardNaoh">OFF</strong><p>Chỉ thị pH mô phỏng; chưa có ngưỡng PLC và tín hiệu chạy bơm để kết luận.</p></div>
+          <div class="v33-sim-controls">
+            <label for="simPh102"><span id="v33SimPhLabel">pH-102 (giá trị giả lập để thử bơm NaOH/H₂SO₄)</span><input id="simPh102" type="number" min="0" max="14" step="0.05" value="7.15" onchange="setSimulatedPH(this.value)"/></label>
+            <div class="v33-inline-caption" id="simChemLogicStatus">PM-101 OFF • Bơm định lượng theo AUTO (SIM)</div>
+            <div class="v33-inline-caption" id="simSludgeRouteStatus">PM-203 → TK-301 (Mô phỏng)</div>
           </div>
-        </section>
-        <section id="simCalibrationSection" class="bg-scada-panel border border-scada-border rounded-xl p-4 space-y-4">
-          <div class="tk-section-title"><div><h3 id="tankCalibTitle">Hiệu chỉnh lưu lượng & kích thước bể</h3><p id="tankCalibNote">Dữ liệu lưu trong trình duyệt. Số mẫu chỉ để kiểm tra thuật toán, không thay cho bản vẽ hoàn công/đo bơm.</p></div><span class="status-pill warning" id="calibStatus">CHƯA HIỆU CHUẨN</span></div>
-          <h4 id="tankDimsTitle" class="tk-mini-title">Kích thước lọt lòng và mực nước hữu dụng (m)</h4>
-          <div class="monitor-table-wrap"><table class="monitor-table tk-calib-table"><thead><tr><th>BỂ</th><th>Dài (m)</th><th>Rộng (m)</th><th>Sâu nước hữu dụng (m)</th><th>V hữu dụng (m³)</th><th>Trạng thái</th></tr></thead><tbody id="tankCalibRows"></tbody></table></div>
-          <h4 id="flowCalibTitle" class="tk-mini-title">Lưu lượng từng bơm (m³/h) • nhập theo đo/đường đặc tính đã xác nhận</h4>
-          <div class="monitor-table-wrap"><table class="monitor-table tk-calib-table"><thead><tr><th>BƠM</th><th>Vai trò</th><th>m³/h</th><th>Hiệu chuẩn</th><th>Nguồn</th></tr></thead><tbody id="pumpCalibRows"></tbody></table></div>
-          <div class="tk-report-actions"><button type="button" class="v3-action" onclick="savePlantCalibration()">✓ Lưu cấu hình</button><button type="button" class="tk-quiet-btn" onclick="exportPlantCalibration()">Xuất JSON hiệu chuẩn</button><span class="text-xs text-amber-300" id="calibMessage"></span></div>
         </section>
       </div>
       <div id="view-equipment" class="hidden space-y-5"><section class="bg-scada-panel border border-scada-border rounded-xl p-4 space-y-3"><h2 class="font-bold text-base text-white">⚙ Thiết bị vận hành / Equipment / 設備</h2><p class="text-xs text-slate-400">Nhấn vào một thiết bị để mở faceplate. Điều khiển chỉ ở trạng thái SIM và không tác động hiện trường.</p><div id="equipmentGrid" class="v3-equipment-grid"></div></section></div>
@@ -2577,7 +2591,6 @@ body{background:#080c14;color:#e2e8f0}
           <div class="tk-report-actions">
             <label><span id="shiftDateLabel">Ngày bắt đầu ca (08:00)</span><input id="shiftDate" type="date" onchange="setShiftDate(this.value)"></label>
             <label><span id="reportModeLabel">Nguồn báo cáo</span><select id="reportMode" onchange="setReportMode(this.value)"><option value="manual">Nhật ký nhập / file Gateway</option><option value="sim">Mô phỏng phiên hiện tại</option></select></label>
-            <button type="button" class="tk-quiet-btn" onclick="jumpToSimulationCalibration()">◉ Hiệu chỉnh kích thước bể & lưu lượng bơm</button>
             <button type="button" class="v3-action" onclick="renderShiftReport()">↻ Tính lại</button>
             <button type="button" class="v3-action" onclick="exportShiftReportCsv()">↓ Xuất CSV</button>
           </div>
@@ -2585,7 +2598,14 @@ body{background:#080c14;color:#e2e8f0}
           <div id="flowReportTable"></div>
           <p class="tk-report-caution" id="flowReportCaution">Giờ chạy bơm × lưu lượng định mức chỉ là ước tính; thể tích bể chỉ dùng cho cân bằng tồn nước/HRT khi có kích thước lọt lòng và độ sâu hữu dụng. Số liệu chưa hiệu chuẩn không sử dụng để kê khai môi trường.</p>
         </section>
-
+        <section class="bg-scada-panel border border-scada-border rounded-xl p-4 space-y-4">
+          <div class="tk-section-title"><div><h3 id="tankCalibTitle">Hiệu chỉnh lưu lượng & kích thước bể</h3><p id="tankCalibNote">Dữ liệu lưu trong trình duyệt. Số mẫu chỉ để kiểm tra thuật toán, không thay cho bản vẽ hoàn công/đo bơm.</p></div><span class="status-pill warning" id="calibStatus">CHƯA HIỆU CHUẨN</span></div>
+          <h4 id="tankDimsTitle" class="tk-mini-title">Kích thước lọt lòng và mực nước hữu dụng (m)</h4>
+          <div class="monitor-table-wrap"><table class="monitor-table tk-calib-table"><thead><tr><th>BỂ</th><th>Dài (m)</th><th>Rộng (m)</th><th>Sâu nước hữu dụng (m)</th><th>V hữu dụng (m³)</th><th>Trạng thái</th></tr></thead><tbody id="tankCalibRows"></tbody></table></div>
+          <h4 id="flowCalibTitle" class="tk-mini-title">Lưu lượng từng bơm (m³/h) • nhập theo đo/đường đặc tính đã xác nhận</h4>
+          <div class="monitor-table-wrap"><table class="monitor-table tk-calib-table"><thead><tr><th>BƠM</th><th>Vai trò</th><th>m³/h</th><th>Hiệu chuẩn</th><th>Nguồn</th></tr></thead><tbody id="pumpCalibRows"></tbody></table></div>
+          <div class="tk-report-actions"><button type="button" class="v3-action" onclick="savePlantCalibration()">✓ Lưu cấu hình</button><button type="button" class="tk-quiet-btn" onclick="exportPlantCalibration()">Xuất JSON hiệu chuẩn</button><span class="text-xs text-amber-300" id="calibMessage"></span></div>
+        </section>
         <section class="bg-scada-panel border border-scada-border rounded-xl p-4 space-y-4">
           <div class="tk-section-title"><div><h3 id="manualDataTitle">Nhật ký ca thực tế • Nhập dữ liệu từ PLC / đồng hồ / hiện trường</h3><p id="manualDataNote">Các ô để trống = chưa có dữ liệu. Nhập 0 khi xác nhận thiết bị không chạy. File nhập không tự được xác nhận là dữ liệu đo đã kiểm định.</p></div><span class="status-pill unknown">OFF → NHẬP / TÍNH</span></div>
           <div class="tk-report-actions"><button type="button" class="tk-quiet-btn" onclick="downloadShiftTemplate()">↓ Mẫu JSON nhật ký</button><label class="tk-file-import" for="shiftImportFile">↑ Nhập JSON nhật ký<input id="shiftImportFile" type="file" accept=".json,application/json" onchange="importShiftLogFile(event)" hidden></label><button class="v3-action" onclick="saveShiftLog()">Lưu nhật ký ca</button></div>
@@ -2633,6 +2653,25 @@ body{background:#080c14;color:#e2e8f0}
             <button type="button" class="admin-action warn" onclick="resetPidLayout()" data-admin-i18n="reset">Khôi phục sơ đồ gốc</button>
           </div>
           <div class="admin-status" id="adminLayoutMessage" role="status">Vai trò hiện tại: Operator • Chưa bật chỉnh sơ đồ.</div>
+        </section>
+        <section class="admin-dash v33-logic-config" id="v33LogicConfig">
+          <h3 id="v33LogicTitle">⚙ Cài đặt logic mô phỏng hóa chất & hướng bùn</h3>
+          <p id="v33LogicIntro" class="text-xs text-slate-400">Thiết lập chỉ quyết định animation và logic thử nghiệm. Chưa xác minh cấu hình Ladder, van hoặc địa chỉ PLC. Thay đổi không tác động hiện trường.</p>
+          <div class="v33-config-grid">
+            <label for="v33PhLow"><span id="v33LowLabel">Ngưỡng pH thấp (NaOH sẽ chạy khi pH thấp hơn)</span>
+              <input id="v33PhLow" type="number" min="0" max="14" step="0.05" value="6.8"/></label>
+            <label for="v33PhHigh"><span id="v33HighLabel">Ngưỡng pH cao (H₂SO₄ sẽ chạy khi pH cao hơn)</span>
+              <input id="v33PhHigh" type="number" min="0" max="14" step="0.05" value="8.5"/></label>
+            <label for="v33PhDeadband"><span id="v33DeadLabel">Độ trễ đóng/ngắt để chống nhấp nháy pH</span>
+              <input id="v33PhDeadband" type="number" min="0" max="1" step="0.05" value="0.15"/></label>
+            <label for="v33SludgeRoute"><span id="v33RouteLabel">Hướng bơm bùn sinh học PM-203 khi RUN</span>
+              <select id="v33SludgeRoute" onchange="setSludgeRoute(this.value)">
+                <option value="sludge" id="v33RouteSludgeOption">TK-301 — Bể chứa bùn</option>
+                <option value="aerotank" id="v33RouteAeroOption">TK-202A/B — Hồi lưu Aerotank</option>
+              </select></label>
+          </div>
+          <div class="v33-config-actions"><button class="admin-action" id="v33ApplyButton" type="button" onclick="saveDosingSettings()">Áp dụng ngưỡng pH (SIM)</button><span id="v33ConfigMsg" role="status">Mặc định mô phỏng, chưa hiệu chuẩn với PLC.</span></div>
+          <p id="v33LogicHelp" class="text-xs text-amber-300">PAC & Polymer: RUN khi PM-101A/B chạy ở AUTO. NaOH: pH-102 dưới ngưỡng thấp; H₂SO₄: trên ngưỡng cao. Có khóa chéo, chỉ mô phỏng. PM-203 chỉ sáng 1 trong 2 nhánh đã chọn.</p>
         </section>
         <section class="admin-dash"><h3 data-admin-i18n="limitsTitle">Giới hạn vận hành</h3><p data-admin-i18n="limits">Bố cục chỉ lưu trong trình duyệt (localStorage). Chuyển máy bằng Xuất / Nhập JSON. Bản demo chưa có xác thực Admin và chưa nghiệm thu đường ống.</p></section>
       </div>
@@ -3178,6 +3217,20 @@ body{background:#080c14;color:#e2e8f0}
     state.monitorConfig = Object.fromEntries(PARAM_META.map(m => [m.key, {installed:false, allowSim:false}]));
     const CHEM_CODES=['NaOH','H2SO4','PAC','POLYMER','NaOCl'];
     state.chemicals.forEach((c,i) => {c.code=CHEM_CODES[i];c.capacityL=2000;c.volumeL=null;c.rateLph=0;c.lastMixedAt=null;c.manualSim=false;c.lastAlarm='';});
+    const V33_LANG={
+      vi:{simPhLabel:'pH-102 (giá trị giả lập để thử bơm NaOH/H₂SO₄)',title:'⚙ Cài đặt logic mô phỏng hóa chất & hướng bùn',intro:'Thiết lập chỉ quyết định animation và logic thử nghiệm. Chưa xác minh cấu hình Ladder, van hoặc địa chỉ PLC. Thay đổi không tác động hiện trường.',lowLabel:'Ngưỡng pH thấp (NaOH sẽ chạy khi pH thấp hơn)',highLabel:'Ngưỡng pH cao (H₂SO₄ sẽ chạy khi pH cao hơn)',deadLabel:'Độ trễ đóng/ngắt để chống nhấp nháy pH',routeLabel:'Hướng bơm bùn sinh học PM-203 khi RUN',routeSludge:'TK-301 — Bể chứa bùn',routeAero:'TK-202A/B — Hồi lưu Aerotank',apply:'Áp dụng ngưỡng pH (SIM)',help:'PAC & Polymer: RUN khi PM-101A/B chạy ở AUTO. NaOH: pH-102 dưới ngưỡng thấp; H₂SO₄: trên ngưỡng cao. Có khóa chéo, chỉ mô phỏng. PM-203 chỉ sáng 1 trong 2 nhánh đã chọn.',autoOff:'PM-101 không ở AUTO RUN → PAC / Polymer / điều chỉnh pH dừng (SIM)',routeTo:'PM-203 →',routeStop:'SIM STOP',routeRun:'SIM RUN',routeOff:'OFF',sludge:'TK-301 (bể chứa bùn)',aero:'TK-202A/B (Aerotank)',chemPm101:'Theo PM-101 AUTO',chemLow:'Theo pH thấp',chemHigh:'Theo pH cao',chemPm204:'Theo PM-204 AUTO',invalid:'LỖI: ngưỡng pH phải 0–14; LOW < HIGH, độ trễ nhỏ hơn nửa khoảng ngưỡng.',saved:'Đã lưu ngưỡng mô phỏng',routeSaved:'Hướng bùn mô phỏng đã chọn',notReal:'Không có tín hiệu van thật.',default:'Mặc định mô phỏng, chưa hiệu chuẩn với PLC.'},
+      zh:{simPhLabel:'pH-102（模擬數值，用於測試 NaOH / H₂SO₄ 加藥泵）',title:'⚙ 模擬加藥邏輯與污泥流向設定',intro:'本設定僅控制本機模擬動畫和邏輯；PLC 程式、閥門及點位尚未驗證，不會操作現場設備。',lowLabel:'pH 低限（低於此值啟動 NaOH）',highLabel:'pH 高限（高於此值啟動 H₂SO₄）',deadLabel:'防止 pH 閃爍的停啟遲滯值',routeLabel:'PM-203 生物污泥泵的模擬流向',routeSludge:'TK-301 — 污泥儲池',routeAero:'TK-202A/B — 回流曝氣池',apply:'套用 pH 限值（SIM）',help:'PAC / Polymer：PM-101A/B AUTO 運轉時自動加藥。低 pH 啟動 NaOH，高 pH 啟動 H₂SO₄，具有互鎖；僅為模擬。PM-203 只啟用所選的一條管線。',autoOff:'PM-101 未在 AUTO RUN → PAC / Polymer / pH 加藥停止（SIM）',routeTo:'PM-203 →',routeStop:'模擬停止',routeRun:'模擬運行',routeOff:'離線',sludge:'TK-301（污泥儲池）',aero:'TK-202A/B（曝氣池）',chemPm101:'依 PM-101 AUTO',chemLow:'依低 pH',chemHigh:'依高 pH',chemPm204:'依 PM-204 AUTO',invalid:'錯誤：pH 必須在 0–14，低限小於高限，遲滯值小於區間一半。',saved:'模擬 pH 限值已儲存',routeSaved:'已選擇模擬污泥流向',notReal:'無實際閥門訊號。',default:'僅供模擬，尚未與 PLC 校準。'},
+      en:{simPhLabel:'pH-102 (simulated reading for NaOH / H₂SO₄ dosing tests)',title:'⚙ Simulation settings: dosing logic & sludge routing',intro:'These settings affect simulation animations and logic only. PLC ladder, valves and addresses have not been verified. No field equipment is controlled.',lowLabel:'Low pH threshold (NaOH starts below this value)',highLabel:'High pH threshold (H₂SO₄ starts above this value)',deadLabel:'pH on/off hysteresis to prevent chattering',routeLabel:'PM-203 biological sludge destination when RUN',routeSludge:'TK-301 — Sludge holding tank',routeAero:'TK-202A/B — Return to Aerotank',apply:'Apply pH thresholds (SIM)',help:'PAC and Polymer automatically run with PM-101A/B in AUTO RUN. Low pH enables NaOH, high pH enables H₂SO₄; they are interlocked. Simulation only. PM-203 animates only the selected route.',autoOff:'PM-101 is not in AUTO RUN → PAC / Polymer / pH dosing stopped (SIM)',routeTo:'PM-203 →',routeStop:'SIM STOP',routeRun:'SIM RUN',routeOff:'OFF',sludge:'TK-301 (sludge holding tank)',aero:'TK-202A/B (Aerotank)',chemPm101:'From PM-101 AUTO',chemLow:'From low pH',chemHigh:'From high pH',chemPm204:'From PM-204 AUTO',invalid:'ERROR: pH must be 0–14; LOW < HIGH; hysteresis less than half the interval.',saved:'Simulation pH thresholds saved',routeSaved:'Simulation sludge destination selected',notReal:'No actual valve feedback.',default:'Simulation defaults — not verified against PLC.'}
+    };
+    function v33Text(){return V33_LANG[state.lang]||V33_LANG.vi;}
+    function renderV33Language(){
+      const d=v33Text(),ids={v33SimPhLabel:'simPhLabel',v33LogicTitle:'title',v33LogicIntro:'intro',v33LowLabel:'lowLabel',v33HighLabel:'highLabel',v33DeadLabel:'deadLabel',v33RouteLabel:'routeLabel',v33RouteSludgeOption:'routeSludge',v33RouteAeroOption:'routeAero',v33ApplyButton:'apply',v33LogicHelp:'help'};
+      Object.entries(ids).forEach(([id,key])=>{const n=document.getElementById(id);if(n)n.textContent=d[key];});
+    }
+    state.dosingConfig={phLow:6.8,phHigh:8.5,deadband:0.15,phOverride:null};
+    state.phDoseLatch='none';
+    state.sludgeRoute='sludge'; // SIM default based on existing drawn path; NOT a verified field valve state.
+    const LOGIC_KEY='topkey_scada_sim_logic_v33';
     const STORAGE_KEY='topkey_scada_origin_v3_inventory';
     function loadInventory(){
       try {const raw=localStorage.getItem(STORAGE_KEY); if(!raw)return; const j=JSON.parse(raw);
@@ -3196,6 +3249,93 @@ body{background:#080c14;color:#e2e8f0}
       mixHistory:state.mixHistory.slice(0,50),mon:state.monitorConfig
     }));}catch(e){console.warn('Local settings not saved',e);}}
     loadInventory();
+    function loadLogicSettings(){
+      try{
+        const j=JSON.parse(localStorage.getItem(LOGIC_KEY)||'{}');
+        if(Number.isFinite(j.phLow)&&Number.isFinite(j.phHigh)&&j.phLow>=0&&j.phLow<j.phHigh&&j.phHigh<=14){state.dosingConfig.phLow=j.phLow;state.dosingConfig.phHigh=j.phHigh;}
+        if(Number.isFinite(j.deadband)&&j.deadband>=0&&j.deadband<=1)state.dosingConfig.deadband=j.deadband;
+        if(['sludge','aerotank'].includes(j.sludgeRoute))state.sludgeRoute=j.sludgeRoute;
+      }catch(e){console.warn('SIM logic settings not available',e);}
+    }
+    function persistLogicSettings(){
+      try{localStorage.setItem(LOGIC_KEY,JSON.stringify({phLow:state.dosingConfig.phLow,phHigh:state.dosingConfig.phHigh,deadband:state.dosingConfig.deadband,sludgeRoute:state.sludgeRoute}));}
+      catch(e){console.warn('SIM logic settings not saved',e);}
+    }
+    function renderLogicSettings(){
+      const low=document.getElementById('v33PhLow'),high=document.getElementById('v33PhHigh'),dead=document.getElementById('v33PhDeadband'),route=document.getElementById('v33SludgeRoute');
+      if(low)low.value=state.dosingConfig.phLow;
+      if(high)high.value=state.dosingConfig.phHigh;
+      if(dead)dead.value=state.dosingConfig.deadband;
+      if(route)route.value=state.sludgeRoute;
+      renderLogicStatus();
+    }
+    function renderLogicStatus(){
+      const d=v33Text();
+      const ph=state.telemetry.ph102;
+      const pump=state.equipment.PM101;
+      const auto=state.simActive&&pump?.status==='RUN'&&pump?.mode==='AUTO';
+      const stateText=auto?`PM-101 AUTO RUN | pH ${Number.isFinite(ph)?ph.toFixed(2):'—'} | NaOH ${chemicalPumpActive(0)?'RUN':'STOP'} • H₂SO₄ ${chemicalPumpActive(1)?'RUN':'STOP'} • PAC / Polymer RUN`:d.autoOff;
+      const status=document.getElementById('simChemLogicStatus');if(status)status.textContent=stateText;
+      const sel=document.getElementById('v33SludgeRoute');if(sel&&sel.value!==state.sludgeRoute)sel.value=state.sludgeRoute;
+      const target=state.sludgeRoute==='aerotank'?d.aero:d.sludge;
+      const route=document.getElementById('simSludgeRouteStatus');if(route)route.textContent=`${d.routeTo} ${target} • ${state.simActive&&state.equipment.PM203?.status==='RUN'?d.routeRun:d.routeStop}`;
+      const pid=document.getElementById('sludgeRouteStatus');if(pid)pid.textContent=`${d.routeTo} ${target} • ${state.simActive?'SIM':d.routeOff}`;
+      const phInput=document.getElementById('simPh102');if(phInput&&document.activeElement!==phInput)phInput.value=state.dosingConfig.phOverride===null?Number(ph||7.15).toFixed(2):Number(state.dosingConfig.phOverride).toFixed(2);
+    }
+    function saveDosingSettings(){
+      const low=Number(document.getElementById('v33PhLow').value),high=Number(document.getElementById('v33PhHigh').value),dead=Number(document.getElementById('v33PhDeadband').value);
+      if(!Number.isFinite(low)||!Number.isFinite(high)||!Number.isFinite(dead)||low<0||high>14||low>=high||dead<0||dead>1||dead*2>=high-low){
+        const m=document.getElementById('v33ConfigMsg');if(m)m.textContent=v33Text().invalid;
+        return;
+      }
+      Object.assign(state.dosingConfig,{phLow:low,phHigh:high,deadband:dead});state.phDoseLatch='none';persistLogicSettings();refreshDosingAndRouting();
+      const m=document.getElementById('v33ConfigMsg');if(m)m.textContent=`SIM: LOW ${low} • HIGH ${high} • hysteresis ${dead} • ${v33Text().saved}`;
+    }
+    function setSludgeRoute(route){
+      if(!['sludge','aerotank'].includes(route))return;
+      state.sludgeRoute=route;persistLogicSettings();syncPidPipesAndStatuses();renderLogicStatus();
+      const m=document.getElementById('v33ConfigMsg');if(m)m.textContent=`SIM: PM-203 → ${route==='aerotank'?v33Text().aero:v33Text().sludge} • ${v33Text().notReal}`;
+    }
+    function setSimulatedPH(v){
+      const value=Number(v);
+      if(!state.simActive||!Number.isFinite(value)||value<0||value>14)return;
+      state.dosingConfig.phOverride=value;state.telemetry.ph102=value;refreshDosingAndRouting();
+      const svg=document.getElementById('svg-ph102');if(svg)svg.textContent=`pH: ${value.toFixed(2)}`;
+      const kpi=document.getElementById('val-ph102');if(kpi)kpi.textContent=value.toFixed(2);
+    }
+    function evaluatePhDosing(){
+      if(!state.simActive||state.equipment.PM101?.status!=='RUN'||state.equipment.PM101?.mode!=='AUTO'){state.phDoseLatch='none';return 'none';}
+      const v=Number(state.telemetry.ph102);
+      if(!Number.isFinite(v)||v<0||v>14){state.phDoseLatch='none';return 'none';}
+      const {phLow,phHigh,deadband}=state.dosingConfig;
+      if(state.phDoseLatch==='naoh'&&v<phLow+deadband)return 'naoh';
+      if(state.phDoseLatch==='acid'&&v>phHigh-deadband)return 'acid';
+      state.phDoseLatch=v<phLow?'naoh':v>phHigh?'acid':'none';
+      return state.phDoseLatch;
+    }
+    function chemicalPumpActive(i){
+      if(!state.simActive)return false;
+      const manual=state.chemicals[i]?.manualSim===true;
+      const e=state.equipment.PM101;
+      // Interlock even between the AUTO request and a manual SIM test.
+      if(i===0)return !state.chemicals[1]?.manualSim && (manual||evaluatePhDosing()==='naoh');
+      if(i===1)return !state.chemicals[0]?.manualSim && (manual||evaluatePhDosing()==='acid');
+      if(i===2||i===3)return manual||(e?.status==='RUN'&&e?.mode==='AUTO');
+      if(i===4)return manual||(state.equipment.PM204?.status==='RUN'&&state.equipment.PM204?.mode==='AUTO');
+      return false;
+    }
+    function renderChemicalDiagramStatus(){
+      const codes=['NaOH','H2SO4','PAC','POLYMER'];
+      codes.forEach((code,i)=>{
+        const el=document.getElementById('chemChip-'+code);if(!el)return;
+        const run=chemicalPumpActive(i);
+        el.classList.toggle('run',run);el.classList.toggle('stop',!run);
+        const text=el.querySelector('text');if(text)text.textContent=`${code} • ${state.simActive?(run?'SIM RUN':'SIM STOP'):'OFF'}`;
+        const rect=el.querySelector('rect');if(rect)rect.setAttribute('stroke',run?'#10b981':'#64748b');
+      });
+    }
+    function refreshDosingAndRouting(){renderChemicalDiagramStatus();renderChemicalsAndProtocols();renderLogicStatus();syncPidPipesAndStatuses();}
+    loadLogicSettings();
 
     // =========================================================================
     // 4. APPLY 100% BILINGUAL TEXT ACROSS ENTIRE APPLICATION
@@ -3341,6 +3481,7 @@ body{background:#080c14;color:#e2e8f0}
       applyLanguage();
       updateEditorLanguage();
       refreshShiftLanguage();
+      renderLogicStatus();renderV33Language();
       showToast(
         state.lang === 'vi'
           ? 'Đã chuyển đổi 100% giao diện sang Tiếng Việt'
@@ -3382,8 +3523,7 @@ body{background:#080c14;color:#e2e8f0}
       if (activeBtn) activeBtn.className = 'nav-btn w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-semibold bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 transition text-left';
       if (tabName === 'qcvn') {renderMonitorRows(); if(state.simActive)renderHistorianChart();}
       renderExtraViews();
-      if(tabName==='simulation'){renderPlantCalibration();renderSimulationSummary();}
-      if(tabName==='report'){renderShiftInputs();renderShiftReport();}
+      if(tabName==='report'){renderPlantCalibration();renderShiftInputs();renderShiftReport();}
     }
 
     function changeQCVNStandard() {
@@ -3419,7 +3559,7 @@ body{background:#080c14;color:#e2e8f0}
       t.qOut = eq.PM204.status==='RUN' ? Number(plantConfig.pumps['PM-204A']?.q || 0) : 0;
       t.qDaily = +(Math.max(0,t.qDaily || 0) + t.qOut * dt / 3600).toFixed(3);
 
-      t.ph102 = +(7.15 + (Math.random() - 0.5) * 0.08).toFixed(2);
+      t.ph102 = state.dosingConfig.phOverride===null?+(7.15 + (Math.random() - 0.5) * 0.08).toFixed(2):state.dosingConfig.phOverride;
       t.ph12 = +(7.22 + (Math.random() - 0.5) * 0.06).toFixed(2);
       t.doVal = blowerRun
         ? +(Math.min(3.5, Math.max(2.3, t.doVal + (Math.random() - 0.48) * 0.1))).toFixed(2)
@@ -3482,8 +3622,10 @@ body{background:#080c14;color:#e2e8f0}
       }
 
       simulateChemicalUse(dt);
+      renderChemicalDiagramStatus();
       updateDashboardUI();
       renderChemicalsAndProtocols();
+      renderLogicStatus();
       if (!document.getElementById('view-qcvn').classList.contains('hidden')) renderHistorianChart();
     }
 
@@ -3679,12 +3821,13 @@ body{background:#080c14;color:#e2e8f0}
         const status=alertState(c),volume=c.volumeL,pc=volume===null?0:volume/2000*100;
         const names=state.lang==='vi'?c.nameVi:state.lang==='zh'?c.nameZh:EN_CHEM[c.code];
         const statusName=status==='critical'?ui('empty'):status==='warning'?ui('low'):status==='unknown'?ui('off'):ui('ready');
-        const testPump=state.simActive&&(c.manualSim||isChemicalPumpScheduled(i));
+        const testPump=chemicalPumpActive(i);
         return `<article class="chem-tank" data-chem="${safe(c.code)}">
          <div class="chem-head"><strong>${safe(names)}</strong><span class="chem-tag">${safe(c.pumps)}</span></div>
          <div class="chem-row"><span>${ui('level')}: <strong>${volume===null?'—':fmtL(volume)+' L / 2.000 L ('+pc.toFixed(1)+'%)'}</strong></span><span class="status-pill ${status}">${statusName}</span></div>
          <div class="chem-progress"><i style="width:${pc}%;background:${status==='critical'?'#ef4444':status==='warning'?'#f59e0b':status==='unknown'?'#64748b':({NaOH:'#a855f7',H2SO4:'#f43f5e',PAC:'#f59e0b',POLYMER:'#06b6d4',NaOCl:'#10b981'})[c.code]}"></i></div>
          <div class="chem-row"><span>${ui('rate')}: <strong>${fmtL(c.rateLph)} L/h</strong></span><span>Phối trộn: <strong>${safe(c.conc)}</strong></span></div>
+         <div class="chem-row"><span class="status-pill ${testPump?'sim':'unknown'}" aria-label="Dosing status">${state.simActive?(testPump?(c.manualSim?'SIM TEST RUN':'SIM AUTO RUN'):'SIM STOP'):'OFF'}</span><small>${i===2||i===3?v33Text().chemPm101:i===0?v33Text().chemLow:i===1?v33Text().chemHigh:v33Text().chemPm204}</small></div>
          <div class="chem-row"><small>${ui('last')}: ${safe(c.lastMixedAt||'—')}</small><small>${ui('keep')}</small></div>
          <div class="chem-actions"><button type="button" class="chem-action" onclick="openMixModal(${i})">✚ ${ui('mix')} / Apply</button><button type="button" class="chem-action test ${c.manualSim?'active':''}" ${state.simActive?'':'disabled'} onclick="toggleChemPump(${i})">${testPump?'● ': '○ '}${c.manualSim?ui('stopPump'):ui('simPump')}</button></div>
         </article>`;
@@ -3717,17 +3860,12 @@ body{background:#080c14;color:#e2e8f0}
     }
     function toggleChemPump(i){
       if(!state.simActive||!state.chemicals[i])return;
-      state.chemicals[i].manualSim=!state.chemicals[i].manualSim;
-      renderChemicalsAndProtocols();
+      const next=!state.chemicals[i].manualSim;
+      if(next && i<2) state.chemicals[1-i].manualSim=false; // test-only chemical interlock
+      state.chemicals[i].manualSim=next;
+      refreshDosingAndRouting();
     }
-    function isChemicalPumpScheduled(i){
-      const e=state.equipment,t=state.telemetry;
-      if(i===0)return e.PM101?.status==='RUN'&&(t.ph102<7||t.ph12<7);
-      if(i===1)return e.PM101?.status==='RUN'&&(t.ph102>8.5||t.ph12>8.5);
-      if(i===2||i===3)return e.PM101?.status==='RUN';
-      if(i===4)return e.PM204?.status==='RUN';
-      return false;
-    }
+    function isChemicalPumpScheduled(i){return chemicalPumpActive(i);}
     function updateChemicalWarnings(){
       state.chemicals.forEach(c=>{
         const kind=alertState(c),sev=kind==='critical'?'CRITICAL':kind==='warning'?'WARNING':null;
@@ -3743,7 +3881,7 @@ body{background:#080c14;color:#e2e8f0}
       const hours=Math.min(4,Math.max(0,dt))/3600;let dirty=false;
       state.chemicals.forEach((c,i)=>{
         if(c.volumeL===null||c.rateLph<=0)return;
-        const run=c.manualSim||isChemicalPumpScheduled(i);
+        const run=chemicalPumpActive(i);
         if(!run)return;
         const next=Math.max(0,c.volumeL-c.rateLph*hours);
         if(next!==c.volumeL){const used=c.volumeL-next;simChemUsed[c.code]=(simChemUsed[c.code]||0)+used;c.volumeL=Math.round(next*1000)/1000;dirty=true;}
@@ -3810,7 +3948,7 @@ body{background:#080c14;color:#e2e8f0}
         if(/LT:|LEVEL:|SV30:|ACTIVE|RUNNING|RUN\)/.test(el.textContent||''))el.textContent='OFF / —';
       });
       syncPidPipesAndStatuses();
-      renderMonitorRows();renderElectricity(false);renderChemicalsAndProtocols();
+      renderMonitorRows();renderElectricity(false);renderChemicalsAndProtocols();renderChemicalDiagramStatus();renderLogicStatus();
     }
     function toggleSimulationMode(){
       state.simActive=!state.simActive;
@@ -3829,7 +3967,8 @@ body{background:#080c14;color:#e2e8f0}
       }else{
         state.chemicals.forEach(c=>c.manualSim=false);paintNoSource();renderAlarmJournal();
       }
-      renderMonitorConfig();renderExtraViews();
+      state.phDoseLatch='none';
+      renderMonitorConfig();renderExtraViews();refreshDosingAndRouting();
     }
     let pidZoom=1;
     function changePidZoom(delta){
@@ -3837,22 +3976,40 @@ body{background:#080c14;color:#e2e8f0}
       const svg=document.getElementById('pidSvg');if(svg){svg.style.width=Math.round(1560*pidZoom)+'px';svg.style.minWidth='0';}
     }
     function fitPid(){const svg=document.getElementById('pidSvg');if(svg){svg.style.width='100%';svg.style.minWidth='0';pidZoom=1;}}
-    function togglePidFullscreen(){
+    function syncPidFullscreenPresentation(){
       const node=document.getElementById('pidFullscreenBox');
-      if(document.fullscreenElement===node){document.exitFullscreen().catch(()=>{});return;}
-      if(node.classList.contains('pid-fallback-fullscreen')){node.classList.remove('pid-fallback-fullscreen');syncPidOverlayPlacement();return;}
-      if(node.requestFullscreen)node.requestFullscreen().catch(()=>{node.classList.add('pid-fallback-fullscreen');syncPidOverlayPlacement();});
-      else {node.classList.add('pid-fallback-fullscreen');syncPidOverlayPlacement();}
-    }
-    document.addEventListener('fullscreenchange',()=>{
-      const active=document.fullscreenElement===document.getElementById('pidFullscreenBox');
-      const btn=document.getElementById('btnPidFullscreen');if(btn)btn.textContent=active?'✕ Exit fullscreen':'⛶ Fullscreen';
+      if(!node)return;
+      const active=document.fullscreenElement===node||node.classList.contains('pid-fallback-fullscreen');
+      document.body.classList.toggle('pid-immersive-open',active);
+      const btn=document.getElementById('btnPidFullscreen');
+      if(btn)btn.textContent=active?'✕ Exit fullscreen':'⛶ Fullscreen';
+      if(active)fitPid();
       syncPidOverlayPlacement();
-      // Keep overlays inside the fullscreen top layer; never detach the P&ID during updates.
+    }
+    async function togglePidFullscreen(){
+      const node=document.getElementById('pidFullscreenBox');
+      if(!node)return;
+      if(document.fullscreenElement===node){
+        try{await document.exitFullscreen();}catch(e){console.warn('Fullscreen exit',e)}
+        syncPidFullscreenPresentation();return;
+      }
+      if(node.classList.contains('pid-fallback-fullscreen')){
+        node.classList.remove('pid-fallback-fullscreen');syncPidFullscreenPresentation();return;
+      }
+      if(node.requestFullscreen){
+        try{await node.requestFullscreen();syncPidFullscreenPresentation();return;}
+        catch(e){console.warn('Native fullscreen unavailable; using in-page fullscreen',e)}
+      }
+      node.classList.add('pid-fallback-fullscreen');syncPidFullscreenPresentation();
+    }
+    document.addEventListener('fullscreenchange',syncPidFullscreenPresentation);
+    window.addEventListener('resize',()=>{
+      const node=document.getElementById('pidFullscreenBox');
+      if(node&&(document.fullscreenElement===node||node.classList.contains('pid-fallback-fullscreen')))fitPid();
     });
     document.addEventListener('keydown',e=>{if(e.key==='Escape'){
       const m=document.getElementById('mixModal');if(m&&!m.classList.contains('hidden'))closeMixModal();
-      const f=document.getElementById('pidFullscreenBox');if(f){f.classList.remove('pid-fallback-fullscreen');syncPidOverlayPlacement();}
+      const f=document.getElementById('pidFullscreenBox');if(f&&f.classList.contains('pid-fallback-fullscreen')){f.classList.remove('pid-fallback-fullscreen');syncPidFullscreenPresentation();}
     }});
 
 
@@ -3907,7 +4064,7 @@ body{background:#080c14;color:#e2e8f0}
       eq.mode = m;
       if (m === 'MAINT') eq.status = 'STOP';
       renderFaceplate();
-      updateDashboardUI();
+      updateDashboardUI();refreshDosingAndRouting();
     }
 
     function commandEquipment(cmd) {
@@ -3931,7 +4088,7 @@ body{background:#080c14;color:#e2e8f0}
         );
       }
       renderFaceplate();
-      updateDashboardUI();
+      updateDashboardUI();refreshDosingAndRouting();
     }
 
     // =========================================================================
@@ -4104,7 +4261,7 @@ body{background:#080c14;color:#e2e8f0}
       const html = `
         <div class="p-4 rounded-xl bg-[#080c14] border border-scada-border flex flex-wrap justify-between gap-2">
           <div>
-            <div class="text-slate-400">${state.lang === 'vi' ? 'Đơn vị vận hành:' : '營運單位:'}</div>
+            <div class="text-slate-400">${state.lang === 'vi' ? 'Chủ đầu tư / Nhà thầu:' : '業主單位 / 承建運維商:'}</div>
             <div class="font-bold text-white text-sm">${d.hdrTitle}</div>
           </div>
           <div>
@@ -4229,36 +4386,8 @@ body{background:#080c14;color:#e2e8f0}
       const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='TOPKEY_PLC_mapping_chua_xac_minh.csv';a.click();URL.revokeObjectURL(url);
     }
 
-    function jumpToSimulationCalibration(){
-      switchTab('simulation');
-      document.getElementById('simCalibrationSection')?.scrollIntoView({behavior:'smooth',block:'start'});
-    }
-    function renderSimulationSummary(){
-      const active=!!state.simActive;
-      const badge=document.getElementById('simStatusBadge');
-      if(badge){badge.textContent=active?'SIM • PLC OFF':'OFF';badge.className='status-pill '+(active?'sim':'unknown');}
-      const write=(id,value,kind='off')=>{
-        const el=document.getElementById(id);if(!el)return;
-        el.textContent=value;el.className=kind==='run'?'running':kind==='alarm'?'fault':kind==='estimate'?'estimate':'';
-      };
-      const pH=(id,key,tagId)=>{
-        const n=Number(state.telemetry?.[key]);
-        write(id,active&&Number.isFinite(n)?n.toFixed(2):'—',active?'run':'off');
-        const tag=document.getElementById(tagId);
-        if(tag){tag.textContent=active?'SIM • KHÔNG PHẢI SỐ ĐO':'OFF';tag.className='tk-rep-src '+(active?'sim':'off');}
-      };
-      pH('simCardPh102','ph102','simCardPh102Tag');pH('simCardPh12','ph12','simCardPh12Tag');
-      const pump=id=>{if(!active)return ['OFF','off'];const x=state.equipment[id];return x?.status==='FAULT'?['SIM FAULT','alarm']:x?.status==='RUN'?['SIM RUN','run']:['SIM STOP','off'];};
-      const pm105=pump('PM105'),pm203=pump('PM203');
-      write('simCardPm105',...pm105);write('simCardPm203',...pm203);
-      const pm101=pump('PM101');
-      write('simCardPac',!active?'OFF':pm101[0]==='SIM RUN'?'SIM • PM-101 RUN':'SIM • PM-101 STOP',active?'estimate':'off');
-      write('simCardNaoh',active?'SIM • THEO pH / CHƯA MAP':'OFF',active?'estimate':'off');
-    }
-
     function renderExtraViews(){
       renderPLCConnectionReport();
-      renderSimulationSummary();
       const st=document.getElementById('simTabStatus');if(st){st.textContent=state.simActive?'SIM':'OFF';st.className='status-pill '+(state.simActive?'sim':'unknown');}
       const grid=document.getElementById('levelSimControls');if(grid){
         grid.innerHTML=SIM_LEVELS.map(([key,name])=>{const level=simLevels[key],pump=SIM_EQ[key],run=state.simActive&&state.equipment[pump]?.status==='RUN';
@@ -4330,7 +4459,7 @@ body{background:#080c14;color:#e2e8f0}
       ['pipe-tk104-tk105','PM101'],['pipe-tk105-tk12','PM101'],
       ['pipe-dom-in','PM10'],['pipe-pm10','PM10'],['pipe-sc11-tk11','PM10'],['pipe-pm11','PM11'],
       ['pipe-bl202','BL202','pipe-air-active'],['pipe-bl11','TK11','pipe-air-active'],
-      ['pipe-pm105','PM105','pipe-sludge-active'],['pipe-pm203','PM203','pipe-sludge-active'],
+      ['pipe-pm105','PM105','pipe-sludge-active'],
       ['pipe-sludge-press','PF302','pipe-sludge-active'],
       ['pipe-pm204','PM204'],['pipe-filter-sand-carbon','PM204'],['pipe-filter-to-disinfection','PM204'],['pipe-final-out','PM204'],
       ['pipe-return-existing',null]
@@ -4348,6 +4477,10 @@ body{background:#080c14;color:#e2e8f0}
         const stateName=key?simMotorStatus(key):'STOP';
         pipeMode(id,stateName==='RUN'?'on':stateName==='FAULT'?'fault':'off',type);
       }
+      const sludgePump=simMotorStatus('PM203');
+      const routeStatus=sludgePump==='RUN'?'on':sludgePump==='FAULT'?'fault':'off';
+      pipeMode('pipe-pm203',state.sludgeRoute==='sludge'?routeStatus:'off','pipe-sludge-active');
+      pipeMode('pipe-pm203-return-aerotank',state.sludgeRoute==='aerotank'?routeStatus:'off','pipe-sludge-active');
       for(const id of ['pipe-tk12-bio','pipe-anox-aero','pipe-aero-clar','pipe-clar-tk204'])
         pipeMode(id,state.simActive&&combined==='RUN'?'on':state.simActive&&combined==='FAULT'?'fault':'off');
       pipeMode('pipe-pm202b',simMotorStatus('BL202')==='RUN'&&combined==='RUN'?'on':'off');
@@ -4359,7 +4492,7 @@ body{background:#080c14;color:#e2e8f0}
           p.classList.add('pipe-paused');p.dataset.flowStatus='off';
         });
       }
-      renderPidOperatingStates();
+      renderPidOperatingStates();renderChemicalDiagramStatus();renderLogicStatus();
     }
     const MOTOR_PREFIX=/^(PM|BL|MX|AG|SC|PF)/;
     function renderPidOperatingStates(){
@@ -4466,7 +4599,8 @@ body{background:#080c14;color:#e2e8f0}
         'pipe-clar-tk204':'TK-203 → TK-204 (sau lắng)',
         'pipe-pm204':'TK-204 → hệ thống lọc',
         'pipe-pm105':'TK-105 → bể bùn TK-301',
-        'pipe-pm203':'TK-203 → bể bùn TK-301',
+        'pipe-pm203':'TK-203 → bể bùn TK-301 (khi chọn)',
+        'pipe-pm203-return-aerotank':'TK-203 → Aerotank TK-202A/B (khi chọn)',
         'pipe-sludge-press':'TK-301 → máy ép bùn PF-302'
       };
       if(select)select.innerHTML='<option value="">— Chọn tuyến ống —</option>'+Object.keys(editor.defaults.pipes).map(id=>`<option value="${id}">${routeDescriptions[id]||id.replace(/^pipe-/,'').replaceAll('-',' → ')}</option>`).join('');
@@ -4846,6 +4980,7 @@ body{background:#080c14;color:#e2e8f0}
       updateEditorLanguage();
       syncPidPipesAndStatuses();
       initShiftReport();
+      renderLogicSettings();renderV33Language();renderChemicalDiagramStatus();
       setInterval(stepProcessSimulation, 1500);
     };
   </script>
