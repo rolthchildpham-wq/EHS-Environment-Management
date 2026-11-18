@@ -20,6 +20,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate Node.js runtime
+        run: |
+          node --version
+          node -e "if(Number(process.versions.node.split('.')[0]) < 22)process.exit(1)"
       - name: Validate Firebase configuration
         env:
           FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
@@ -54,6 +61,7 @@ jobs:
           node --check public/ehs-qr-stock.js
           node --check public/ehs-simple-finance.js
           node --check public/ehs-permissions.js
+          node --check public/wwtp/ehs-auth-guard.js
           node --check scripts/deploy-ehs-rules-rest.mjs
           node --experimental-default-type=module --test tests/ehs-finance.test.mjs
           node --experimental-default-type=module --test tests/ehs-ui.test.mjs
@@ -62,6 +70,7 @@ jobs:
           node --test tests/ehs-qr-finance.test.mjs
           node --test tests/ehs-permissions.test.mjs
           node --test tests/ehs-journal-filters.test.mjs
+          node --test tests/ehs-wwtp-hub.test.mjs
       - name: Publish and verify Firestore Rules before Hosting
         env:
           FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}

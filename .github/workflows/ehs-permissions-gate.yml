@@ -11,6 +11,9 @@ on:
       - 'public/index.html'
       - 'firestore.rules'
       - 'tests/ehs-permissions.test.mjs'
+      - 'tests/ehs-wwtp-hub.test.mjs'
+      - 'public/wwtp/**'
+      - '.github/workflows/firebase-hosting.yml'
 permissions:
   contents: read
 jobs:
@@ -26,6 +29,7 @@ jobs:
           node --check public/app.js
           node --check public/ehs-qr-stock.js
           node --check public/ehs-permissions.js
+          node --check public/wwtp/ehs-auth-guard.js
       - name: Permission and existing UI tests
         run: |
           node --test tests/ehs-permissions.test.mjs
@@ -33,6 +37,7 @@ jobs:
           node --test tests/ehs-qr-finance.test.mjs
           node --test tests/ehs-ui.test.mjs
           node --test tests/ehs-journal-filters.test.mjs
+          node --test tests/ehs-wwtp-hub.test.mjs
       - name: Firebase emulator permissions test
         run: |
           npm install --no-audit --no-fund -g firebase-tools@14
