@@ -6,7 +6,13 @@ const origin = base.replace(/\/$/, '');
 
 async function served(path, matches = []) {
   const url = origin + path;
-  const response = await fetch(url, { redirect: 'follow' });
+  let response;
+  // Newly published Hosting preview routes may briefly return 404 before CDN propagation.
+  for (let attempt = 0; attempt < 8; attempt++) {
+    response = await fetch(url, { redirect: 'follow', cache: 'no-store' });
+    if (response.status === 200 || response.status !== 404) break;
+    if (attempt < 7) await new Promise(resolve => setTimeout(resolve, 1500));
+  }
   assert.equal(response.status, 200, `${url} HTTP ${response.status}`);
   const html = await response.text();
   assert.ok(html.length > 200, `${url} returned empty response`);
