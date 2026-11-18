@@ -29,7 +29,7 @@ export const defaultMatrix=()=>Object.fromEntries(['editor','viewer'].map(role=>
 ]));
 let matrix=defaultMatrix(),currentRole=null,currentUser=null,currentDb=null;
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
-export const may=action=>currentRole==='admin'||Boolean(matrix[currentRole||'viewer']?.[action]===true);
+export const may=action=>{if(action==='hub_view'||action.startsWith('wwtp_'))return Boolean(currentUser&&currentRole&&(currentRole==='admin'||matrix[currentRole]?.[action]===true));return currentRole==='admin'||Boolean(matrix[currentRole||'viewer']?.[action]===true)};
 export const rights=()=>JSON.parse(JSON.stringify(matrix));
 export function applyRights(){
  const page={portal:'hub_view',wwtp:'wwtp_view',dashboard:'dashboard',records:'journal',map:'map',import:'excel_import',reports:'reports',admin:'users_manage',compliance:'compliance'};
