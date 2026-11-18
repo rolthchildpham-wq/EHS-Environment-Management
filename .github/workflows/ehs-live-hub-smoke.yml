@@ -1,0 +1,52 @@
+name: EHS Hub production read-only smoke
+on:
+  push:
+    branches: [qa/ehs-hub-production-smoke-20261118]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate live Hosting routes (read only)
+        run: |
+          node - <<'NODE'
+          const assert=require('node:assert/strict');
+          const host='https://ehs-environment-management.web.app';
+          async function fetchAndCheck(path,expect){
+            const res=await fetch(host+path,{redirect:'follow'});
+            assert.equal(res.status,200,path+' HTTP '+res.status);
+            const text=await res.text();
+            for(const [label,regexp] of expect){assert.match(text,regexp,path+': '+label)}
+            console.log('PASS',path,'HTTP 200',text.length,'chars');return text;
+          }
+          (async()=>{
+           const hub=await fetchAndCheck('/',[['Hub',/TRUNG TÂM HỆ THỐNG MÔI TRƯỜNG/],['WWTP link',/href="wwtp\/"/],['environment link',/href="\?app=environment"/]]);
+           assert.doesNotMatch(hub,/<iframe\b|id="wwtpFrame"/,'Production must not embed WWTP');
+           await fetchAndCheck('/?app=environment',[['EHS dashboard',/id="dashboard"/]]);
+           await fetchAndCheck('/app.js',[['route guard',/may\('hub_view'\)/],['separate destinations',/environmentMode/]]);
+           await fetchAndCheck('/wwtp/',[['SCADA',/id="pidSvg"/],['back to Hub',/id="ehsBackHub"/]]);
+           await fetchAndCheck('/wwtp/ehs-auth-guard.js',[['member auth',/resolveMember\(db,user\)/]]);
+          })().catch(e=>{console.error(e);process.exitCode=1});
+          NODE
+      - name: Actual Chrome desktop and mobile snapshots, signed out
+        run: |
+          CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$CHROME" || { echo 'Chrome missing; browser gate NOT TESTED'; exit 1; }
+          mkdir -p screenshots
+          "$CHROME" --headless --no-sandbox --disable-gpu --disable-dev-shm-usage --virtual-time-budget=4000 --hide-scrollbars --window-size=1440,900 --screenshot=screenshots/hub-desktop.png https://ehs-environment-management.web.app/
+          "$CHROME" --headless --no-sandbox --disable-gpu --disable-dev-shm-usage --virtual-time-budget=4000 --hide-scrollbars --window-size=390,844 --screenshot=screenshots/hub-mobile.png https://ehs-environment-management.web.app/
+          "$CHROME" --headless --no-sandbox --disable-gpu --disable-dev-shm-usage --virtual-time-budget=4000 --hide-scrollbars --window-size=1440,900 --screenshot=screenshots/wwtp-auth-gate.png https://ehs-environment-management.web.app/wwtp/
+          ls -l screenshots
+      - name: Upload production smoke screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ehs-production-smoke-screenshots
+          path: screenshots/*.png
+          if-no-files-found: ignore
