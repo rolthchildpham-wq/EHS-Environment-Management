@@ -86,12 +86,14 @@ test('Calibration stays in the report tab and shares the simulation data model',
  const reportStart=html.indexOf('id="view-report"');
  const tankRows=html.indexOf('id="tankCalibRows"');
  const pumpRows=html.indexOf('id="pumpCalibRows"');
- assert.ok(simStart>=0 && simStart<equipmentStart && equipmentStart<reportStart && reportStart<tankRows && tankRows<pumpRows);
+ const settingsStart=html.indexOf('id="view-settings"');
+ assert.ok(simStart>=0 && simStart<equipmentStart && equipmentStart<reportStart && reportStart<settingsStart && settingsStart<tankRows && tankRows<pumpRows);
  assert.equal((html.match(/id="tankCalibRows"/g)||[]).length,1);
  assert.equal((html.match(/id="pumpCalibRows"/g)||[]).length,1);
  assert.match(html,/function renderPlantCalibration\(\)/);
  assert.match(html,/function savePlantCalibration\(\)/);
- assert.match(html,/if\(tabName==='report'\)\{renderPlantCalibration\(\);renderShiftInputs\(\);renderShiftReport\(\);\}/);
+ assert.match(html,/id="wwtpUnifiedCalibration"/);
+ assert.match(html,/if\(tabName==='settings'\)setWwtpConfigMode/);
  assert.match(html,/renderShiftReport\(\)/);
 });
 
@@ -128,6 +130,23 @@ test('P&ID v3.5 branding and visible PM-203 route selection remain permission gu
  assert.match(html,/function setPidMobileDetail\(enabled\)/);
  assert.match(html,/route-selected/);
  assert.match(html,/pipe-pm203-return-aerotank/);
- assert.match(auth,/routeSelect\.disabled=!admin/);
+ assert.match(auth,/routeSelect\.disabled=!simConfig/);
  assert.match(auth,/protect\(adminFns,'wwtp_design'\)/);
+});
+
+test('WWTP granular EHS permissions and simulation/production settings are isolated',()=>{
+ const perms=file('public/ehs-permissions.js');
+ const guard=file('public/wwtp/ehs-auth-guard.js');
+ const page=file('public/wwtp/index.html');
+ for(const right of ['wwtp_view','wwtp_simulate','wwtp_sim_config','wwtp_reports','wwtp_calibration','wwtp_prod_view','wwtp_design'])
+   assert.ok(perms.includes("'"+right+"'"),right);
+ assert.match(page,/id="wwtpUnifiedSettings"/);
+ assert.match(page,/name="wwtpConfigMode" value="production"/);
+ assert.match(page,/name="wwtpConfigMode" value="simulation"/);
+ assert.match(page,/id="wwtpProductionProfile"/);
+ assert.match(page,/function setWwtpConfigMode\(mode\)/);
+ assert.match(page,/PLC chưa kết nối; không phát lệnh/);
+ assert.match(guard,/protect\(simSettingsFns,'wwtp_sim_config'\)/);
+ assert.match(guard,/protect\(calibrationFns,'wwtp_calibration'\)/);
+ assert.match(guard,/routeSelect\.disabled=!simConfig/);
 });

@@ -27,7 +27,9 @@ function showGate(msg){gate.style.display='flex';document.body.classList.add('eh
 function hideGate(){gate.style.display='none';document.body.classList.remove('ehsWwtpUnauthorized')}
 function deny(){if(typeof window.showToast==='function')window.showToast('Chức năng này chưa được cấp quyền trong EHS.','error');}
 const simFns=['toggleSimulationMode','toggleExceedanceSimulation','commandEquipment','setEquipmentMode','setSimLevel','toggleChemPump','openMixModal','applyNewBatch','setPlantPhase','setShiftHours','setShiftTankLevel','saveEntryNumber','saveEntryText','saveChemHours','saveShiftLog','importShiftLogFile','setSimulatedPH'];
-const adminFns=['setPidEditorRole','togglePidLayoutEdit','savePidLayout','startPidLayoutEditing','resetPidLayout','importPidLayoutFile','setTankCalibration','setPumpCalibration','savePlantCalibration','setMonitorConfig','saveDosingSettings','setSludgeRoute'];
+const adminFns=['setPidEditorRole','togglePidLayoutEdit','savePidLayout','startPidLayoutEditing','resetPidLayout','importPidLayoutFile'];
+const simSettingsFns=['saveDosingSettings','setSludgeRoute'];
+const calibrationFns=['setTankCalibration','setPumpCalibration','savePlantCalibration','setMonitorConfig'];
 function protect(list,action){
  for(const name of list){
    const original=window[name];
@@ -36,13 +38,18 @@ function protect(list,action){
    guarded.__ehsGuarded=true;window[name]=guarded;
  }
 }
-function protectAll(){protect(simFns,'wwtp_simulate');protect(adminFns,'wwtp_design')}
+function protectAll(){protect(simFns,'wwtp_simulate');protect(adminFns,'wwtp_design');protect(simSettingsFns,'wwtp_sim_config');protect(calibrationFns,'wwtp_calibration')}
 function markAccess(){
  const admin=ready&&may('wwtp_design');
  const sim=ready&&may('wwtp_simulate');
+ const simConfig=ready&&may('wwtp_sim_config');
+ const calibration=ready&&may('wwtp_calibration');
  const rolePicker=document.getElementById('adminDemoRole');
  if(rolePicker&&!admin){rolePicker.value='viewer';rolePicker.disabled=true}
- const routeSelect=document.getElementById('pidRouteQuickSelect');if(routeSelect)routeSelect.disabled=!admin;
+ const routeSelect=document.getElementById('pidRouteQuickSelect');if(routeSelect)routeSelect.disabled=!simConfig;
+ const sludge=document.getElementById('v33SludgeRoute');if(sludge)sludge.disabled=!simConfig;
+ for(const id of ['v33PhLow','v33PhHigh','v33PhDeadband','v33ApplyButton']){const el=document.getElementById(id);if(el)el.disabled=!simConfig}
+ for(const id of ['tankCalibRows','pumpCalibRows']){const root=document.getElementById(id);if(root)root.querySelectorAll('input,select,button').forEach(el=>el.disabled=!calibration)}
  const adminStart=document.getElementById('adminStartEdit');
  if(adminStart&&!admin)adminStart.disabled=true;
  if(!sim&&document.getElementById('simModeBtn'))document.getElementById('simModeBtn').disabled=true;
@@ -51,7 +58,7 @@ function markAccess(){
  id.textContent=ready?('EHS '+loginEmail+' · '+String(role).toUpperCase()+' · PLC OFF'):'EHS · OFF';
 }
 protectAll();
-window.__ehsWwtpAuth={get role(){return role},get ready(){return ready}};
+window.__ehsWwtpAuth={get role(){return role},get ready(){return ready},can(action){return !!ready&&may(action)}};
 const config=window.EHS_FIREBASE_CONFIG;
 if(!config){showGate('Không có cấu hình Firebase EHS; không cho phép mở module.')}
 else{
