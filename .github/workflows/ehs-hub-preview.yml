@@ -6,6 +6,8 @@ on:
       - 'public/app.js'
       - 'public/wwtp/**'
       - 'tests/ehs-wwtp-hub.test.mjs'
+      - 'tests/ehs-hub-preview-smoke.mjs'
+      - 'tests/ehs-hub-browser-preview.mjs'
       - '.github/workflows/ehs-hub-preview.yml'
 permissions:
   contents: read
@@ -38,4 +40,24 @@ jobs:
           export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase-preview-account.json"
           trap 'rm -f "$RUNNER_TEMP/firebase-preview-account.json"' EXIT
           npm install -g --no-audit --no-fund firebase-tools@14
-          firebase hosting:channel:deploy "$CHANNEL_ID" --expires 2d --project "$FIREBASE_PROJECT_ID" --non-interactive
+          firebase hosting:channel:deploy "$CHANNEL_ID" --expires 2d --project "$FIREBASE_PROJECT_ID" --non-interactive 2>&1 | tee "$RUNNER_TEMP/ehs-hub-preview.log"
+          PREVIEW_URL="$(grep -Eo 'https://ehs-environment-management--[a-z0-9-]+\.web\.app' "$RUNNER_TEMP/ehs-hub-preview.log" | tail -n1)"
+          test -n "$PREVIEW_URL" || { echo 'Preview URL missing'; exit 1; }
+          echo "EHS_PREVIEW_URL=$PREVIEW_URL" >> "$GITHUB_ENV"
+          echo "Preview ready: $PREVIEW_URL"
+      - name: Verify routes served by deployed Firebase Hosting preview
+        run: node tests/ehs-hub-preview-smoke.mjs
+      - name: Install browser for visual layout test
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Desktop and mobile browser smoke on actual preview
+        run: node tests/ehs-hub-browser-preview.mjs
+      - name: Publish browser screenshots as PR artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ehs-hub-pr-preview-screenshots
+          path: tests/artifacts/*.png
+          if-no-files-found: ignore
+
