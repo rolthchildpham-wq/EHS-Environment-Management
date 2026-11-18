@@ -3,21 +3,51 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const file=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 
-test('EHS Hub exposes exactly the intended two modules',()=>{
+test('Landing URL is Hub-only, with two independent module links and no embedded SCADA',()=>{
  const html=file('public/index.html');
  assert.match(html,/id="portal"/);
  assert.match(html,/HỆ THỐNG VẬN HÀNH XLNT/);
  assert.match(html,/HỆ THỐNG DỮ LIỆU MÔI TRƯỜNG/);
- assert.match(html,/id="wwtpFrame"/);
- assert.doesNotMatch(html,/<iframe[^>]+src="https?:/);
+ assert.match(html,/href="wwtp\/"[^>]*data-hub="wwtp"|data-hub="wwtp"[^>]*href="wwtp\/"/);
+ assert.match(html,/href="\?app=environment"/);
+ assert.match(html,/ehs-hub-mode/);
+ assert.match(html,/body>header\{display:none!important\}/);
+ assert.doesNotMatch(html,/id="wwtpFrame"|<iframe\b|<section id="wwtp"/);
 });
 
-test('EHS menu launches WWTP only through the existing permission check',()=>{
+test('Hub choices navigate to full pages, never EHS application tabs',()=>{
  const app=file('public/app.js');
- assert.match(app,/portal:'hub_view',wwtp:'wwtp_view'/);
- assert.match(app,/const can=signedIn&&may\('hub_view'\)/);
- assert.match(app,/if\(!may\(\(\{portal:'hub_view'/);
- assert.match(app,/wwtp\/index\.html/);
+ const html=file('public/index.html');
+ assert.match(app,/const labels=\{dashboard:/);
+ assert.doesNotMatch(app,/wwtpFrame|frame\.src|portal:'Hệ thống Hub'|wwtp:'Vận hành XLNT'/);
+ assert.match(app,/document\.querySelectorAll\('\[data-hub\]'\)/);
+ assert.match(app,/const allowed=!!user&&!!role&&may\('hub_view'\)/);
+ assert.match(app,/target==='wwtp'\?may\('wwtp_view'\)/);
+ assert.match(app,/document\.documentElement\.classList\.contains\('ehs-environment-mode'\)/);
+ assert.match(html,/html\.ehs-hub-mode main>section:not\(#portal\)\{display:none!important\}/);
+});
+
+test('Separate environment destination keeps existing EHS dashboard and login',()=>{
+ const html=file('public/index.html'),app=file('public/app.js');
+ assert.match(html,/id="dashboard"/);
+ assert.match(html,/id="login"/);
+ assert.match(html,/id="hubLogin"/);
+ assert.match(html,/id="hubLogout"/);
+ assert.match(html,/class="ehs-back-hub" href="\.\/" /);
+ assert.match(app,/el\('hubLogin'\)\.onclick=/);
+ assert.match(app,/el\('hubLogout'\)\.onclick=/);
+ assert.match(app,/el\('dashboard'\)\.classList\.add\('active'\)/);
+});
+
+test('WWTP is served as a standalone full-width page and can return to Hub',()=>{
+ const html=file('public/wwtp/index.html');
+ const guard=file('public/wwtp/ehs-auth-guard.js');
+ assert.match(html,/id="ehsWwtpBackBar"/);
+ assert.match(html,/id="ehsBackHub"/);
+ assert.match(html,/href="\.\.\/" id="ehsBackHub"/);
+ assert.match(html,/id="pidSvg"/);
+ assert.match(html,/ehs-auth-guard\.js/);
+ assert.match(guard,/href="\.\.\/"\>Về Hub EHS/);
 });
 
 test('EHS rights reuse the existing centrally managed permissions matrix',()=>{
