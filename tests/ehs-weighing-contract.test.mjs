@@ -8,7 +8,7 @@ const ehs=readFileSync('public/app.js','utf8');
 const hub=readFileSync('public/index.html','utf8');
 test('QR weighing workflow has persistent login, repeated weights, category switch and tare',()=>{
  for(const id of ['weightInput','addWeight','category','changeType','typeDialog','tare','saveTare','gross','net','pending','qrCode'])assert.ok(page.includes('id="'+id+'"'),id);
- for(const marker of ['browserLocalPersistence','runTransaction(','loadCurrent()','saveTare()','loadPending()','type=','status:\x27pending\x27'])assert.ok(app.includes(marker),marker);
+ for(const marker of ['browserLocalPersistence','runTransaction(','loadCurrent()','saveTare()','loadPending()',"url.searchParams.set('type',category)",'status:\x27pending\x27'])assert.ok(app.includes(marker),marker);
 });
 test('Approved waste batch totals flow into journal only after approval',()=>{
  assert.match(ehs,/loadApprovedWasteWeighing\(\)/);
