@@ -39,12 +39,12 @@ body.qr-entry #kioskHeader{display:flex;gap:16px;justify-content:space-between;a
 body.qr-entry #kioskChangeType{width:auto;min-width:105px}
 body.qr-entry #weighDetail,body.qr-entry .advanced-only{display:none!important}
 body.qr-entry #session>.row{display:block;margin:0!important}
-body.qr-entry #weightInput{font-size:clamp(46px,14vw,96px);height:clamp(95px,22vh,170px);border:3px solid #087e80;letter-spacing:1px}
-body.qr-entry #addWeight{font-size:clamp(24px,7vw,38px);min-height:80px}
-body.qr-entry #saveMessage{font-size:18px;text-align:center;min-height:28px}
-body.qr-entry #pendingSync{text-align:center}
+body.qr-entry #weightInput{font-size:clamp(40px,12vw,84px);height:clamp(75px,17vh,140px);border:3px solid #087e80;letter-spacing:1px}
+body.qr-entry #addWeight{font-size:clamp(24px,7vw,38px);min-height:clamp(56px,10vh,78px)}
+body.qr-entry #saveMessage:not(.warn){display:none!important}
+body.qr-entry #pendingSync:empty{display:none!important}
 #kioskHistory{display:none}
-body.qr-entry #kioskHistory{display:flex;flex:1;min-height:0;flex-direction:column;border-top:1px solid #d1e3e7;padding-top:12px}
+body.qr-entry #kioskHistory{display:flex;flex:1;min-height:0;flex-direction:column;border-top:1px solid #d1e3e7;padding-top:6px}
 #kioskHistory h3{font-size:clamp(16px,2vw,22px);margin:0 0 8px}
 #kioskHistory .history-scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;border:1px solid #d1e3e7;border-radius:10px}
 #kioskHistory table{width:100%;table-layout:fixed}
@@ -80,6 +80,7 @@ body.qr-entry #session>.row,body.qr-entry #kioskHeader,body.qr-entry #saveMessag
 <p>Trạng thái: <b id="state">Chưa nhập</b>. Chỉ số liệu được Admin duyệt mới xuất hiện trong Nhật ký EHS và thống kê ngày.</p>
 <div style="overflow:auto"><table><thead><tr><th>STT</th><th>Thời gian</th><th>Khối lượng (kg)</th></tr></thead><tbody id="entries"></tbody></table></div></div>
 </section>
+<section id="weighSummary" hidden><h2>Thống kê khối lượng cân theo ngày / tháng</h2><div class="row"><label>Kỳ thống kê<select id="summaryPeriod"><option value="day">Theo ngày</option><option value="month">Theo tháng</option></select></label><label>Ngày / tháng<input id="summaryDate" type="date"></label><label>Tìm theo tên loại / nhóm<input id="summarySearch" type="search" placeholder="Ví dụ: kim loại, CTNH"></label></div><div class="row" style="margin-top:12px"><button id="summaryLoad" type="button">Tìm và thống kê</button></div><p id="summaryStatus" role="status" class="muted">Nhấn Tìm và thống kê để tải số liệu.</p><div class="catalog-grid"><table><thead><tr><th>Nhóm</th><th>Loại rác</th><th>Số lượt</th><th>Tổng cân (kg)</th><th>Trừ bao bì (kg)</th><th>Khối lượng ròng (kg)</th></tr></thead><tbody id="summaryRows"></tbody></table></div><p><strong id="summaryTotal">Tổng: 0 kg</strong></p></section>
 <section id="admin" hidden><h2>4. Duyệt cân và thiết lập danh mục (Admin)</h2>
 <p class="muted">Danh mục cần đối chiếu đúng với tệp Google Sheets nguồn trước khi sử dụng chính thức.</p>
 <h3>Danh mục loại rác</h3>
@@ -90,6 +91,6 @@ body.qr-entry #session>.row,body.qr-entry #kioskHeader,body.qr-entry #saveMessag
 <h3>Các lô cân chờ duyệt</h3><div id="pending">Đang tải…</div>
 </section>
 </main>
-<dialog id="typeDialog"><h2>Đổi loại rác</h2><label>Chọn loại<select id="dialogCategory"></select></label><div class="row" style="margin-top:16px"><button id="applyType">OK · Chuyển loại</button><button id="cancelType" class="secondary">Hủy</button></div></dialog>
-<script type="module" src="./weighing.js?v=20261119kioskhistory1"></script>
+<dialog id="typeDialog"><h2>Đổi loại rác</h2><label>Tìm loại rác<input id="typeSearch" type="search" placeholder="Nhập tên, nhóm hoặc mã loại rác..." autocomplete="off"></label><p id="typeSearchCount" class="muted" role="status"></p><div id="typeSuggestions" role="listbox" aria-label="Danh sách loại rác gợi ý" style="max-height:min(45dvh,360px);overflow-y:auto;overscroll-behavior:contain;border:1px solid #dce8ec;border-radius:10px;margin-top:8px"></div><label style="display:none">Chọn loại<select id="dialogCategory"></select></label><div class="row" style="margin-top:16px"><button id="applyType">OK · Chuyển loại</button><button id="cancelType" class="secondary">Hủy</button></div></dialog>
+<script type="module" src="./weighing.js?v=20261119typesearch3"></script>
 </body></html>
