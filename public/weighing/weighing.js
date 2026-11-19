@@ -12,9 +12,9 @@ const today=()=>{const dt=new Date();return new Date(dt.getTime()-dt.getTimezone
 let auth,db,user=null,role=null,category='',catalog=DEFAULT,batches=[],entries=[],batch=null,revision=0;
 const kiosk=params.has('type');
 document.body.classList.toggle('qr-entry',kiosk);
-let syncing=false,nextRetryAt=0,submitting=false;
+let syncing=false,nextRetryAt=0,submitting=false,retryHandle=null;
 const storageKey=()=>user?'ehs-weigh-pending-v1:'+user.uid:null;
-const readQueue=()=>{try{return JSON.parse(localStorage.getItem(storageKey())||'[]')}catch{return []}};
+const readQueue=()=>{try{const rows=JSON.parse(localStorage.getItem(storageKey())||'[]');return Array.isArray(rows)?rows:[]}catch{return []}};
 function writeQueue(items){localStorage.setItem(storageKey(),JSON.stringify(items))}
 function showQueue(){const n=readQueue().length;$('pendingSync').textContent=n?`${n} lượt đã lưu tạm trên máy, CHƯA đồng bộ Firebase. Không xóa dữ liệu trình duyệt.`:''}
 
@@ -107,14 +107,17 @@ async function flushQueue(force=false){
     return {batch:{...(old||{}),gross:next,count,tare:old?.tare||0,status:'pending'}};
    });
    if(x.batchId===batchId()&&result.batch){batch={id:x.batchId,...result.batch};renderTotals()}
-   queue=queue.slice(1);
-   writeQueue(queue);
+   // Preserve entries appended while the asynchronous Firebase transaction was running.
+   writeQueue(readQueue().filter(p=>p.id!==x.id));
+   queue=readQueue();
   }
   nextRetryAt=0;
   toast('Đã đồng bộ tất cả lượt cân lên Firebase.');
  }catch(e){
   if(quotaError(e)){
    nextRetryAt=Date.now()+60000;
+   if(retryHandle)clearTimeout(retryHandle);
+   retryHandle=setTimeout(()=>{retryHandle=null;void flushQueue(true)},60000);
    toast('Firebase đã vượt hạn mức (quota exceeded). Lượt cân được GIỮ TẠM trên máy, chưa lên hệ thống. Thử đồng bộ lại sau khi quota được cấp lại hoặc nâng hạn mức.',true);
   }else toast('Chưa đồng bộ: '+e.message+' — dữ liệu tạm vẫn nằm trên máy.',true);
  }finally{syncing=false;showQueue()}
@@ -136,7 +139,7 @@ async function addWeight(){
   $('weightInput').value='';
   toast('Đã ghi tạm '+fmt(value)+' kg. Đang đồng bộ…');
   showQueue();$('weightInput').focus();
-  await flushQueue();
+  void flushQueue();
  }catch(e){toast('Không ghi được lượt cân: '+e.message+'. Số đang nhập được giữ nguyên.',true)}
  finally{submitting=false;$('addWeight').disabled=batch?.status==='approved';$('weightInput').focus()}
 }
