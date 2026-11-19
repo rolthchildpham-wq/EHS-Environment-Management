@@ -34,4 +34,6 @@ await served('/?app=environment', [['environment route', /id="dashboard"/]]);
 await served('/app.js', [['auth-gated navigation', /may\('hub_view'\)/], ['environment route', /environmentMode/]]);
 await served('/wwtp/', [['standalone P&ID', /id="pidSvg"/], ['back to Hub', /id="ehsBackHub"/]]);
 await served('/wwtp/ehs-auth-guard.js', [['same EHS member check', /resolveMember\(db,user\)/]]);
+await served('/weighing/', [['daily weighing form', /id="weightInput"/], ['tare input', /id="tare"/], ['approval list', /id="pending"/]]);
+await served('/weighing/weighing.js', [['Firestore aggregate transaction', /runTransaction\(/], ['EHS member gate', /resolveMember\(db,u\)/]]);
 console.log('PASS all preview static routes');
