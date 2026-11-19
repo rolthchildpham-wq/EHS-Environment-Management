@@ -148,7 +148,7 @@ async function addWeight(){
   const record={id:entryRef.id,batchId:date+'_'+item.code,date,code:item.code,name:item.name,group:item.group,value:round(value)};
   writeQueue([...current,record]);
   $('weightInput').value='';
-  toast('Đã ghi tạm '+fmt(value)+' kg. Đang đồng bộ…');
+  toast('Đã ghi tạm '+fmt(value)+' kg. '+(Date.now()<nextRetryAt?'Firebase còn vượt quota, CHƯA đồng bộ.':'Đang đồng bộ…'),Date.now()<nextRetryAt);
   showQueue();$('weightInput').focus();
   void flushQueue();
  }catch(e){toast('Không ghi được lượt cân: '+e.message+'. Số đang nhập được giữ nguyên.',true)}
