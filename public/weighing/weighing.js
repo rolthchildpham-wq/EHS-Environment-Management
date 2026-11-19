@@ -11,6 +11,11 @@ const fmt=n=>Number(n||0).toLocaleString('vi-VN',{maximumFractionDigits:3});
 const today=()=>{const dt=new Date();return new Date(dt.getTime()-dt.getTimezoneOffset()*60000).toISOString().slice(0,10)};
 let auth,db,user=null,role=null,category='',catalog=DEFAULT,batches=[],entries=[],batch=null,revision=0;
 const kiosk=params.has('type');
+const recentWeights=[];
+function renderKioskHistory(){
+ const target=$('kioskHistoryRows');if(!target)return;
+ target.innerHTML=recentWeights.length?recentWeights.map(x=>'<tr><td>'+escape(x.time)+'</td><td>'+escape(x.name)+'</td><td>'+fmt(x.value)+'</td></tr>').join(''):'<tr><td colspan="3">Chưa có lượt cân trên thiết bị này</td></tr>';
+}
 document.body.classList.toggle('qr-entry',kiosk);
 let syncing=false,nextRetryAt=0,submitting=false,retryHandle=null;
 const storageKey=()=>user?'ehs-weigh-pending-v1:'+user.uid:null;
@@ -147,6 +152,9 @@ async function addWeight(){
   const entryRef=doc(collection(db,'waste_weigh_entries'));
   const record={id:entryRef.id,batchId:date+'_'+item.code,date,code:item.code,name:item.name,group:item.group,value:round(value)};
   writeQueue([...current,record]);
+  recentWeights.unshift({time:new Date().toLocaleTimeString('vi-VN'),name:item.name,value:record.value});
+  if(recentWeights.length>100)recentWeights.length=100;
+  renderKioskHistory();
   $('weightInput').value='';
   toast('Đã ghi tạm '+fmt(value)+' kg. '+(Date.now()<nextRetryAt?'Firebase còn vượt quota, CHƯA đồng bộ.':'Đang đồng bộ…'),Date.now()<nextRetryAt);
   showQueue();$('weightInput').focus();
