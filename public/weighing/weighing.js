@@ -2,7 +2,7 @@ import {initializeApp,getApps,getApp} from 'https://www.gstatic.com/firebasejs/1
 import {getAuth,GoogleAuthProvider,signInWithPopup,onAuthStateChanged,signOut,setPersistence,browserLocalPersistence} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js';
 import {getFirestore,collection,doc,getDoc,getDocs,query,where,runTransaction,setDoc,serverTimestamp} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
 import {resolveMember} from '../member-admin.js';
-import {loadEhsPermissions,may} from '../ehs-permissions.js';
+import {loadEhsPermissions,may} from '../ehs-permissions.js?v=20261119weigh1';
 
 const $=id=>document.getElementById(id);
 const DEFAULT=[{code:'ctnh-metal-packaging',name:'Bao bì kim loại thải',group:'CTNH'}];
