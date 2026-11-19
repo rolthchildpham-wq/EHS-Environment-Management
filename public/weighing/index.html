@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EHS | Cân rác QR</title>
+<style>
+:root{font-family:system-ui,Arial,sans-serif;background:#edf5f7;color:#123746}*{box-sizing:border-box}body{margin:0}
+header{background:#103c50;color:#fff;padding:16px 22px;display:flex;gap:18px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+header a{color:#fff}main{max-width:1050px;margin:auto;padding:16px;display:grid;gap:15px}
+section{background:white;border:1px solid #d1e3e7;border-radius:16px;padding:18px;box-shadow:0 3px 12px #18424b12}
+h1{font-size:22px;margin:0}h2{font-size:20px;margin:0 0 14px}p{line-height:1.5}
+.row{display:flex;align-items:end;gap:12px;flex-wrap:wrap}.row>*{flex:1}
+label{display:grid;gap:6px;font-weight:650}input,select,textarea,button{font:inherit;border-radius:10px;padding:12px;border:1px solid #b4d1d8;min-height:46px;width:100%}
+button{background:#087e80;color:#fff;border:0;font-weight:750;cursor:pointer}button.secondary{background:#dcebf0;color:#154559}button:disabled{opacity:.45;cursor:not-allowed}
+strong.total{font-size:27px;color:#075e61}.muted{color:#5d7883}.warn{color:#984c00}
+#weightInput{font-size:30px;font-weight:850;text-align:center}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:9px;border-bottom:1px solid #e0ebef}th{font-size:13px;color:#526e79}
+#qrCode{display:flex;justify-content:center;margin:16px}dialog{width:min(480px,95vw);border:0;border-radius:15px;padding:22px;box-shadow:0 16px 60px #102a3340}dialog::backdrop{background:#102a3399}
+#status{min-height:24px}#session[hidden],#staff[hidden],#admin[hidden]{display:none!important}
+@media(max-width:640px){.row{display:grid}.row>*{width:100%}header{align-items:start}section{padding:14px}}
+</style>
+<script src="../firebase-config.js"></script><script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head><body>
+<header><div><h1>⚖ CÂN RÁC HẰNG NGÀY · EHS</h1><small>Nhập từng lần cân · Tổng hợp theo loại · Chờ phê duyệt</small></div><div><a href="../?app=environment&tab=records">← Nhật ký môi trường</a></div></header>
+<main>
+<section><div class="row"><div><b id="account">Đang kiểm tra đăng nhập…</b><p id="status" role="status">Đang kết nối Firebase.</p></div><button id="login" hidden>Đăng nhập Google</button><button id="logout" class="secondary" hidden>Đăng xuất</button></div></section>
+<section id="staff" hidden>
+<h2>1. Chọn loại rác · Tạo QR</h2><div class="row"><label>Loại rác<select id="category"></select></label><button id="changeType" class="secondary">Đổi loại rác</button></div>
+<div id="qrCode"></div><p class="muted">Dán mã QR tại vị trí cân. Sau lần đăng nhập đầu tiên, Firebase lưu phiên trên chính trình duyệt; không dùng IP để nhận diện người nhập.</p>
+<button id="copyUrl" class="secondary">Sao chép liên kết QR</button>
+</section>
+<section id="session" hidden><h2>2. Nhập khối lượng liên tục</h2>
+<div class="row"><label>Ngày cân<input type="date" id="day"></label><label>Khối lượng cân (kg)<input type="number" min="0.001" step="0.001" inputmode="decimal" placeholder="Ví dụ: 25.5" id="weightInput"></label></div>
+<div class="row" style="margin-top:12px"><button id="addWeight">+ Lưu lần cân, tiếp tục nhập</button><button class="secondary" id="refresh">Tải lại số liệu</button></div>
+<p id="saveMessage" role="status"></p>
+<h2>3. Chi tiết và tổng hợp</h2>
+<div class="row"><div>Loại: <b id="selectedType"></b></div><div>Lượt cân: <b id="count">0</b></div><div>Tổng cân: <strong id="gross" class="total">0 kg</strong></div></div>
+<div class="row" style="margin-top:12px"><label>Khối lượng bao bì cần trừ (kg, tổng cho loại/ngày)<input type="number" id="tare" min="0" step="0.001" inputmode="decimal" value="0"></label><div>Khối lượng ròng<br><strong id="net" class="total">0 kg</strong></div></div>
+<button id="saveTare">Lưu khối lượng bao bì</button>
+<p>Trạng thái: <b id="state">Chưa nhập</b>. Chỉ số liệu được Admin duyệt mới xuất hiện trong Nhật ký EHS và thống kê ngày.</p>
+<div style="overflow:auto"><table><thead><tr><th>STT</th><th>Thời gian</th><th>Khối lượng (kg)</th></tr></thead><tbody id="entries"></tbody></table></div>
+</section>
+<section id="admin" hidden><h2>4. Duyệt cân và thiết lập danh mục (Admin)</h2>
+<p class="muted">Danh mục cần đối chiếu đúng với tệp Google Sheets nguồn trước khi sử dụng chính thức.</p>
+<label>Danh mục loại rác (mỗi dòng một loại)<textarea id="catalog" rows="5" placeholder="Nhập tên các loại rác theo Google Sheets"></textarea></label><button id="saveCatalog">Lưu danh mục</button>
+<h3>Các lô cân chờ duyệt</h3><div id="pending">Đang tải…</div>
+</section>
+</main>
+<dialog id="typeDialog"><h2>Đổi loại rác</h2><label>Chọn loại<select id="dialogCategory"></select></label><div class="row" style="margin-top:16px"><button id="applyType">OK · Chuyển loại</button><button id="cancelType" class="secondary">Hủy</button></div></dialog>
+<script type="module" src="./weighing.js"></script>
+</body></html>
