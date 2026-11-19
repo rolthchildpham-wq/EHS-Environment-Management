@@ -25,3 +25,22 @@ test('Firestore weighing writes require EHS authorization and lock approved batc
  assert.match(rules,/request\.resource\.data\.status == \x27approved\x27/);
  assert.match(rules,/allow delete: if false;/);
 });
+
+test('QR entry is a minimal full-viewport kiosk and resets after each OK',()=>{
+ for(const id of ['kioskHeader','kioskType','kioskChangeType','pendingSync','weighDetail'])assert.ok(page.includes('id="'+id+'"'),id);
+ assert.match(page,/body\.qr-entry #session\{min-height:100dvh/);
+ assert.match(page,/body\.qr-entry #weighDetail,body\.qr-entry \.advanced-only\{display:none!important\}/);
+ assert.match(app,/const kiosk=params\.has\('type'\)/);
+ assert.match(app,/\$\('addWeight'\)\.textContent=kiosk\?'OK'/);
+ assert.match(app,/\$\('weightInput'\)\.value=''/);
+ assert.match(app,/void flushQueue\(\)/);
+});
+test('Local queued readings are idempotent and never represented as committed while quota is exhausted',()=>{
+ assert.match(app,/localStorage\.setItem/);
+ assert.match(app,/if\(entry\.exists\(\)\)return/);
+ assert.match(app,/readQueue\(\)\.filter\(p=>p\.id!==x\.id\)/);
+ assert.match(app,/e\?\.code==='resource-exhausted'/);
+ assert.match(app,/CHƯA đồng bộ Firebase/);
+ assert.match(app,/Firebase đã vượt hạn mức/);
+ assert.doesNotMatch(app,/await loadCurrent\(\);\$\('weightInput'\)\.focus\(\)/);
+});

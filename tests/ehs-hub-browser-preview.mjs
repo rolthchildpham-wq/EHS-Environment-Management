@@ -42,6 +42,18 @@ try{
   assert.equal(await page.locator('#tare').count(),1,device+': tare input');
   await page.screenshot({path:`tests/artifacts/weighing-${device}.png`});
   console.log('PASS',device,'waste weighing route, login gate and entry form');
+  await page.goto(origin+'/weighing/?type=ctnh-metal-packaging',{waitUntil:'domcontentloaded',timeout:30000});
+  await page.locator('#weightInput').waitFor({state:'attached'});
+  await page.evaluate(()=>{document.body.classList.add('kiosk-ready');document.querySelector('#session').hidden=false});
+  assert.equal(await page.locator('#kioskChangeType').isVisible(),true,device+': change type button visible');
+  assert.equal(await page.locator('#weighDetail').isVisible(),false,device+': detailed panels hidden');
+  assert.equal(await page.locator('#qrCode').isVisible(),false,device+': QR admin panel hidden');
+  assert.equal(await page.locator('#addWeight').isVisible(),true,device+': OK action visible');
+  const viewportHeight=await page.evaluate(()=>document.documentElement.clientHeight);
+  const kioskHeight=await page.locator('#session').evaluate(el=>el.getBoundingClientRect().height);
+  assert.ok(kioskHeight>=viewportHeight-2,device+': full viewport kiosk');
+  await page.screenshot({path:`tests/artifacts/weighing-kiosk-${device}.png`});
+  console.log('PASS',device,'full-viewport QR kiosk with only weight / OK / change type');
   const fatal=errors.filter(x=>/SyntaxError|ReferenceError|TypeError/.test(x));
   assert.equal(fatal.length,0,device+': JS fatal '+fatal.join('|'));
   await page.close();
