@@ -334,6 +334,7 @@ service cloud.firestore {
       && request.resource.data.gross > 0
       && request.resource.data.count == 1
       && request.resource.data.lastEntryId is string
+      && !exists(/databases/$(database)/documents/waste_weigh_entries/$(request.resource.data.lastEntryId))
       && existsAfter(/databases/$(database)/documents/waste_weigh_entries/$(request.resource.data.lastEntryId))
       && getAfter(/databases/$(database)/documents/waste_weigh_entries/$(request.resource.data.lastEntryId)).data.batchId == batchId
       && getAfter(/databases/$(database)/documents/waste_weigh_entries/$(request.resource.data.lastEntryId)).data.value == request.resource.data.gross
@@ -354,7 +355,8 @@ service cloud.firestore {
           && request.resource.data.count == resource.data.count + 1
           && request.resource.data.lastEntryId is string
           && request.resource.data.lastEntryId != resource.data.lastEntryId
-          && existsAfter(/databases/$(database)/documents/waste_weigh_entries/$(request.resource.data.lastEntryId))
+          && !exists(/databases/$(database)/documents/waste_weigh_entries/$(request.resource.data.lastEntryId))
+      && existsAfter(/databases/$(database)/documents/waste_weigh_entries/$(request.resource.data.lastEntryId))
           && getAfter(/databases/$(database)/documents/waste_weigh_entries/$(request.resource.data.lastEntryId)).data.batchId == batchId
           && request.resource.data.gross >= resource.data.gross + getAfter(/databases/$(database)/documents/waste_weigh_entries/$(request.resource.data.lastEntryId)).data.value - 0.001
           && request.resource.data.gross <= resource.data.gross + getAfter(/databases/$(database)/documents/waste_weigh_entries/$(request.resource.data.lastEntryId)).data.value + 0.001)
