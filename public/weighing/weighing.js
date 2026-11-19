@@ -91,12 +91,14 @@ function renderTotals(){
  $('count').textContent=String(batch?.count||0);
  $('gross').textContent=fmt(gross)+' kg';
  $('tare').value=String(batch?.tare??0);
+ $('hasTare').checked=Number(batch?.tare||0)>0;
+ updateTareVisibility();
  $('net').textContent=fmt(Math.max(0,round(gross-Number(batch?.tare||0))))+' kg';
  $('state').textContent=({pending:'Chờ phê duyệt',approved:'Đã duyệt',rejected:'Đã từ chối'})[batch?.status]||'Chưa nhập';
  const editing=(!batch||batch.status==='pending');
  $('weightInput').disabled=!editing;
  $('addWeight').disabled=!editing;
- $('tare').disabled=!editing;$('saveTare').disabled=!editing;
+ $('hasTare').disabled=!editing;$('tare').disabled=!editing||!$('hasTare').checked;$('saveTare').disabled=!editing;
  if(!kiosk)$('entries').innerHTML=entries.map((x,i)=>'<tr><td>'+(i+1)+'</td><td>'+escape(x.createdAt?.toDate?.()?.toLocaleString('vi-VN')||'Đang đồng bộ')+'</td><td>'+fmt(x.value)+'</td></tr>').join('')||'<tr><td colspan="3">Chưa có lượt cân</td></tr>';
  showQueue();
 }
@@ -202,7 +204,15 @@ $('day').value=today();await loadCurrent()}
  }catch(e){toast('Không ghi được lượt cân: '+e.message+'. Số đang nhập được giữ nguyên.',true)}
  finally{submitting=false;$('addWeight').disabled=batch?.status==='approved';$('weightInput').focus()}
 }
+function updateTareVisibility(){
+ const enabled=$('hasTare').checked;
+ $('tareField').hidden=!enabled;
+ $('saveTare').hidden=!enabled;
+ $('tare').disabled=!enabled||!!(batch&&batch.status!=='pending');
+}
+$('hasTare').onchange=updateTareVisibility;
 async function saveTare(){
+ if(!$('hasTare').checked)return toast('Tích chọn loại cần trừ bao bì trước khi lưu.',true);
  const tare=Number($('tare').value),id=batchId();
  if(!batch||batch.status!=='pending'||!Number.isFinite(tare)||tare<0||tare>Number(batch.gross))return toast('Bao bì phải từ 0 đến tổng khối lượng cân',true);
  try{
@@ -223,6 +233,19 @@ async function loadPending(){
  for(const b of batches){
   const item=document.createElement('div');item.className='row';item.style.padding='10px 0';item.style.borderBottom='1px solid #dce8ec';
   const label=document.createElement('div');label.textContent=b.date+' · '+b.name+' · '+fmt(b.gross)+' kg · '+b.count+' lượt · Bao bì '+fmt(b.tare)+' kg';
+  const tareRow=document.createElement('div');tareRow.style.cssText='display:flex;align-items:center;gap:8px;flex-wrap:wrap';
+  const check=document.createElement('input');check.type='checkbox';check.checked=Number(b.tare||0)>0;check.setAttribute('aria-label','Trừ bao bì cho '+b.name);
+  const tareInput=document.createElement('input');tareInput.type='number';tareInput.min='0';tareInput.max=String(b.gross);tareInput.step='0.001';tareInput.value=String(b.tare||0);tareInput.style.cssText='width:110px';
+  const save=document.createElement('button');save.type='button';save.textContent='Lưu trừ bì';save.className='secondary';
+  const toggle=()=>{tareInput.hidden=!check.checked;save.hidden=!check.checked};check.onchange=toggle;toggle();
+  save.onclick=async()=>{
+   const tare=Number(tareInput.value);if(!tareInput.value.trim()||!Number.isFinite(tare)||tare<0||tare>b.gross)return toast('Khối lượng trừ bì không hợp lệ',true);
+   save.disabled=true;try{
+    await runTransaction(db,async tx=>{const ref=doc(db,'waste_weigh_batches',b.id),snap=await tx.get(ref);if(!snap.exists()||snap.data().status!=='pending'||tare>snap.data().gross)throw Error('Lô đã thay đổi hoặc đã duyệt');tx.update(ref,{tare,updatedAt:serverTimestamp()})});
+    await loadPending();if(b.id===batchId())await loadCurrent();toast('Đã lưu trừ bì cho '+b.name+'; lô chờ duyệt.');
+   }catch(e){toast('Không lưu được trừ bì: '+e.message,true);save.disabled=false}
+  };
+  tareRow.append(check,document.createTextNode('Trừ bì'),tareInput,save);
   const button=document.createElement('button');button.textContent='Duyệt '+fmt(round(b.gross-b.tare))+' kg';
   button.onclick=async()=>{
    if(!confirm('Duyệt lô '+b.date+' / '+b.name+'? Sau khi duyệt, lô sẽ khóa nhập liệu.'))return;
@@ -238,7 +261,7 @@ async function loadPending(){
     await loadPending();await loadCurrent();toast('Đã phê duyệt. Dữ liệu ròng được liên kết với Nhật ký EHS.');
    }catch(e){toast('Duyệt thất bại: '+e.message,true);button.disabled=false}
   };
-  item.append(label,button);$('pending').append(item);
+  item.append(label,tareRow,button);$('pending').append(item);
  }
  if(!batches.length)$('pending').textContent='Không có lô đang chờ duyệt.';
 }
