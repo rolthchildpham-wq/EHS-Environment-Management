@@ -1,4 +1,4 @@
-import {loadEhsPermissions,may,applyRights} from './ehs-permissions.js?v=20261116reconciled';
+import {loadEhsPermissions,may,applyRights} from './ehs-permissions.js?v=20261119weigh1';
 import {mountQrStock,unmountQrStock} from './ehs-qr-stock.js?v=20261116fixnull';
 import {initSimpleFinance,setSimpleFinanceRecords} from './ehs-simple-finance.js?v=20261116fa';
 import {mountPublicPublisher} from './ehs-public-publish.js?v=20261116a';
@@ -190,9 +190,20 @@ async function reload(){
  if(!db||!role)return;
  const snap=await getDocs(query(collection(db,'records'),limit(5000)));
  data=snap.docs.map(d=>norm(d.data())).filter(valid);
- await loadOperations();setCostExplorerRecords(getAllOperations());setSimpleFinanceRecords(getAllOperations());if(role&&['admin','editor'].includes(role)){try{mountQrStock(db,user,role,getAllOperations,reload)}catch(error){console.error('QR refresh failed',error)}}data.push(...getOperationalRecords());
+ await loadOperations();await loadApprovedWasteWeighing();setCostExplorerRecords(getAllOperations());setSimpleFinanceRecords(getAllOperations());if(role&&['admin','editor'].includes(role)){try{mountQrStock(db,user,role,getAllOperations,reload)}catch(error){console.error('QR refresh failed',error)}}data.push(...getOperationalRecords());
  await reviews();updateYearOptions();render();refreshCompliance();notice('Đã tải '+data.length+' bản ghi dữ liệu gốc/nghiệp vụ và '+reviewData.length+' chứng từ đã duyệt. Bảng báo cáo nghiệp vụ hiển thị chi tiết theo sheet Excel.');
 }
+// Approved QR weigh batches are derived journal records, never duplicate editable import rows.
+async function loadApprovedWasteWeighing(){
+ const snap=await getDocs(query(collection(db,'waste_weigh_batches'),limit(5000)));
+ const approved=snap.docs.map(x=>x.data()).filter(x=>x.status==='approved');
+ data.push(...approved.map(x=>norm({
+  date:x.date,kind:'waste',value:x.net,unit:'kg',name:x.name,
+  note:'QR cân rác • '+x.group+' • '+x.count+' lượt • cân '+x.gross+' kg • bao bì '+x.tare+' kg',
+  source:'qr-weigh-approved'
+ })).filter(valid));
+}
+
 async function reviews(){
  if(!db||!role)return;
  const snap=await getDocs(query(collection(db,'reviews'),limit(1000)));

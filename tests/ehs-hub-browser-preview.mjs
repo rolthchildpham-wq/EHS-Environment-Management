@@ -36,6 +36,12 @@ try{
   assert.equal(await page.locator('iframe').count(),0,device+': WWTP has no iframe');
   await page.screenshot({path:`tests/artifacts/wwtp-${device}.png`});
   console.log('PASS',device,'standalone WWTP route with EHS auth gate');
+  await page.goto(origin+'/weighing/',{waitUntil:'domcontentloaded',timeout:30000});
+  await page.locator('#weightInput').waitFor({state:'attached'});
+  assert.equal(await page.locator('#typeDialog').count(),1,device+': category change dialog');
+  assert.equal(await page.locator('#tare').count(),1,device+': tare input');
+  await page.screenshot({path:`tests/artifacts/weighing-${device}.png`});
+  console.log('PASS',device,'waste weighing route, login gate and entry form');
   const fatal=errors.filter(x=>/SyntaxError|ReferenceError|TypeError/.test(x));
   assert.equal(fatal.length,0,device+': JS fatal '+fatal.join('|'));
   await page.close();

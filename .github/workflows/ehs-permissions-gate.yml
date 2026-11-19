@@ -8,6 +8,8 @@ on:
       - 'public/ehs-permissions.js'
       - 'public/ehs-qr-stock.js'
       - 'public/app.js'
+      - 'public/weighing/**'
+      - 'tests/ehs-waste-weighing-emulator.cjs'
       - 'public/index.html'
       - 'firestore.rules'
       - 'tests/ehs-permissions.test.mjs'
@@ -29,11 +31,14 @@ jobs:
           node --check public/app.js
           node --check public/ehs-qr-stock.js
           node --check public/ehs-permissions.js
+          node --check public/weighing/weighing.js
+          node --check tests/ehs-waste-weighing-emulator.cjs
           node --check public/wwtp/ehs-auth-guard.js
       - name: Permission and existing UI tests
         run: |
           node --test tests/ehs-permissions.test.mjs
           node --test tests/firestore-rules.test.mjs
+          node --test tests/ehs-weighing-contract.test.mjs
           node --test tests/ehs-qr-finance.test.mjs
           node --test tests/ehs-ui.test.mjs
           node --test tests/ehs-journal-filters.test.mjs
@@ -42,4 +47,4 @@ jobs:
         run: |
           npm install --no-audit --no-fund -g firebase-tools@14
           npm install --no-save --no-audit --no-fund @firebase/rules-unit-testing@4 firebase@11
-          firebase emulators:exec --project demo-ehs-permission-gate --only firestore "node tests/ehs-permissions-emulator.cjs" --config .ehs-permissions-emulator.json
+          firebase emulators:exec --project demo-ehs-permission-gate --only firestore "node tests/ehs-permissions-emulator.cjs && node tests/ehs-waste-weighing-emulator.cjs" --config .ehs-permissions-emulator.json

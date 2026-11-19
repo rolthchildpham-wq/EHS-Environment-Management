@@ -62,6 +62,7 @@ jobs:
           node --check public/ehs-simple-finance.js
           node --check public/ehs-permissions.js
           node --check public/wwtp/ehs-auth-guard.js
+          node --check public/weighing/weighing.js
           node --check scripts/deploy-ehs-rules-rest.mjs
           node --experimental-default-type=module --test tests/ehs-finance.test.mjs
           node --experimental-default-type=module --test tests/ehs-ui.test.mjs
@@ -71,6 +72,7 @@ jobs:
           node --test tests/ehs-permissions.test.mjs
           node --test tests/ehs-journal-filters.test.mjs
           node --test tests/ehs-wwtp-hub.test.mjs
+          node --test tests/ehs-weighing-contract.test.mjs
       - name: Publish and verify Firestore Rules before Hosting
         env:
           FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
