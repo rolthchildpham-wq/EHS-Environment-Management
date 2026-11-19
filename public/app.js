@@ -1,4 +1,4 @@
-import {loadEhsPermissions,may,applyRights} from './ehs-permissions.js?v=20261116reconciled';
+import {loadEhsPermissions,may,applyRights} from './ehs-permissions.js?v=20261119weigh1';
 import {mountQrStock,unmountQrStock} from './ehs-qr-stock.js?v=20261116fixnull';
 import {initSimpleFinance,setSimpleFinanceRecords} from './ehs-simple-finance.js?v=20261116fa';
 import {mountPublicPublisher} from './ehs-public-publish.js?v=20261116a';
