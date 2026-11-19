@@ -149,10 +149,6 @@ async function flushQueue(force=false){
   }else toast('Chưa đồng bộ: '+e.message+' — dữ liệu tạm vẫn nằm trên máy.',true);
  }finally{syncing=false;showQueue()}
 }
-async function addWeight(){
- if(submitting)return;
- if(!isStaff())return toast('Chưa có quyền nhập cân',true);
- if(kiosk&&$('day').value!==today()){
 function summaryRange(){
  const raw=$('summaryDate').value;
  const month=$('summaryPeriod').value==='month';
@@ -192,6 +188,11 @@ $('summaryDate').value=today();
 $('summaryPeriod').onchange=()=>{$('summaryDate').type=$('summaryPeriod').value==='month'?'month':'date';$('summaryDate').value=$('summaryPeriod').value==='month'?today().slice(0,7):today()};
 $('summaryLoad').onclick=loadSummary;
 
+
+async function addWeight(){
+ if(submitting)return;
+ if(!isStaff())return toast('Chưa có quyền nhập cân',true);
+ if(kiosk&&$('day').value!==today()){
 $('day').value=today();await loadCurrent()}
  const raw=$('weightInput').value.trim(),value=Number(raw),item=byCategory(),date=$('day').value;
  if(!raw||!dateOK(date)||!item||!Number.isFinite(value)||value<=0||value>100000)return toast('Nhập khối lượng từ 0,001 đến 100.000 kg',true);
