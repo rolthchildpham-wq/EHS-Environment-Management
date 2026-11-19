@@ -1,3 +1,4 @@
+import {installI18n,translateDOM,t} from '../i18n.js?v=20261119qr1';
 import {initializeApp,getApps,getApp} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js';
 import {getAuth,GoogleAuthProvider,signInWithPopup,onAuthStateChanged,signOut,setPersistence,browserLocalPersistence} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js';
 import {getFirestore,collection,doc,getDoc,getDocs,query,where,runTransaction,setDoc,serverTimestamp} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
@@ -14,9 +15,11 @@ const kiosk=params.has('type');
 const recentWeights=[];
 function renderKioskHistory(){
  const target=$('kioskHistoryRows');if(!target)return;
- target.innerHTML=recentWeights.length?recentWeights.map(x=>'<tr><td>'+escape(x.time)+'</td><td>'+escape(x.name)+'</td><td>'+fmt(x.value)+'</td></tr>').join(''):'<tr><td colspan="3">Chưa có lượt cân trên thiết bị này</td></tr>';
+ target.innerHTML=recentWeights.length?recentWeights.map((x,i)=>'<tr><td>'+(recentWeights.length-i)+'</td><td>'+escape(x.time)+'</td><td>'+escape(x.group||'')+' · '+escape(x.name)+'</td><td>'+fmt(x.value)+'</td></tr>').join(''):'<tr><td colspan="4">Chưa có lượt cân trên thiết bị này</td></tr>';
+ translateDOM(target);
 }
 document.body.classList.toggle('qr-entry',kiosk);
+installI18n();
 let syncing=false,nextRetryAt=0,submitting=false,retryHandle=null;
 const storageKey=()=>user?'ehs-weigh-pending-v1:'+user.uid:null;
 const readQueue=()=>{try{const rows=JSON.parse(localStorage.getItem(storageKey())||'[]');return Array.isArray(rows)?rows:[]}catch{return []}};
@@ -194,7 +197,7 @@ $('day').value=today();await loadCurrent()}
   const entryRef=doc(collection(db,'waste_weigh_entries'));
   const record={id:entryRef.id,batchId:date+'_'+item.code,date,code:item.code,name:item.name,group:item.group,value:round(value)};
   writeQueue([...current,record]);
-  recentWeights.unshift({time:new Date().toLocaleTimeString('vi-VN'),name:item.name,value:record.value});
+  recentWeights.unshift({time:new Date().toLocaleTimeString('vi-VN'),name:item.name,group:item.group,value:record.value});
   if(recentWeights.length>100)recentWeights.length=100;
   renderKioskHistory();
   $('weightInput').value='';
