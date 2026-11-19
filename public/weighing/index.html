@@ -60,7 +60,7 @@ body.qr-entry #session>.row,body.qr-entry #kioskHeader,body.qr-entry #saveMessag
 </style>
 <script src="../firebase-config.js"></script><script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head><body>
-<header><div><h1>⚖ CÂN RÁC HẰNG NGÀY · EHS</h1><small>Nhập từng lần cân · Tổng hợp theo loại · Chờ phê duyệt</small></div><div><a href="../?app=environment&tab=records">← Nhật ký môi trường</a></div></header>
+<header><div><h1>⚖ CÂN RÁC HẰNG NGÀY · EHS</h1><small>Nhập từng lần cân · Tổng hợp theo loại · Chờ phê duyệt</small></div><div><label style="display:inline-flex;align-items:center;gap:6px;color:white">Ngôn ngữ <select id="languageSelect" aria-label="Ngôn ngữ"><option value="vi">Tiếng Việt</option><option value="en">English</option><option value="zh">中文</option></select></label> <a href="../?app=environment&tab=records">← Nhật ký môi trường</a></div></header>
 <main>
 <section><div class="row"><div><b id="account">Đang kiểm tra đăng nhập…</b><p id="status" role="status">Đang kết nối Firebase.</p></div><button id="login" hidden>Đăng nhập Google</button><button id="logout" class="secondary" hidden>Đăng xuất</button></div></section>
 <section id="staff" hidden>
@@ -72,7 +72,7 @@ body.qr-entry #session>.row,body.qr-entry #kioskHeader,body.qr-entry #saveMessag
 <div class="row"><label class="advanced-only">Ngày cân<input type="date" id="day"></label><label>Khối lượng cân (kg)<input type="number" min="0.001" step="0.001" inputmode="decimal" placeholder="Ví dụ: 25.5" id="weightInput"></label></div>
 <div class="row" style="margin-top:12px"><button id="addWeight">+ Lưu lần cân, tiếp tục nhập</button><button class="secondary advanced-only" id="refresh">Tải lại số liệu</button></div>
 <p id="saveMessage" role="status"></p><p id="pendingSync" role="status"></p>
-<div id="kioskHistory" aria-label="Lịch sử lượt cân trên thiết bị"><h3>Lượt cân vừa nhập (thiết bị này)</h3><div class="history-scroll" tabindex="0"><table><thead><tr><th>Giờ</th><th>Loại rác</th><th>Khối lượng (kg)</th></tr></thead><tbody id="kioskHistoryRows"><tr><td colspan="3">Chưa có lượt cân</td></tr></tbody></table></div></div>
+<div id="kioskHistory" aria-label="Lịch sử lượt cân trên thiết bị"><h3>Lượt cân vừa nhập (thiết bị này)</h3><div class="history-scroll" tabindex="0"><table><thead><tr><th>STT</th><th>Giờ</th><th>Nhóm / Loại rác</th><th>Khối lượng (kg)</th></tr></thead><tbody id="kioskHistoryRows"><tr><td colspan="4">Chưa có lượt cân</td></tr></tbody></table></div></div>
 <div id="weighDetail"><h2>3. Chi tiết và tổng hợp</h2>
 <div class="row"><div>Loại: <b id="selectedType"></b></div><div>Lượt cân: <b id="count">0</b></div><div>Tổng cân: <strong id="gross" class="total">0 kg</strong></div></div>
 <div class="row" style="margin-top:12px"><div><label><input type="checkbox" id="hasTare"> Có trừ khối lượng bao bì cho loại này</label><label id="tareField" hidden>Khối lượng bao bì cần trừ (kg, tổng cho loại/ngày)<input type="number" id="tare" min="0" step="0.001" inputmode="decimal" value="0"></label></div><div>Khối lượng ròng<br><strong id="net" class="total">0 kg</strong></div></div>
@@ -92,5 +92,5 @@ body.qr-entry #session>.row,body.qr-entry #kioskHeader,body.qr-entry #saveMessag
 </section>
 </main>
 <dialog id="typeDialog"><h2>Đổi loại rác</h2><label>Tìm loại rác<input id="typeSearch" type="search" placeholder="Nhập tên, nhóm hoặc mã loại rác..." autocomplete="off"></label><p id="typeSearchCount" class="muted" role="status"></p><div id="typeSuggestions" role="listbox" aria-label="Danh sách loại rác gợi ý" style="max-height:min(45dvh,360px);overflow-y:auto;overscroll-behavior:contain;border:1px solid #dce8ec;border-radius:10px;margin-top:8px"></div><label style="display:none">Chọn loại<select id="dialogCategory"></select></label><div class="row" style="margin-top:16px"><button id="applyType">OK · Chuyển loại</button><button id="cancelType" class="secondary">Hủy</button></div></dialog>
-<script type="module" src="./weighing.js?v=20261119taretypes4"></script>
+<script type="module" src="./weighing.js?v=20261119qr-i18n5"></script>
 </body></html>
