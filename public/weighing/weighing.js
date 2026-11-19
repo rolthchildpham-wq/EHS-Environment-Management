@@ -49,7 +49,7 @@ function showQr(){
 }
 function isStaff(){return !!user&&!!role&&may('waste_weigh')}
 function refreshVisibility(){
- $('staff').hidden=!isStaff();$('session').hidden=!isStaff();$('admin').hidden=role!=='admin';$('weighSummary').hidden=!isStaff()||kiosk;
+ $('staff').hidden=!isStaff();$('session').hidden=!isStaff();$('admin').hidden=role!=='admin';$('pendingApproval').hidden=role!=='admin';$('weighSummary').hidden=!isStaff()||kiosk;
  $('login').hidden=!!user;$('logout').hidden=!user;
  $('account').textContent=user?(user.email+' · '+(role||'chưa cấp quyền')):'Chưa đăng nhập EHS';
  document.body.classList.toggle('kiosk-ready',kiosk&&isStaff());

@@ -78,6 +78,7 @@ body.qr-entry #session>.row,body.qr-entry #kioskHeader,body.qr-entry #saveMessag
 <div class="row" style="margin-top:12px"><label>Khối lượng bao bì cần trừ (kg, tổng cho loại/ngày)<input type="number" id="tare" min="0" step="0.001" inputmode="decimal" value="0"></label><div>Khối lượng ròng<br><strong id="net" class="total">0 kg</strong></div></div>
 <button id="saveTare">Lưu khối lượng bao bì</button>
 <p>Trạng thái: <b id="state">Chưa nhập</b>. Chỉ số liệu được Admin duyệt mới xuất hiện trong Nhật ký EHS và thống kê ngày.</p>
+<div id="pendingApproval" hidden><h3>Các lô cân chờ duyệt</h3><div id="pending">Đang tải…</div></div>
 <div style="overflow:auto"><table><thead><tr><th>STT</th><th>Thời gian</th><th>Khối lượng (kg)</th></tr></thead><tbody id="entries"></tbody></table></div></div>
 </section>
 <section id="weighSummary" hidden><h2>Thống kê khối lượng cân theo ngày / tháng</h2><div class="row"><label>Kỳ thống kê<select id="summaryPeriod"><option value="day">Theo ngày</option><option value="month">Theo tháng</option></select></label><label>Ngày / tháng<input id="summaryDate" type="date"></label><label>Tìm theo tên loại / nhóm<input id="summarySearch" type="search" placeholder="Ví dụ: kim loại, CTNH"></label></div><div class="row" style="margin-top:12px"><button id="summaryLoad" type="button">Tìm và thống kê</button></div><p id="summaryStatus" role="status" class="muted">Nhấn Tìm và thống kê để tải số liệu.</p><div class="catalog-grid"><table><thead><tr><th>Nhóm</th><th>Loại rác</th><th>Số lượt</th><th>Tổng cân (kg)</th><th>Trừ bao bì (kg)</th><th>Khối lượng ròng (kg)</th></tr></thead><tbody id="summaryRows"></tbody></table></div><p><strong id="summaryTotal">Tổng: 0 kg</strong></p></section>
@@ -88,7 +89,6 @@ body.qr-entry #session>.row,body.qr-entry #kioskHeader,body.qr-entry #saveMessag
 <div class="catalog-grid"><table aria-label="Bảng danh mục loại rác"><thead><tr><th>STT</th><th>Tên loại rác</th><th>Nhóm</th><th>Mã loại rác (QR)</th><th>Xóa</th></tr></thead><tbody id="catalogRows"></tbody></table></div>
 <div class="catalog-actions"><button id="catalogAdd" type="button" class="secondary">+ Thêm dòng</button><button id="saveCatalog" type="button">Lưu danh mục</button></div>
 <p id="catalogMessage" role="status" class="muted"></p>
-<h3>Các lô cân chờ duyệt</h3><div id="pending">Đang tải…</div>
 </section>
 </main>
 <dialog id="typeDialog"><h2>Đổi loại rác</h2><label>Tìm loại rác<input id="typeSearch" type="search" placeholder="Nhập tên, nhóm hoặc mã loại rác..." autocomplete="off"></label><p id="typeSearchCount" class="muted" role="status"></p><div id="typeSuggestions" role="listbox" aria-label="Danh sách loại rác gợi ý" style="max-height:min(45dvh,360px);overflow-y:auto;overscroll-behavior:contain;border:1px solid #dce8ec;border-radius:10px;margin-top:8px"></div><label style="display:none">Chọn loại<select id="dialogCategory"></select></label><div class="row" style="margin-top:16px"><button id="applyType">OK · Chuyển loại</button><button id="cancelType" class="secondary">Hủy</button></div></dialog>
