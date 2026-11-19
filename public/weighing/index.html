@@ -75,8 +75,8 @@ body.qr-entry #session>.row,body.qr-entry #kioskHeader,body.qr-entry #saveMessag
 <div id="kioskHistory" aria-label="Lịch sử lượt cân trên thiết bị"><h3>Lượt cân vừa nhập (thiết bị này)</h3><div class="history-scroll" tabindex="0"><table><thead><tr><th>Giờ</th><th>Loại rác</th><th>Khối lượng (kg)</th></tr></thead><tbody id="kioskHistoryRows"><tr><td colspan="3">Chưa có lượt cân</td></tr></tbody></table></div></div>
 <div id="weighDetail"><h2>3. Chi tiết và tổng hợp</h2>
 <div class="row"><div>Loại: <b id="selectedType"></b></div><div>Lượt cân: <b id="count">0</b></div><div>Tổng cân: <strong id="gross" class="total">0 kg</strong></div></div>
-<div class="row" style="margin-top:12px"><label>Khối lượng bao bì cần trừ (kg, tổng cho loại/ngày)<input type="number" id="tare" min="0" step="0.001" inputmode="decimal" value="0"></label><div>Khối lượng ròng<br><strong id="net" class="total">0 kg</strong></div></div>
-<button id="saveTare">Lưu khối lượng bao bì</button>
+<div class="row" style="margin-top:12px"><div><label><input type="checkbox" id="hasTare"> Có trừ khối lượng bao bì cho loại này</label><label id="tareField" hidden>Khối lượng bao bì cần trừ (kg, tổng cho loại/ngày)<input type="number" id="tare" min="0" step="0.001" inputmode="decimal" value="0"></label></div><div>Khối lượng ròng<br><strong id="net" class="total">0 kg</strong></div></div>
+<button id="saveTare" hidden>Lưu khối lượng bao bì · Chờ duyệt</button>
 <p>Trạng thái: <b id="state">Chưa nhập</b>. Chỉ số liệu được Admin duyệt mới xuất hiện trong Nhật ký EHS và thống kê ngày.</p>
 <div style="overflow:auto"><table><thead><tr><th>STT</th><th>Thời gian</th><th>Khối lượng (kg)</th></tr></thead><tbody id="entries"></tbody></table></div></div>
 </section>
@@ -92,5 +92,5 @@ body.qr-entry #session>.row,body.qr-entry #kioskHeader,body.qr-entry #saveMessag
 </section>
 </main>
 <dialog id="typeDialog"><h2>Đổi loại rác</h2><label>Tìm loại rác<input id="typeSearch" type="search" placeholder="Nhập tên, nhóm hoặc mã loại rác..." autocomplete="off"></label><p id="typeSearchCount" class="muted" role="status"></p><div id="typeSuggestions" role="listbox" aria-label="Danh sách loại rác gợi ý" style="max-height:min(45dvh,360px);overflow-y:auto;overscroll-behavior:contain;border:1px solid #dce8ec;border-radius:10px;margin-top:8px"></div><label style="display:none">Chọn loại<select id="dialogCategory"></select></label><div class="row" style="margin-top:16px"><button id="applyType">OK · Chuyển loại</button><button id="cancelType" class="secondary">Hủy</button></div></dialog>
-<script type="module" src="./weighing.js?v=20261119typesearch3"></script>
+<script type="module" src="./weighing.js?v=20261119taretypes4"></script>
 </body></html>
