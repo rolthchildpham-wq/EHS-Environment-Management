@@ -319,14 +319,16 @@ service cloud.firestore {
       && request.resource.data.createdBy == request.auth.uid
       && request.resource.data.createdAt == request.time
       && existsAfter(/databases/$(database)/documents/waste_weigh_batches/$(request.resource.data.batchId))
-      && getAfter(/databases/$(database)/documents/waste_weigh_batches/$(request.resource.data.batchId)).data.status == 'pending';
+      && getAfter(/databases/$(database)/documents/waste_weigh_batches/$(request.resource.data.batchId)).data.status == 'pending'
+      && getAfter(/databases/$(database)/documents/waste_weigh_batches/$(request.resource.data.batchId)).data.lastEntryId == entryId
+      && getAfter(/databases/$(database)/documents/waste_weigh_batches/$(request.resource.data.batchId)).data.updatedAt == request.time;
     allow update, delete: if false;
   }
   match /waste_weigh_batches/{batchId} {
     allow read: if canReadEhs();
     allow create: if allowed('waste_weigh')
       && request.resource.data.keys().hasOnly([
-        'date','code','name','group','gross','count','tare','status',
+        'date','code','name','group','gross','count','tare','status','lastEntryId','lastEntryId',
         'createdBy','createdAt','updatedAt'
       ])
       && request.resource.data.keys().hasAll([
@@ -360,6 +362,10 @@ service cloud.firestore {
       && request.resource.data.gross is number
       && request.resource.data.gross > 0
       && request.resource.data.count == 1
+      && request.resource.data.lastEntryId is string
+      && existsAfter(/databases/$(database)/documents/waste_weigh_entries/$(request.resource.data.lastEntryId))
+      && getAfter(/databases/$(database)/documents/waste_weigh_entries/$(request.resource.data.lastEntryId)).data.batchId == batchId
+      && getAfter(/databases/$(database)/documents/waste_weigh_entries/$(request.resource.data.lastEntryId)).data.value == request.resource.data.gross
       && request.resource.data.tare == 0
       && request.resource.data.status == 'pending'
       && request.resource.data.createdBy == request.auth.uid
@@ -371,10 +377,16 @@ service cloud.firestore {
       && request.resource.data.status == 'pending'
       && request.resource.data.updatedAt == request.time
       && (
-        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['gross','count','updatedAt'])
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['gross','count','lastEntryId','updatedAt'])
           && request.resource.data.gross is number
           && request.resource.data.gross > resource.data.gross
-          && request.resource.data.count == resource.data.count + 1)
+          && request.resource.data.count == resource.data.count + 1
+          && request.resource.data.lastEntryId is string
+          && request.resource.data.lastEntryId != resource.data.lastEntryId
+          && existsAfter(/databases/$(database)/documents/waste_weigh_entries/$(request.resource.data.lastEntryId))
+          && getAfter(/databases/$(database)/documents/waste_weigh_entries/$(request.resource.data.lastEntryId)).data.batchId == batchId
+          && request.resource.data.gross >= resource.data.gross + getAfter(/databases/$(database)/documents/waste_weigh_entries/$(request.resource.data.lastEntryId)).data.value - 0.001
+          && request.resource.data.gross <= resource.data.gross + getAfter(/databases/$(database)/documents/waste_weigh_entries/$(request.resource.data.lastEntryId)).data.value + 0.001)
         || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['tare','updatedAt'])
           && request.resource.data.tare is number
           && request.resource.data.tare >= 0
