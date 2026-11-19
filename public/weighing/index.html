@@ -41,8 +41,8 @@ body.qr-entry #weighDetail,body.qr-entry .advanced-only{display:none!important}
 body.qr-entry #session>.row{display:block;margin:0!important}
 body.qr-entry #weightInput{font-size:clamp(40px,12vw,84px);height:clamp(75px,17vh,140px);border:3px solid #087e80;letter-spacing:1px}
 body.qr-entry #addWeight{font-size:clamp(24px,7vw,38px);min-height:clamp(56px,10vh,78px)}
-body.qr-entry #saveMessage{display:none!important}
-body.qr-entry #pendingSync{display:none!important}
+body.qr-entry #saveMessage:not(.warn){display:none!important}
+body.qr-entry #pendingSync:empty{display:none!important}
 #kioskHistory{display:none}
 body.qr-entry #kioskHistory{display:flex;flex:1;min-height:0;flex-direction:column;border-top:1px solid #d1e3e7;padding-top:6px}
 #kioskHistory h3{font-size:clamp(16px,2vw,22px);margin:0 0 8px}
