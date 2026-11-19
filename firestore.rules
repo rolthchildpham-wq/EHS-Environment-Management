@@ -287,6 +287,116 @@ service cloud.firestore {
         && request.resource.data.green.size() <= 1200));
     allow delete: if admin();
   }
+  // QR waste weighing: immutable individual readings, locked daily totals after approval.
+  match /waste_weigh_entries/{entryId} {
+    allow read: if canReadEhs();
+    allow create: if allowed('waste_weigh')
+      && request.resource.data.keys().hasOnly(['batchId','date','code','value','createdBy','createdAt'])
+      && request.resource.data.keys().hasAll(['batchId','date','code','value','createdBy','createdAt'])
+      && request.resource.data.batchId is string
+      && request.resource.data.batchId == request.resource.data.date + '_' + request.resource.data.code
+      && request.resource.data.date is string
+      && request.resource.data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}
+    allow read: if activeMember();
+    allow write: if admin();
+  }
+  match /{document=**} { allow read, write: if false; }
+ }
+}
+)
+      && request.resource.data.code is string
+      && request.resource.data.code.matches('^[a-z0-9-]{2,60}
+    allow read: if activeMember();
+    allow write: if admin();
+  }
+  match /{document=**} { allow read, write: if false; }
+ }
+}
+)
+      && request.resource.data.value is number
+      && request.resource.data.value > 0
+      && request.resource.data.value <= 100000
+      && request.resource.data.createdBy == request.auth.uid
+      && request.resource.data.createdAt == request.time
+      && existsAfter(/databases/$(database)/documents/waste_weigh_batches/$(request.resource.data.batchId))
+      && getAfter(/databases/$(database)/documents/waste_weigh_batches/$(request.resource.data.batchId)).data.status == 'pending';
+    allow update, delete: if false;
+  }
+  match /waste_weigh_batches/{batchId} {
+    allow read: if canReadEhs();
+    allow create: if allowed('waste_weigh')
+      && request.resource.data.keys().hasOnly([
+        'date','code','name','group','gross','count','tare','status',
+        'createdBy','createdAt','updatedAt'
+      ])
+      && request.resource.data.keys().hasAll([
+        'date','code','name','group','gross','count','tare','status',
+        'createdBy','createdAt','updatedAt'
+      ])
+      && request.resource.data.date is string
+      && request.resource.data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}
+    allow read: if activeMember();
+    allow write: if admin();
+  }
+  match /{document=**} { allow read, write: if false; }
+ }
+}
+)
+      && request.resource.data.code is string
+      && request.resource.data.code.matches('^[a-z0-9-]{2,60}
+    allow read: if activeMember();
+    allow write: if admin();
+  }
+  match /{document=**} { allow read, write: if false; }
+ }
+}
+)
+      && batchId == request.resource.data.date + '_' + request.resource.data.code
+      && request.resource.data.name is string
+      && request.resource.data.name.size() > 0
+      && request.resource.data.name.size() <= 150
+      && request.resource.data.group is string
+      && request.resource.data.group.size() <= 60
+      && request.resource.data.gross is number
+      && request.resource.data.gross > 0
+      && request.resource.data.count == 1
+      && request.resource.data.tare == 0
+      && request.resource.data.status == 'pending'
+      && request.resource.data.createdBy == request.auth.uid
+      && request.resource.data.createdAt == request.time
+      && request.resource.data.updatedAt == request.time;
+    allow update: if (
+      allowed('waste_weigh')
+      && resource.data.status == 'pending'
+      && request.resource.data.status == 'pending'
+      && request.resource.data.updatedAt == request.time
+      && (
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['gross','count','updatedAt'])
+          && request.resource.data.gross is number
+          && request.resource.data.gross > resource.data.gross
+          && request.resource.data.count == resource.data.count + 1)
+        || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['tare','updatedAt'])
+          && request.resource.data.tare is number
+          && request.resource.data.tare >= 0
+          && request.resource.data.tare <= resource.data.gross)
+      )
+    ) || (
+      admin()
+      && resource.data.status == 'pending'
+      && request.resource.data.status == 'approved'
+      && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+        'status','net','reviewedBy','reviewedAt','updatedAt'
+      ])
+      && request.resource.data.net is number
+      && request.resource.data.net >= 0
+      && request.resource.data.net >= resource.data.gross - resource.data.tare - 0.001
+      && request.resource.data.net <= resource.data.gross - resource.data.tare + 0.001
+      && request.resource.data.reviewedBy == request.auth.uid
+      && request.resource.data.reviewedAt == request.time
+      && request.resource.data.updatedAt == request.time
+    );
+    allow delete: if false;
+  }
   match /settings/{id} {
     allow read: if activeMember();
     allow write: if admin();
