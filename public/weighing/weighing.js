@@ -15,7 +15,13 @@ const kiosk=params.has('type');
 const recentWeights=[];
 function renderKioskHistory(){
  const target=$('kioskHistoryRows');if(!target)return;
- target.innerHTML=recentWeights.length?recentWeights.map((x,i)=>'<tr><td>'+(recentWeights.length-i)+'</td><td>'+escape(x.time)+'</td><td>'+escape(x.group||'')+' · '+escape(x.name)+'</td><td>'+fmt(x.value)+'</td></tr>').join(''):'<tr><td colspan="4">Chưa có lượt cân trên thiết bị này</td></tr>';
+ let rows='';let lastGroup='';
+ for(let i=0;i<recentWeights.length;i++){
+  const x=recentWeights[i],group=(x.group||'')+' · '+x.name;
+  if(group!==lastGroup){rows+='<tr class="history-group"><th colspan="4" style="background:#e7f2f4;text-align:left">'+escape(group)+'</th></tr>';lastGroup=group;}
+  rows+='<tr><td>'+(recentWeights.length-i)+'</td><td>'+escape(x.time)+'</td><td>'+escape(x.name)+'</td><td>'+fmt(x.value)+'</td></tr>';
+ }
+ target.innerHTML=rows||'<tr><td colspan="4">Chưa có lượt cân trên thiết bị này</td></tr>';
  translateDOM(target);
 }
 document.body.classList.toggle('qr-entry',kiosk);
