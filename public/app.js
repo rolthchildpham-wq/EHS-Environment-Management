@@ -10,7 +10,7 @@ import {mountDataReset} from './data-reset.js?v=20261112f';
 import {mountOperations,unmountOperations,loadOperations,getOperationalRecords,getAllOperations,renderOperationsReport} from './ehs-operations.js?v=20261116stockqr2';
 import {resolveMember,mountMemberAdmin} from './member-admin.js?v=20261112f';
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js';
-import {getAuth,GoogleAuthProvider,signInWithPopup,onAuthStateChanged,signOut} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js';
+import {getAuth,GoogleAuthProvider,signInWithPopup,onAuthStateChanged,signOut,setPersistence,browserLocalPersistence} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js';
 import {getFirestore,collection,doc,getDoc,addDoc,getDocs,query,limit,serverTimestamp,updateDoc} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
 const el=id=>document.getElementById(id);
 const fmt=v=>Number(v||0).toLocaleString('vi-VN',{maximumFractionDigits:2});
@@ -18,6 +18,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const names={waste:'Rác thải',water_in:'Nước vào',water_out:'Nước ra',stock_in:'Nhập vật tư',stock_out:'Xuất vật tư',cost:'Chi phí',revenue:'Doanh thu'};
 const labels={dashboard:'Tổng quan',records:'Nhật ký',map:'Bản đồ',import:'Nhập liệu & Excel',reports:'Báo cáo',admin:'Quản trị',compliance:'Chỉ số EHS & ISO'};
 let data=[],pending=[],reviewData=[],user=null,role=null,db=null,auth=null,charts={};
+let authPending=true,authRevision=0;
 const notice=s=>el('notice').textContent=s;
 const date=x=>String(x||'').slice(0,10);
 const norm=x=>({date:date(x.date),kind:x.kind,value:Number(x.value),unit:String(x.unit||''),name:String(x.name||''),note:String(x.note||''),source:String(x.source||'excel')});
@@ -248,11 +249,11 @@ document.querySelectorAll('[data-hub]').forEach(link=>link.addEventListener('cli
  if(!user)el('hubLogin').focus();
 }));
 function syncEhsHub(){
- const authenticated=!!user,can=authenticated&&!!role&&may('hub_view');
- el('hubLogin').hidden=authenticated;
+ const authenticated=!!user,can=authenticated&&!authPending&&!!role&&may('hub_view');
+ el('hubLogin').hidden=authenticated||authPending;
  el('hubLogout').hidden=!authenticated;
- el('hubIdentity').textContent=authenticated?(esc(user.email||'Tài khoản EHS')+(role?' · '+role.toUpperCase():' · chưa được cấp quyền')):'Chưa đăng nhập EHS';
- el('hubNotice').textContent=can?'Bạn đã đăng nhập EHS. Chọn một trong hai hệ thống bên dưới để mở riêng toàn màn hình.':
+ el('hubIdentity').textContent=authPending?'Đang xác minh phiên EHS…':authenticated?(esc(user.email||'Tài khoản EHS')+(role?' · '+role.toUpperCase():' · chưa được cấp quyền')):'Chưa đăng nhập EHS';
+ el('hubNotice').textContent=authPending?'Đang xác minh phiên đăng nhập và phân quyền EHS…':can?'Bạn đã đăng nhập EHS. Chọn một trong hai hệ thống bên dưới để mở riêng toàn màn hình.':
   authenticated?'Tài khoản chưa có quyền Hub. Liên hệ Admin để được cấp quyền.':
   'Đăng nhập Google bằng tài khoản EHS đã được cấp quyền để truy cập các phân hệ.';
 }
@@ -334,9 +335,19 @@ localEvidence.onchange=()=>{
  view.classList.remove('hide');
 };
 
-el('login').onclick=()=>auth&&signInWithPopup(auth,new GoogleAuthProvider()).catch(e=>alert(e.message));
+el('login').onclick=async()=>{
+ if(!auth)return;
+ try{
+  await setPersistence(auth,browserLocalPersistence);
+  await signInWithPopup(auth,new GoogleAuthProvider());
+ }catch(e){
+  console.error('EHS Google sign-in failed',e);
+  el('hubNotice').textContent='Không thể duy trì phiên đăng nhập: '+e.message;
+  notice('Đăng nhập thất bại: '+e.message);
+ }
+};
 el('logout').onclick=()=>auth&&signOut(auth);
 if(window.EHS_FIREBASE_CONFIG){
  const app=initializeApp(window.EHS_FIREBASE_CONFIG);auth=getAuth(app);db=getFirestore(app);
- onAuthStateChanged(auth,async u=>{user=u;role=null;syncEhsHub();el('login').classList.toggle('hide',!!u);el('logout').classList.toggle('hide',!u);if(!u){await loadEhsPermissions(null,null,null);el('mode').textContent='Chưa đăng nhập';unmountQrStock();mountMemberAdmin(db,null,null);mountPublicPublisher(db,null,null,()=>[]);mountDataReset(db,null,null,null);unmountOperations();setCostExplorerRecords([]);await configureCostExplorer(null,null);await mountFactoryMap(db,null,null);await mountCompliance(db,null,null,getAllOperations);data=[];reviewData=[];render();return}try{const membership=await resolveMember(db,u);role=membership?.role||null;await loadEhsPermissions(db,u,role);syncEhsHub();mountMemberAdmin(db,u,role);mountPublicPublisher(db,u,role,()=>({operations:getAllOperations(),costs:getCostReportRows(String(el('publicPublishYear')?.value||new Date().getFullYear()))}));mountDataReset(db,u,role,reload);if(role){mountOperations(db,u,role,reload);try{mountQrStock(db,u,role,getAllOperations,reload)}catch(error){console.error('QR initialization failed',error)}}else{unmountOperations();unmountQrStock();}await mountFactoryMap(db,u,role);await mountCompliance(db,u,role,getAllOperations);el('mode').textContent=u.email+' · '+(role||'chưa cấp quyền');if(role){await reload();await configureCostExplorer(db,role);applyRights();}else notice('Chưa được cấp quyền; tạo members/'+u.uid+' trong Firestore Console.')}catch(e){notice(e.message)}});
+ onAuthStateChanged(auth,async u=>{const revision=++authRevision;user=u;role=null;authPending=!!u;syncEhsHub();el('login').classList.toggle('hide',!!u);el('logout').classList.toggle('hide',!u);if(!u){authPending=false;syncEhsHub();await loadEhsPermissions(null,null,null);el('mode').textContent='Chưa đăng nhập';unmountQrStock();mountMemberAdmin(db,null,null);mountPublicPublisher(db,null,null,()=>[]);mountDataReset(db,null,null,null);unmountOperations();setCostExplorerRecords([]);await configureCostExplorer(null,null);await mountFactoryMap(db,null,null);await mountCompliance(db,null,null,getAllOperations);data=[];reviewData=[];render();return}try{const membership=await resolveMember(db,u);if(revision!==authRevision)return;role=membership?.role||null;await loadEhsPermissions(db,u,role);if(revision!==authRevision)return;authPending=false;syncEhsHub();mountMemberAdmin(db,u,role);mountPublicPublisher(db,u,role,()=>({operations:getAllOperations(),costs:getCostReportRows(String(el('publicPublishYear')?.value||new Date().getFullYear()))}));mountDataReset(db,u,role,reload);if(role){mountOperations(db,u,role,reload);try{mountQrStock(db,u,role,getAllOperations,reload)}catch(error){console.error('QR initialization failed',error)}}else{unmountOperations();unmountQrStock();}await mountFactoryMap(db,u,role);await mountCompliance(db,u,role,getAllOperations);el('mode').textContent=u.email+' · '+(role||'chưa cấp quyền');if(role){await reload();await configureCostExplorer(db,role);applyRights();}else notice('Chưa được cấp quyền; tạo members/'+u.uid+' trong Firestore Console.')}catch(e){if(revision!==authRevision)return;authPending=false;syncEhsHub();el('hubNotice').textContent='Không xác minh được quyền EHS: '+e.message;notice(e.message)}});
 }else{el('mode').textContent='Chưa cấu hình Firebase';el('login').classList.add('hide');render();notice('Chưa kết nối Firebase Web App. Thêm cấu hình từ Project settings để kích hoạt.')}
