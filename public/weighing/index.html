@@ -67,7 +67,7 @@ body.qr-entry #session>.row,body.qr-entry #kioskHeader,body.qr-entry #saveMessag
 </style>
 <script src="../firebase-config.js"></script><script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head><body>
-<header><div><h1>⚖ CÂN RÁC HẰNG NGÀY · EHS</h1><small>Nhập từng lần cân · Tổng hợp theo loại · Chờ phê duyệt</small></div><div><label style="display:inline-flex;align-items:center;gap:6px;color:white">Ngôn ngữ <select id="languageSelect" aria-label="Ngôn ngữ"><option value="vi">Tiếng Việt</option><option value="en">English</option><option value="zh">中文</option></select></label> <a href="../?app=environment&tab=records">← Nhật ký môi trường</a></div></header>
+<header><div><h1>⚖ CÂN RÁC HẰNG NGÀY · EHS</h1><small>Nhập từng lần cân · Tổng hợp theo loại · Chờ phê duyệt</small></div><div><label style="display:inline-flex;align-items:center;gap:6px;color:white">Ngôn ngữ <select id="languageSelect" aria-label="Ngôn ngữ"><option value="vi">Tiếng Việt</option><option value="en">English</option><option value="zh">中文</option></select></label> <a href="../">← EHS Hub</a> · <a href="../?app=environment&tab=records">Nhật ký môi trường</a></div></header>
 <main>
 <section><div class="row"><div><b id="account">Đang kiểm tra đăng nhập…</b><p id="status" role="status">Đang kết nối Firebase.</p></div><button id="login" hidden>Đăng nhập Google</button><button id="logout" class="secondary" hidden>Đăng xuất</button></div></section>
 <section id="staff" hidden>
