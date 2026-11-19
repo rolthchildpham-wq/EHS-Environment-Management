@@ -34,7 +34,7 @@ body.qr-entry{background:#fff}
 body.qr-entry main{max-width:none;padding:0;margin:0;display:block;min-height:100dvh}
 body.qr-entry>header,body.qr-entry #staff,body.qr-entry #admin{display:none!important}
 body.qr-entry.kiosk-ready main>section:first-child{display:none!important}
-body.qr-entry #session{min-height:100dvh;border:0;border-radius:0;box-shadow:none;padding:clamp(16px,5vw,48px);display:flex;flex-direction:column;justify-content:center;gap:20px}
+body.qr-entry #session{height:100dvh;min-height:0;border:0;border-radius:0;box-shadow:none;padding:clamp(12px,3vw,32px);display:flex;flex-direction:column;justify-content:flex-start;gap:clamp(8px,1.5vh,16px);overflow:hidden}
 body.qr-entry #kioskHeader{display:flex;gap:16px;justify-content:space-between;align-items:center;font-size:clamp(17px,4vw,26px);font-weight:800}
 body.qr-entry #kioskChangeType{width:auto;min-width:105px}
 body.qr-entry #weighDetail,body.qr-entry .advanced-only{display:none!important}
@@ -43,6 +43,17 @@ body.qr-entry #weightInput{font-size:clamp(46px,14vw,96px);height:clamp(95px,22v
 body.qr-entry #addWeight{font-size:clamp(24px,7vw,38px);min-height:80px}
 body.qr-entry #saveMessage{font-size:18px;text-align:center;min-height:28px}
 body.qr-entry #pendingSync{text-align:center}
+#kioskHistory{display:none}
+body.qr-entry #kioskHistory{display:flex;flex:1;min-height:0;flex-direction:column;border-top:1px solid #d1e3e7;padding-top:12px}
+#kioskHistory h3{font-size:clamp(16px,2vw,22px);margin:0 0 8px}
+#kioskHistory .history-scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;border:1px solid #d1e3e7;border-radius:10px}
+#kioskHistory table{width:100%;table-layout:fixed}
+#kioskHistory th{position:sticky;top:0;background:#edf5f7;z-index:1}
+#kioskHistory td:last-child,#kioskHistory th:last-child{text-align:right}
+body.qr-entry #weightInput{flex-shrink:0}
+body.qr-entry #session>.row,body.qr-entry #kioskHeader,body.qr-entry #saveMessage,body.qr-entry #pendingSync{flex-shrink:0}
+@media(max-height:620px){body.qr-entry #weightInput{height:76px;font-size:44px}body.qr-entry #addWeight{min-height:54px;font-size:24px}body.qr-entry #session{gap:6px;padding:10px 16px}}
+@media(max-width:640px){#kioskHistory th,#kioskHistory td{padding:8px 5px;font-size:13px}}
 @media(max-width:640px){body.qr-entry #session{padding:24px 18px}body.qr-entry #kioskHeader{gap:9px}}
 #session[hidden],#staff[hidden],#admin[hidden]{display:none!important}
 @media(max-width:640px){.row{display:grid}.row>*{width:100%}header{align-items:start}section{padding:14px}}
@@ -61,6 +72,7 @@ body.qr-entry #pendingSync{text-align:center}
 <div class="row"><label class="advanced-only">Ngày cân<input type="date" id="day"></label><label>Khối lượng cân (kg)<input type="number" min="0.001" step="0.001" inputmode="decimal" placeholder="Ví dụ: 25.5" id="weightInput"></label></div>
 <div class="row" style="margin-top:12px"><button id="addWeight">+ Lưu lần cân, tiếp tục nhập</button><button class="secondary advanced-only" id="refresh">Tải lại số liệu</button></div>
 <p id="saveMessage" role="status"></p><p id="pendingSync" role="status"></p>
+<div id="kioskHistory" aria-label="Lịch sử lượt cân trên thiết bị"><h3>Lượt cân vừa nhập (thiết bị này)</h3><div class="history-scroll" tabindex="0"><table><thead><tr><th>Giờ</th><th>Loại rác</th><th>Khối lượng (kg)</th></tr></thead><tbody id="kioskHistoryRows"><tr><td colspan="3">Chưa có lượt cân</td></tr></tbody></table></div></div>
 <div id="weighDetail"><h2>3. Chi tiết và tổng hợp</h2>
 <div class="row"><div>Loại: <b id="selectedType"></b></div><div>Lượt cân: <b id="count">0</b></div><div>Tổng cân: <strong id="gross" class="total">0 kg</strong></div></div>
 <div class="row" style="margin-top:12px"><label>Khối lượng bao bì cần trừ (kg, tổng cho loại/ngày)<input type="number" id="tare" min="0" step="0.001" inputmode="decimal" value="0"></label><div>Khối lượng ròng<br><strong id="net" class="total">0 kg</strong></div></div>
@@ -79,5 +91,5 @@ body.qr-entry #pendingSync{text-align:center}
 </section>
 </main>
 <dialog id="typeDialog"><h2>Đổi loại rác</h2><label>Chọn loại<select id="dialogCategory"></select></label><div class="row" style="margin-top:16px"><button id="applyType">OK · Chuyển loại</button><button id="cancelType" class="secondary">Hủy</button></div></dialog>
-<script type="module" src="./weighing.js?v=20261119cataloggrid1"></script>
+<script type="module" src="./weighing.js?v=20261119kioskhistory1"></script>
 </body></html>
