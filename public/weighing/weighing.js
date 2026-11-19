@@ -82,8 +82,8 @@ async function addWeight(){
    if(existing.exists()&&existing.data().status!=='pending')throw Error('Lô cân đã khóa, không thể thêm số liệu');
    const old=existing.exists()?existing.data():null;
    const next=round(Number(old?.gross||0)+value);
-   if(existing.exists())tx.update(batchRef,{gross:next,count:Number(old.count||0)+1,updatedAt:serverTimestamp()});
-   else tx.set(batchRef,{date,code:item.code,name:item.name,group:item.group,gross:next,count:1,tare:0,status:'pending',createdBy:user.uid,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
+   if(existing.exists())tx.update(batchRef,{gross:next,count:Number(old.count||0)+1,lastEntryId:entryRef.id,updatedAt:serverTimestamp()});
+   else tx.set(batchRef,{date,code:item.code,name:item.name,group:item.group,gross:next,count:1,tare:0,lastEntryId:entryRef.id,status:'pending',createdBy:user.uid,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
    tx.set(entryRef,{batchId:id,date,code:item.code,value,createdBy:user.uid,createdAt:serverTimestamp()});
   });
   $('weightInput').value='';toast('Đã lưu lượt cân '+fmt(value)+' kg. Tiếp tục nhập.');
