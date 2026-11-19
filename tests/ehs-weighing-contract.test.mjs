@@ -44,3 +44,16 @@ test('Local queued readings are idempotent and never represented as committed wh
  assert.match(app,/Firebase đã vượt hạn mức/);
  assert.doesNotMatch(app,/await loadCurrent\(\);\$\('weightInput'\)\.focus\(\)/);
 });
+
+test('Admin waste types use an Excel-style table instead of pipe-delimited textarea',()=>{
+ for(const id of ['catalogRows','catalogAdd','saveCatalog','catalogMessage'])assert.ok(page.includes('id="'+id+'"'),id);
+ assert.match(page,/<th>Tên loại rác<\/th>/);
+ assert.match(page,/<th>Nhóm<\/th>/);
+ assert.match(page,/<th>Mã loại rác \(QR\)<\/th>/);
+ assert.doesNotMatch(page,/<textarea id="catalog"/);
+ assert.match(app,/function addCatalogRow\(/);
+ assert.match(app,/function readCatalogRows\(/);
+ assert.match(app,/function renderCatalogRows\(/);
+ assert.match(app,/new Set\(next\.map\(x=>x\.code\)\)/);
+ assert.match(app,/setDoc\(doc\(db,'settings','waste_weigh_catalog'\)/);
+});

@@ -4,6 +4,8 @@ on:
     paths:
       - 'public/index.html'
       - 'public/app.js'
+      - 'public/weighing/**'
+      - 'tests/ehs-weighing-contract.test.mjs'
       - 'public/wwtp/**'
       - 'tests/ehs-wwtp-hub.test.mjs'
       - 'tests/ehs-hub-preview-smoke.mjs'

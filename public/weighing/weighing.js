@@ -31,7 +31,7 @@ function setOptions(){
  const fromQr=params.get('type');
  category=catalog.some(c=>c.code===fromQr)?fromQr:(catalog.some(c=>c.code===category)?category:catalog[0]?.code||'');
  $('category').value=category;$('dialogCategory').value=category;
- $('catalog').value=catalog.map(c=>c.name+' | '+c.group+' | '+c.code).join('\n');
+ renderCatalogRows(catalog);
  showQr();
 }
 function qrUrl(){const url=new URL(location.href);url.search='';url.searchParams.set('type',category);return url.toString()}
@@ -194,13 +194,76 @@ async function loadPending(){
  }
  if(!batches.length)$('pending').textContent='Không có lô đang chờ duyệt.';
 }
+const catalogStatus=(message,error=false)=>{
+ const node=$('catalogMessage');node.textContent=message;node.classList.toggle('warn',error);
+};
+function addCatalogRow(item={name:'',group:'CTNH',code:''}){
+ const tbody=$('catalogRows'),row=document.createElement('tr');
+ const index=document.createElement('td');
+ index.textContent=String(tbody.children.length+1);
+ row.append(index);
+ for(const field of ['name','group','code']){
+  const cell=document.createElement('td'),input=document.createElement('input');
+  input.dataset.catalogField=field;
+  input.type='text';input.value=String(item[field]||'');
+  input.maxLength=field==='code'?60:field==='group'?60:150;
+  input.setAttribute('aria-label',{name:'Tên loại rác',group:'Nhóm rác',code:'Mã loại rác'}[field]+' dòng '+index.textContent);
+  if(field==='name')input.placeholder='Nhập tên rác';
+  if(field==='group')input.placeholder='CTNH';
+  if(field==='code')input.placeholder='ma-loai-rac';
+  if(field==='name')input.addEventListener('blur',()=>{
+   const code=row.querySelector('[data-catalog-field="code"]');
+   if(!code.value.trim())code.value=makeCode(input.value);
+  });
+  cell.append(input);row.append(cell);
+ }
+ const actionCell=document.createElement('td'),remove=document.createElement('button');
+ remove.type='button';remove.className='remove-row';remove.textContent='×';
+ remove.setAttribute('aria-label','Xóa dòng '+index.textContent);
+ remove.onclick=()=>{
+  if(tbody.children.length===1)return catalogStatus('Danh mục phải có ít nhất một dòng.',true);
+  row.remove();
+  [...tbody.children].forEach((tr,i)=>{
+   tr.firstElementChild.textContent=String(i+1);
+   tr.querySelectorAll('[data-catalog-field]').forEach(input=>input.setAttribute('aria-label',({name:'Tên loại rác',group:'Nhóm rác',code:'Mã loại rác'})[input.dataset.catalogField]+' dòng '+(i+1)));
+   tr.querySelector('.remove-row').setAttribute('aria-label','Xóa dòng '+(i+1));
+  });
+  catalogStatus('Có thay đổi chưa lưu.');
+ };
+ actionCell.append(remove);row.append(actionCell);tbody.append(row);
+ return row;
+}
+const makeCode=name=>String(name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,60);
+function renderCatalogRows(items){
+ $('catalogRows').replaceChildren();
+ items.forEach(item=>addCatalogRow(item));
+ if(!items.length)addCatalogRow();
+ catalogStatus('');
+}
+function readCatalogRows(){
+ return [...$('catalogRows').children].map(row=>Object.fromEntries(
+  [...row.querySelectorAll('[data-catalog-field]')].map(input=>[input.dataset.catalogField,input.value.trim()])
+ )).filter(row=>row.name||row.group||row.code);
+}
 async function saveCatalog(){
  if(role!=='admin')return;
- const rows=$('catalog').value.split('\n').map(s=>s.trim()).filter(Boolean);
- const next=rows.map(s=>{const [name,group='CTNH',code]=s.split('|').map(x=>x.trim());return {name,group,code}});
- if(!next.length||next.length>100||next.some(x=>!x.name||x.name.length>150||!x.group||x.group.length>60||!/^[a-z0-9-]{2,60}$/.test(x.code))||new Set(next.map(x=>x.code)).size!==next.length)return toast('Mỗi dòng: Tên loại | Nhóm | mã-khong-dau; mã duy nhất, tối đa 100 loại',true);
- try{await setDoc(doc(db,'settings','waste_weigh_catalog'),{categories:next,updatedBy:user.uid,updatedAt:serverTimestamp()});catalog=next;setOptions();await loadCurrent();toast('Đã lưu danh mục loại rác.')}catch(e){toast(e.message,true)}
+ const next=readCatalogRows();
+ if(!next.length||next.length>100||next.some(x=>!x.name||x.name.length>150||!x.group||x.group.length>60||!/^[a-z0-9-]{2,60}$/.test(x.code))){
+  return catalogStatus('Kiểm tra các cột: Tên rác và Nhóm không được trống; mã chỉ gồm a-z, 0-9, dấu -, tối đa 60 ký tự.',true);
+ }
+ if(new Set(next.map(x=>x.code)).size!==next.length)return catalogStatus('Mã loại rác đang bị trùng, hãy sửa trước khi lưu.',true);
+ const before=new Map(catalog.map(c=>[c.code,c.name]));
+ const missing=[...before.keys()].filter(code=>!next.some(row=>row.code===code));
+ if(missing.length&&!confirm('Bạn đang xóa '+missing.length+' mã loại rác cũ. QR đã in với các mã đó có thể không dùng được. Tiếp tục?'))return;
+ const button=$('saveCatalog');button.disabled=true;
+ try{
+  await setDoc(doc(db,'settings','waste_weigh_catalog'),{categories:next,updatedBy:user.uid,updatedAt:serverTimestamp()});
+  catalog=next;setOptions();await loadCurrent();
+  catalogStatus('Đã lưu '+next.length+' loại rác lên Firebase.');
+ }catch(e){catalogStatus('Không lưu được danh mục: '+e.message,true)}
+ finally{button.disabled=false}
 }
+
 $('day').value=today();
 $('category').onchange=async()=>{category=$('category').value;showQr();await loadCurrent()};
 $('changeType').onclick=()=>{$('dialogCategory').value=category;$('typeDialog').showModal()};
@@ -213,6 +276,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)flushQueue
 $('copyUrl').onclick=async()=>{try{await navigator.clipboard.writeText(qrUrl());toast('Đã sao chép liên kết QR.')}catch{toast(qrUrl())}};
 $('addWeight').onclick=addWeight;$('weightInput').onkeydown=e=>{if(e.key==='Enter')addWeight()};
 $('saveTare').onclick=saveTare;$('saveCatalog').onclick=saveCatalog;
+$('catalogAdd').onclick=()=>{const row=addCatalogRow();row.querySelector('[data-catalog-field="name"]').focus();catalogStatus('Có dòng mới chưa lưu.')};
 $('login').onclick=async()=>{try{await setPersistence(auth,browserLocalPersistence);await signInWithPopup(auth,new GoogleAuthProvider())}catch(e){feedback('Đăng nhập lỗi: '+e.message,true)}};
 $('logout').onclick=()=>signOut(auth);
 if(!window.EHS_FIREBASE_CONFIG){feedback('Thiếu cấu hình Firebase EHS.',true)}

@@ -15,6 +15,19 @@ strong.total{font-size:27px;color:#075e61}.muted{color:#5d7883}.warn{color:#984c
 table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:9px;border-bottom:1px solid #e0ebef}th{font-size:13px;color:#526e79}
 #qrCode{display:flex;justify-content:center;margin:16px}dialog{width:min(480px,95vw);border:0;border-radius:15px;padding:22px;box-shadow:0 16px 60px #102a3340}dialog::backdrop{background:#102a3399}
 #status{min-height:24px}
+.catalog-grid{overflow-x:auto;border:1px solid #d1e3e7;border-radius:12px;margin:12px 0}
+.catalog-grid table{min-width:690px;margin:0}
+.catalog-grid thead th{background:#e9f4f5;color:#153f50;font-size:14px}
+.catalog-grid tbody tr:nth-child(even){background:#f7fbfc}
+.catalog-grid td{padding:6px;vertical-align:middle}
+.catalog-grid td:first-child{text-align:center;width:48px;color:#607786}
+.catalog-grid input{min-height:44px;width:100%;border:1px solid #c0d6dd;background:white;font-size:15px}
+.catalog-grid input:focus{outline:2px solid #087e80;border-color:#087e80}
+.catalog-grid .remove-row{background:#fdeaea;color:#9b2d2d;width:auto;min-width:44px;padding:10px}
+.catalog-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+.catalog-actions button{width:auto;min-width:155px}
+#catalogMessage{min-height:22px}
+
 #kioskHeader{display:none}
 #pendingSync{color:#9a4a00;font-weight:650;min-height:20px}
 body.qr-entry{background:#fff}
@@ -57,10 +70,14 @@ body.qr-entry #pendingSync{text-align:center}
 </section>
 <section id="admin" hidden><h2>4. Duyệt cân và thiết lập danh mục (Admin)</h2>
 <p class="muted">Danh mục cần đối chiếu đúng với tệp Google Sheets nguồn trước khi sử dụng chính thức.</p>
-<label>Danh mục loại rác (mỗi dòng một loại)<textarea id="catalog" rows="5" placeholder="Nhập tên các loại rác theo Google Sheets"></textarea></label><button id="saveCatalog">Lưu danh mục</button>
+<h3>Danh mục loại rác</h3>
+<p class="muted">Nhập dữ liệu theo từng cột như Excel. Thêm dòng để tạo loại rác mới. Mã loại rác phải duy nhất để QR đang sử dụng không bị đổi.</p>
+<div class="catalog-grid"><table aria-label="Bảng danh mục loại rác"><thead><tr><th>STT</th><th>Tên loại rác</th><th>Nhóm</th><th>Mã loại rác (QR)</th><th>Xóa</th></tr></thead><tbody id="catalogRows"></tbody></table></div>
+<div class="catalog-actions"><button id="catalogAdd" type="button" class="secondary">+ Thêm dòng</button><button id="saveCatalog" type="button">Lưu danh mục</button></div>
+<p id="catalogMessage" role="status" class="muted"></p>
 <h3>Các lô cân chờ duyệt</h3><div id="pending">Đang tải…</div>
 </section>
 </main>
 <dialog id="typeDialog"><h2>Đổi loại rác</h2><label>Chọn loại<select id="dialogCategory"></select></label><div class="row" style="margin-top:16px"><button id="applyType">OK · Chuyển loại</button><button id="cancelType" class="secondary">Hủy</button></div></dialog>
-<script type="module" src="./weighing.js?v=20261119kiosk2"></script>
+<script type="module" src="./weighing.js?v=20261119cataloggrid1"></script>
 </body></html>
