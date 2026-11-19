@@ -49,7 +49,7 @@ function showQr(){
 }
 function isStaff(){return !!user&&!!role&&may('waste_weigh')}
 function refreshVisibility(){
- $('staff').hidden=!isStaff();$('session').hidden=!isStaff();$('admin').hidden=role!=='admin';
+ $('staff').hidden=!isStaff();$('session').hidden=!isStaff();$('admin').hidden=role!=='admin';$('weighSummary').hidden=!isStaff()||kiosk;
  $('login').hidden=!!user;$('logout').hidden=!user;
  $('account').textContent=user?(user.email+' · '+(role||'chưa cấp quyền')):'Chưa đăng nhập EHS';
  document.body.classList.toggle('kiosk-ready',kiosk&&isStaff());
@@ -141,7 +141,47 @@ async function flushQueue(force=false){
 async function addWeight(){
  if(submitting)return;
  if(!isStaff())return toast('Chưa có quyền nhập cân',true);
- if(kiosk&&$('day').value!==today()){$('day').value=today();await loadCurrent()}
+ if(kiosk&&$('day').value!==today()){
+function summaryRange(){
+ const raw=$('summaryDate').value;
+ const month=$('summaryPeriod').value==='month';
+ const start=month?raw+'-01':raw;
+ if(!dateOK(start))throw Error('Vui lòng chọn ngày hợp lệ.');
+ // Use an exclusive upper bound to avoid timezone ambiguity.
+ const next=new Date(start+'T12:00:00');if(month)next.setMonth(next.getMonth()+1);else next.setDate(next.getDate()+1);
+ const exclusive=next.getFullYear()+'-'+String(next.getMonth()+1).padStart(2,'0')+'-'+String(next.getDate()).padStart(2,'0');
+ return {start,exclusive};
+}
+async function loadSummary(){
+ if(!isStaff()||kiosk)return;
+ const status=$('summaryStatus'),button=$('summaryLoad');button.disabled=true;
+ status.textContent='Đang tải các lô cân theo kỳ...';
+ try{
+  const {start,exclusive}=summaryRange();
+  const result=await getDocs(query(collection(db,'waste_weigh_batches'),where('date','>=',start),where('date','<',exclusive)));
+  const term=$('summarySearch').value.trim().toLocaleLowerCase('vi');
+  const groups=new Map();
+  for(const snap of result.docs){
+   const x=snap.data(),name=String(x.name||''),group=String(x.group||''),code=String(x.code||'');
+   if(term&&!(name+' '+group+' '+code).toLocaleLowerCase('vi').includes(term))continue;
+   const key=group+'|'+code;
+   const row=groups.get(key)||{group,name,count:0,gross:0,tare:0};
+   row.count+=Number(x.count)||0;row.gross+=Number(x.gross)||0;row.tare+=Number(x.tare)||0;
+   groups.set(key,row);
+  }
+  const rows=[...groups.values()].sort((a,b)=>a.group.localeCompare(b.group,'vi')||a.name.localeCompare(b.name,'vi'));
+  $('summaryRows').innerHTML=rows.map(x=>'<tr><td>'+escape(x.group)+'</td><td>'+escape(x.name)+'</td><td>'+fmt(x.count)+'</td><td>'+fmt(x.gross)+'</td><td>'+fmt(x.tare)+'</td><td>'+fmt(Math.max(0,round(x.gross-x.tare)))+'</td></tr>').join('')||'<tr><td colspan="6">Không có dữ liệu phù hợp.</td></tr>';
+  const gross=rows.reduce((a,x)=>a+x.gross,0),tare=rows.reduce((a,x)=>a+x.tare,0);
+  $('summaryTotal').textContent='Tổng cân: '+fmt(gross)+' kg · Trừ bao bì: '+fmt(tare)+' kg · Ròng: '+fmt(Math.max(0,round(gross-tare)))+' kg';
+  status.textContent='Đã thống kê '+result.size+' lô trong kỳ; '+rows.length+' loại/nhóm phù hợp. Bao gồm lô chưa duyệt.';
+ }catch(e){status.textContent='Không tải được thống kê: '+e.message;}
+ finally{button.disabled=false}
+}
+$('summaryDate').value=today();
+$('summaryPeriod').onchange=()=>{$('summaryDate').type=$('summaryPeriod').value==='month'?'month':'date';$('summaryDate').value=$('summaryPeriod').value==='month'?today().slice(0,7):today()};
+$('summaryLoad').onclick=loadSummary;
+
+$('day').value=today();await loadCurrent()}
  const raw=$('weightInput').value.trim(),value=Number(raw),item=byCategory(),date=$('day').value;
  if(!raw||!dateOK(date)||!item||!Number.isFinite(value)||value<=0||value>100000)return toast('Nhập khối lượng từ 0,001 đến 100.000 kg',true);
  if(batch?.status&&batch.status!=='pending')return toast('Lô cân đã khóa, cần chọn ngày hoặc loại khác.',true);
