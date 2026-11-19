@@ -314,7 +314,26 @@ async function saveCatalog(){
 
 $('day').value=today();
 $('category').onchange=async()=>{category=$('category').value;showQr();await loadCurrent()};
-$('changeType').onclick=()=>{$('dialogCategory').value=category;$('typeDialog').showModal()};
+
+const normalizeType=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/gi,'d').toLowerCase();
+function showTypeSuggestions(){
+ const term=normalizeType($('typeSearch').value.trim());
+ const matches=catalog.filter(x=>normalizeType(x.name+' '+x.group+' '+x.code).includes(term));
+ const box=$('typeSuggestions');box.replaceChildren();
+ $('typeSearchCount').textContent=matches.length+' loại phù hợp';
+ for(const item of matches){
+  const button=document.createElement('button');button.type='button';button.className='secondary';
+  button.style.cssText='display:block;width:100%;text-align:left;margin:0;border-radius:0;padding:12px 14px;white-space:normal';
+  button.textContent=item.name+' · '+item.group;
+  button.setAttribute('role','option');
+  button.setAttribute('aria-selected',String(item.code===$('dialogCategory').value));
+  button.onclick=()=>{ $('dialogCategory').value=item.code; $('typeSearch').value=item.name; showTypeSuggestions(); $('applyType').focus(); };
+  box.append(button);
+ }
+ if(!matches.length)box.textContent='Không tìm thấy loại rác phù hợp.';
+}
+$('typeSearch').oninput=showTypeSuggestions;
+$('changeType').onclick=()=>{$('dialogCategory').value=category;$('typeSearch').value='';showTypeSuggestions();$('typeDialog').showModal();$('typeSearch').focus()};
 $('kioskChangeType').onclick=()=>$('changeType').click();
 $('cancelType').onclick=()=>$('typeDialog').close();
 $('applyType').onclick=async()=>{category=$('dialogCategory').value;$('category').value=category;params.set('type',category);history.replaceState(null,'','?'+params.toString());$('typeDialog').close();showQr();await loadCurrent()};
