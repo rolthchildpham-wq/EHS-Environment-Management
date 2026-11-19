@@ -8,7 +8,14 @@ header a{color:#fff}main{max-width:1050px;margin:auto;padding:16px;display:grid;
 section{background:white;border:1px solid #d1e3e7;border-radius:16px;padding:18px;box-shadow:0 3px 12px #18424b12}
 h1{font-size:22px;margin:0}h2{font-size:20px;margin:0 0 14px}p{line-height:1.5}
 .row{display:flex;align-items:end;gap:12px;flex-wrap:wrap}.row>*{flex:1}
-label{display:grid;gap:6px;font-weight:650}input,select,textarea,button{font:inherit;border-radius:10px;padding:12px;border:1px solid #b4d1d8;min-height:46px;width:100%}
+label{display:grid;gap:6px;font-weight:650}
+/* Native checkboxes must never inherit the full-width text input layout. */
+input[type=checkbox]{appearance:auto;width:18px;height:18px;min-height:18px;min-width:18px;padding:0;margin:0;flex:0 0 18px;vertical-align:middle;accent-color:#087e80}
+label:has(>input[type=checkbox]){display:inline-flex;align-items:center;justify-content:flex-start;gap:8px;font-weight:600;cursor:pointer}
+#pending input[type=checkbox]{width:18px;min-width:18px;max-width:18px}
+#pending button{width:auto;min-width:110px}
+#pending input[type=number]{width:110px;min-width:85px}
+[hidden]{display:none!important}input,select,textarea,button{font:inherit;border-radius:10px;padding:12px;border:1px solid #b4d1d8;min-height:46px;width:100%}
 button{background:#087e80;color:#fff;border:0;font-weight:750;cursor:pointer}button.secondary{background:#dcebf0;color:#154559}button:disabled{opacity:.45;cursor:not-allowed}
 strong.total{font-size:27px;color:#075e61}.muted{color:#5d7883}.warn{color:#984c00}
 #weightInput{font-size:30px;font-weight:850;text-align:center}
@@ -92,5 +99,5 @@ body.qr-entry #session>.row,body.qr-entry #kioskHeader,body.qr-entry #saveMessag
 </section>
 </main>
 <dialog id="typeDialog"><h2>Đổi loại rác</h2><label>Tìm loại rác<input id="typeSearch" type="search" placeholder="Nhập tên, nhóm hoặc mã loại rác..." autocomplete="off"></label><p id="typeSearchCount" class="muted" role="status"></p><div id="typeSuggestions" role="listbox" aria-label="Danh sách loại rác gợi ý" style="max-height:min(45dvh,360px);overflow-y:auto;overscroll-behavior:contain;border:1px solid #dce8ec;border-radius:10px;margin-top:8px"></div><label style="display:none">Chọn loại<select id="dialogCategory"></select></label><div class="row" style="margin-top:16px"><button id="applyType">OK · Chuyển loại</button><button id="cancelType" class="secondary">Hủy</button></div></dialog>
-<script type="module" src="./weighing.js?v=20261119qr-i18n5"></script>
+<script type="module" src="./weighing.js?v=20261119checkbox-i18n6"></script>
 </body></html>
