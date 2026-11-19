@@ -1209,6 +1209,38 @@ Object.assign(dictionary,{
     "zh": "环境运营管理"
   }
 });
+// Verified terminology for common EHS waste categories and QR weighing labels.
+Object.assign(dictionary,{
+ "Bao bì kim loại thải":{en:"Waste metal packaging",zh:"废金属包装物"},
+ "Bao bì thải nhựa":{en:"Waste plastic packaging",zh:"废塑料包装物"},
+ "Bóng đèn huỳnh quang thải":{en:"Waste fluorescent lamps",zh:"废荧光灯"},
+ "CTNH":{en:"Hazardous waste",zh:"危险废物"},
+ "Chất thải nguy hại":{en:"Hazardous waste",zh:"危险废物"},
+ "Chất thải thông thường":{en:"Non-hazardous waste",zh:"一般废物"},
+ "Có trừ khối lượng bao bì cho loại này":{en:"Deduct packaging weight for this type",zh:"此类别扣除包装重量"},
+ "Khối lượng bao bì cần trừ (kg, tổng cho loại/ngày)":{en:"Packaging tare to deduct (kg, type/day total)",zh:"需扣除的包装重量（公斤，类别/日合计）"},
+ "Khối lượng ròng":{en:"Net weight",zh:"净重"},
+ "Lưu khối lượng bao bì · Chờ duyệt":{en:"Save packaging tare · Pending approval",zh:"保存包装皮重 · 待审核"},
+ "Các lô cân chờ duyệt":{en:"Weighing batches pending approval",zh:"待审核称重批次"},
+ "Lượt cân vừa nhập (thiết bị này)":{en:"Recent weighings (this device)",zh:"最近称重记录（本设备）"},
+ "Nhóm / Loại rác":{en:"Group / Waste type",zh:"组别 / 废物类别"},
+ "Loại rác":{en:"Waste type",zh:"废物类别"},
+ "Nhóm rác":{en:"Waste group",zh:"废物组别"},
+ "Tên loại rác":{en:"Waste type name",zh:"废物类别名称"},
+ "Trừ bì":{en:"Deduct tare",zh:"扣除皮重"},
+ "Lưu trừ bì":{en:"Save tare",zh:"保存皮重"},
+ "Chưa có lượt cân trên thiết bị này":{en:"No weighings on this device yet",zh:"本设备暂无称重记录"},
+ "Chưa có lượt cân":{en:"No weighings yet",zh:"暂无称重记录"},
+ "Tìm loại rác":{en:"Search waste types",zh:"搜索废物类别"},
+ "Đổi loại rác":{en:"Change waste type",zh:"更换废物类别"},
+ "Đổi loại":{en:"Change type",zh:"更换类别"},
+ "Tìm và thống kê":{en:"Search and summarize",zh:"搜索并统计"},
+ "Thống kê khối lượng cân theo ngày / tháng":{en:"Daily / monthly weighing summary",zh:"每日 / 每月称重统计"},
+ "Chưa nhập":{en:"Not entered",zh:"未录入"},
+ "Chờ phê duyệt":{en:"Pending approval",zh:"待审核"},
+ "Đang tải…":{en:"Loading…",zh:"加载中…"},
+ "Dán mã QR tại vị trí cân. Sau lần đăng nhập đầu tiên, Firebase lưu phiên trên chính trình duyệt; không dùng IP để nhận diện thiết bị.":{en:"Place the QR code at the scale. Firebase remembers the browser session after the first sign-in; IP addresses are not used to identify devices.",zh:"将二维码放置在称重位置。首次登录后 Firebase 会保存浏览器会话；不使用 IP 地址识别设备。"}
+});
 let active='vi';
 const originals=new WeakMap();
 const runtimeTranslations=new Map();
