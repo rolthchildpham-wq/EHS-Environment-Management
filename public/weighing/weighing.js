@@ -10,6 +10,14 @@ const params=new URLSearchParams(location.search);
 const fmt=n=>Number(n||0).toLocaleString('vi-VN',{maximumFractionDigits:3});
 const today=()=>{const dt=new Date();return new Date(dt.getTime()-dt.getTimezoneOffset()*60000).toISOString().slice(0,10)};
 let auth,db,user=null,role=null,category='',catalog=DEFAULT,batches=[],entries=[],batch=null,revision=0;
+const kiosk=params.has('type');
+document.body.classList.toggle('qr-entry',kiosk);
+let syncing=false,nextRetryAt=0,submitting=false;
+const storageKey=()=>user?'ehs-weigh-pending-v1:'+user.uid:null;
+const readQueue=()=>{try{return JSON.parse(localStorage.getItem(storageKey())||'[]')}catch{return []}};
+function writeQueue(items){localStorage.setItem(storageKey(),JSON.stringify(items))}
+function showQueue(){const n=readQueue().length;$('pendingSync').textContent=n?`${n} lượt đã lưu tạm trên máy, CHƯA đồng bộ Firebase. Không xóa dữ liệu trình duyệt.`:''}
+
 const feedback=(msg,error=false)=>{ $('status').textContent=msg;$('status').classList.toggle('warn',error)};
 const toast=(msg,error=false)=>{$('saveMessage').textContent=msg;$('saveMessage').classList.toggle('warn',error)};
 const round=n=>Math.round(n*1000)/1000;
@@ -29,6 +37,7 @@ function setOptions(){
 function qrUrl(){const url=new URL(location.href);url.search='';url.searchParams.set('type',category);return url.toString()}
 function showQr(){
  $('selectedType').textContent=byCategory()?.name||'';
+ $('kioskType').textContent=byCategory()?.name||'Chọn loại rác';
  $('qrCode').replaceChildren();
  if(window.QRCode&&category)new window.QRCode($('qrCode'),{text:qrUrl(),width:170,height:170});
  else $('qrCode').textContent=qrUrl();
@@ -38,6 +47,8 @@ function refreshVisibility(){
  $('staff').hidden=!isStaff();$('session').hidden=!isStaff();$('admin').hidden=role!=='admin';
  $('login').hidden=!!user;$('logout').hidden=!user;
  $('account').textContent=user?(user.email+' · '+(role||'chưa cấp quyền')):'Chưa đăng nhập EHS';
+ document.body.classList.toggle('kiosk-ready',kiosk&&isStaff());
+ $('addWeight').textContent=kiosk?'OK':' + Lưu lần cân, tiếp tục nhập';
 }
 async function loadCatalog(){
  const snap=await getDoc(doc(db,'settings','waste_weigh_catalog'));
@@ -51,44 +62,83 @@ async function loadCurrent(){
  if(!isStaff())return;
  if(!dateOK($('day').value)||!category)return toast('Ngày hoặc loại rác không hợp lệ',true);
  const id=batchId();
- const [b,rows]=await Promise.all([
-  getDoc(doc(db,'waste_weigh_batches',id)),
-  getDocs(query(collection(db,'waste_weigh_entries'),where('batchId','==',id)))
- ]);
- batch=b.exists()?{id,...b.data()}:null;
- entries=rows.docs.map(x=>({id:x.id,...x.data()})).sort((a,b)=>(a.createdAt?.seconds||0)-(b.createdAt?.seconds||0));
- $('count').textContent=String(entries.length);
- const gross=round(entries.reduce((n,x)=>n+Number(x.value||0),0));
+ const snap=await getDoc(doc(db,'waste_weigh_batches',id));
+ batch=snap.exists()?{id,...snap.data()}:null;
+ if(!kiosk){
+  const rows=await getDocs(query(collection(db,'waste_weigh_entries'),where('batchId','==',id)));
+  entries=rows.docs.map(x=>({id:x.id,...x.data()})).sort((a,b)=>(a.createdAt?.seconds||0)-(b.createdAt?.seconds||0));
+ }else entries=[];
+ renderTotals();
+}
+function renderTotals(){
+ const gross=Number(batch?.gross||0);
+ $('count').textContent=String(batch?.count||0);
  $('gross').textContent=fmt(gross)+' kg';
  $('tare').value=String(batch?.tare??0);
- const net=round(gross-Number(batch?.tare||0));
- $('net').textContent=fmt(Math.max(0,net))+' kg';
+ $('net').textContent=fmt(Math.max(0,round(gross-Number(batch?.tare||0))))+' kg';
  $('state').textContent=({pending:'Chờ phê duyệt',approved:'Đã duyệt',rejected:'Đã từ chối'})[batch?.status]||'Chưa nhập';
  const editing=(!batch||batch.status==='pending');
- $('weightInput').disabled=!editing;$('addWeight').disabled=!editing;
+ $('weightInput').disabled=!editing;
+ $('addWeight').disabled=!editing;
  $('tare').disabled=!editing;$('saveTare').disabled=!editing;
- $('entries').innerHTML=entries.map((x,i)=>'<tr><td>'+(i+1)+'</td><td>'+escape(x.createdAt?.toDate?.()?.toLocaleString('vi-VN')||'Đang đồng bộ')+'</td><td>'+fmt(x.value)+'</td></tr>').join('')||'<tr><td colspan="3">Chưa có lượt cân</td></tr>';
+ if(!kiosk)$('entries').innerHTML=entries.map((x,i)=>'<tr><td>'+(i+1)+'</td><td>'+escape(x.createdAt?.toDate?.()?.toLocaleString('vi-VN')||'Đang đồng bộ')+'</td><td>'+fmt(x.value)+'</td></tr>').join('')||'<tr><td colspan="3">Chưa có lượt cân</td></tr>';
+ showQueue();
+}
+const quotaError=e=>e?.code==='resource-exhausted'||/quota.exceeded|resource.exhausted/i.test(String(e?.message||''));
+async function flushQueue(force=false){
+ if(syncing||!user||!isStaff()||(!force&&Date.now()<nextRetryAt))return;
+ syncing=true;
+ try{
+  let queue=readQueue();
+  while(queue.length){
+   const x=queue[0],entryRef=doc(db,'waste_weigh_entries',x.id);
+   const batchRef=doc(db,'waste_weigh_batches',x.batchId);
+   const result=await runTransaction(db,async tx=>{
+    const entry=await tx.get(entryRef);
+    const existing=await tx.get(batchRef);
+    if(entry.exists())return {batch:existing.exists()?existing.data():null};
+    if(existing.exists()&&existing.data().status!=='pending')throw Error('Lô cân đã được phê duyệt; dữ liệu lưu tạm cần Admin kiểm tra.');
+    const old=existing.exists()?existing.data():null;
+    const next=round(Number(old?.gross||0)+x.value);
+    const count=Number(old?.count||0)+1;
+    if(existing.exists())tx.update(batchRef,{gross:next,count,lastEntryId:entryRef.id,updatedAt:serverTimestamp()});
+    else tx.set(batchRef,{date:x.date,code:x.code,name:x.name,group:x.group,gross:next,count:1,tare:0,lastEntryId:entryRef.id,status:'pending',createdBy:user.uid,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
+    tx.set(entryRef,{batchId:x.batchId,date:x.date,code:x.code,value:x.value,createdBy:user.uid,createdAt:serverTimestamp()});
+    return {batch:{...(old||{}),gross:next,count,tare:old?.tare||0,status:'pending'}};
+   });
+   if(x.batchId===batchId()&&result.batch){batch={id:x.batchId,...result.batch};renderTotals()}
+   queue=queue.slice(1);
+   writeQueue(queue);
+  }
+  nextRetryAt=0;
+  toast('Đã đồng bộ tất cả lượt cân lên Firebase.');
+ }catch(e){
+  if(quotaError(e)){
+   nextRetryAt=Date.now()+60000;
+   toast('Firebase đã vượt hạn mức (quota exceeded). Lượt cân được GIỮ TẠM trên máy, chưa lên hệ thống. Thử đồng bộ lại sau khi quota được cấp lại hoặc nâng hạn mức.',true);
+  }else toast('Chưa đồng bộ: '+e.message+' — dữ liệu tạm vẫn nằm trên máy.',true);
+ }finally{syncing=false;showQueue()}
 }
 async function addWeight(){
+ if(submitting)return;
  if(!isStaff())return toast('Chưa có quyền nhập cân',true);
- const value=Number($('weightInput').value),id=batchId(),item=byCategory(),date=$('day').value;
- if(!dateOK(date)||!item||!Number.isFinite(value)||value<=0||value>100000)return toast('Nhập khối lượng từ 0,001 đến 100.000 kg',true);
- $('addWeight').disabled=true;
+ if(kiosk&&$('day').value!==today()){$('day').value=today();await loadCurrent()}
+ const raw=$('weightInput').value.trim(),value=Number(raw),item=byCategory(),date=$('day').value;
+ if(!raw||!dateOK(date)||!item||!Number.isFinite(value)||value<=0||value>100000)return toast('Nhập khối lượng từ 0,001 đến 100.000 kg',true);
+ if(batch?.status&&batch.status!=='pending')return toast('Lô cân đã khóa, cần chọn ngày hoặc loại khác.',true);
+ submitting=true;$('addWeight').disabled=true;
  try{
+  const current=readQueue();
+  if(current.length>=300)throw Error('Bộ nhớ tạm đã có 300 lượt. Phải đồng bộ trước khi nhập thêm.');
   const entryRef=doc(collection(db,'waste_weigh_entries'));
-  const batchRef=doc(db,'waste_weigh_batches',id);
-  await runTransaction(db,async tx=>{
-   const existing=await tx.get(batchRef);
-   if(existing.exists()&&existing.data().status!=='pending')throw Error('Lô cân đã khóa, không thể thêm số liệu');
-   const old=existing.exists()?existing.data():null;
-   const next=round(Number(old?.gross||0)+value);
-   if(existing.exists())tx.update(batchRef,{gross:next,count:Number(old.count||0)+1,lastEntryId:entryRef.id,updatedAt:serverTimestamp()});
-   else tx.set(batchRef,{date,code:item.code,name:item.name,group:item.group,gross:next,count:1,tare:0,lastEntryId:entryRef.id,status:'pending',createdBy:user.uid,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
-   tx.set(entryRef,{batchId:id,date,code:item.code,value,createdBy:user.uid,createdAt:serverTimestamp()});
-  });
-  $('weightInput').value='';toast('Đã lưu lượt cân '+fmt(value)+' kg. Tiếp tục nhập.');
-  await loadCurrent();$('weightInput').focus();
- }catch(e){toast('Không lưu được: '+e.message,true);$('addWeight').disabled=false}
+  const record={id:entryRef.id,batchId:date+'_'+item.code,date,code:item.code,name:item.name,group:item.group,value:round(value)};
+  writeQueue([...current,record]);
+  $('weightInput').value='';
+  toast('Đã ghi tạm '+fmt(value)+' kg. Đang đồng bộ…');
+  showQueue();$('weightInput').focus();
+  await flushQueue();
+ }catch(e){toast('Không ghi được lượt cân: '+e.message+'. Số đang nhập được giữ nguyên.',true)}
+ finally{submitting=false;$('addWeight').disabled=batch?.status==='approved';$('weightInput').focus()}
 }
 async function saveTare(){
  const tare=Number($('tare').value),id=batchId();
@@ -140,9 +190,12 @@ async function saveCatalog(){
 $('day').value=today();
 $('category').onchange=async()=>{category=$('category').value;showQr();await loadCurrent()};
 $('changeType').onclick=()=>{$('dialogCategory').value=category;$('typeDialog').showModal()};
+$('kioskChangeType').onclick=()=>$('changeType').click();
 $('cancelType').onclick=()=>$('typeDialog').close();
 $('applyType').onclick=async()=>{category=$('dialogCategory').value;$('category').value=category;params.set('type',category);history.replaceState(null,'','?'+params.toString());$('typeDialog').close();showQr();await loadCurrent()};
-$('day').onchange=loadCurrent;$('refresh').onclick=async()=>{await loadCurrent();await loadPending()};
+$('day').onchange=loadCurrent;$('refresh').onclick=async()=>{await flushQueue(true);await loadCurrent();if(!kiosk)await loadPending()};
+window.addEventListener('online',()=>flushQueue(true));
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)flushQueue(true)});
 $('copyUrl').onclick=async()=>{try{await navigator.clipboard.writeText(qrUrl());toast('Đã sao chép liên kết QR.')}catch{toast(qrUrl())}};
 $('addWeight').onclick=addWeight;$('weightInput').onkeydown=e=>{if(e.key==='Enter')addWeight()};
 $('saveTare').onclick=saveTare;$('saveCatalog').onclick=saveCatalog;
@@ -162,7 +215,9 @@ else{
    refreshVisibility();
    if(!isStaff())return feedback('Tài khoản không có quyền cân rác. Liên hệ Admin.',true);
    await loadCatalog();if(now!==revision)return;
-   await loadCurrent();await loadPending();
+   await loadCurrent();if(!kiosk)await loadPending();
+   showQueue();if(readQueue().length)await flushQueue(true);
+   if(kiosk)$('weightInput').focus();
    feedback('Đã xác minh tài khoản EHS. Lượt cân được lưu ngay vào Firestore.');
   }catch(e){feedback('Lỗi xác minh hoặc tải dữ liệu: '+e.message,true)}
  });
