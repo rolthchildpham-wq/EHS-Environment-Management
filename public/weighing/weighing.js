@@ -51,10 +51,21 @@ function refreshVisibility(){
  $('addWeight').textContent=kiosk?'OK':' + Lưu lần cân, tiếp tục nhập';
 }
 async function loadCatalog(){
- const snap=await getDoc(doc(db,'settings','waste_weigh_catalog'));
- if(snap.exists()&&Array.isArray(snap.data().categories)){
-  const valid=snap.data().categories.filter(c=>/^[a-z0-9-]{2,60}$/.test(c.code)&&typeof c.name==='string'&&c.name.trim());
-  if(valid.length)catalog=valid;
+ try{
+  const snap=await getDoc(doc(db,'settings','waste_weigh_catalog'));
+  if(snap.exists()&&Array.isArray(snap.data().categories)){
+   const valid=snap.data().categories.filter(c=>/^[a-z0-9-]{2,60}$/.test(c.code)&&typeof c.name==='string'&&c.name.trim());
+   if(valid.length)catalog=valid;
+  }
+  try{localStorage.setItem('ehs-weigh-catalog:'+user.uid,JSON.stringify(catalog))}catch{}
+ }catch(e){
+  if(!quotaError(e))throw e;
+  // Catalog is not authorization. Role/permission checks already succeeded.
+  try{
+   const cached=JSON.parse(localStorage.getItem('ehs-weigh-catalog:'+user.uid)||'[]');
+   if(Array.isArray(cached)&&cached.length)catalog=cached;
+  }catch{}
+  feedback('Firebase vượt quota đọc dữ liệu. Dùng danh mục đã lưu trên thiết bị, lượt cân sẽ CHƯA đồng bộ.',true);
  }
  setOptions();
 }
