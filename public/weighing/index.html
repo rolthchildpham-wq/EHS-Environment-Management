@@ -14,7 +14,24 @@ strong.total{font-size:27px;color:#075e61}.muted{color:#5d7883}.warn{color:#984c
 #weightInput{font-size:30px;font-weight:850;text-align:center}
 table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:9px;border-bottom:1px solid #e0ebef}th{font-size:13px;color:#526e79}
 #qrCode{display:flex;justify-content:center;margin:16px}dialog{width:min(480px,95vw);border:0;border-radius:15px;padding:22px;box-shadow:0 16px 60px #102a3340}dialog::backdrop{background:#102a3399}
-#status{min-height:24px}#session[hidden],#staff[hidden],#admin[hidden]{display:none!important}
+#status{min-height:24px}
+#kioskHeader{display:none}
+#pendingSync{color:#9a4a00;font-weight:650;min-height:20px}
+body.qr-entry{background:#fff}
+body.qr-entry main{max-width:none;padding:0;margin:0;display:block;min-height:100dvh}
+body.qr-entry>header,body.qr-entry #staff,body.qr-entry #admin{display:none!important}
+body.qr-entry.kiosk-ready main>section:first-child{display:none!important}
+body.qr-entry #session{min-height:100dvh;border:0;border-radius:0;box-shadow:none;padding:clamp(16px,5vw,48px);display:flex;flex-direction:column;justify-content:center;gap:20px}
+body.qr-entry #kioskHeader{display:flex;gap:16px;justify-content:space-between;align-items:center;font-size:clamp(17px,4vw,26px);font-weight:800}
+body.qr-entry #kioskChangeType{width:auto;min-width:105px}
+body.qr-entry #weighDetail,body.qr-entry .advanced-only{display:none!important}
+body.qr-entry #session>.row{display:block;margin:0!important}
+body.qr-entry #weightInput{font-size:clamp(46px,14vw,96px);height:clamp(95px,22vh,170px);border:3px solid #087e80;letter-spacing:1px}
+body.qr-entry #addWeight{font-size:clamp(24px,7vw,38px);min-height:80px}
+body.qr-entry #saveMessage{font-size:18px;text-align:center;min-height:28px}
+body.qr-entry #pendingSync{text-align:center}
+@media(max-width:640px){body.qr-entry #session{padding:24px 18px}body.qr-entry #kioskHeader{gap:9px}}
+#session[hidden],#staff[hidden],#admin[hidden]{display:none!important}
 @media(max-width:640px){.row{display:grid}.row>*{width:100%}header{align-items:start}section{padding:14px}}
 </style>
 <script src="../firebase-config.js"></script><script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -27,16 +44,16 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:9px;bord
 <div id="qrCode"></div><p class="muted">Dán mã QR tại vị trí cân. Sau lần đăng nhập đầu tiên, Firebase lưu phiên trên chính trình duyệt; không dùng IP để nhận diện người nhập.</p>
 <button id="copyUrl" class="secondary">Sao chép liên kết QR</button>
 </section>
-<section id="session" hidden><h2>2. Nhập khối lượng liên tục</h2>
-<div class="row"><label>Ngày cân<input type="date" id="day"></label><label>Khối lượng cân (kg)<input type="number" min="0.001" step="0.001" inputmode="decimal" placeholder="Ví dụ: 25.5" id="weightInput"></label></div>
-<div class="row" style="margin-top:12px"><button id="addWeight">+ Lưu lần cân, tiếp tục nhập</button><button class="secondary" id="refresh">Tải lại số liệu</button></div>
-<p id="saveMessage" role="status"></p>
-<h2>3. Chi tiết và tổng hợp</h2>
+<section id="session" hidden><div id="kioskHeader"><span id="kioskType">Đang tải loại rác…</span><button id="kioskChangeType" type="button" class="secondary">Đổi loại</button></div><h2 class="advanced-only">2. Nhập khối lượng liên tục</h2>
+<div class="row"><label class="advanced-only">Ngày cân<input type="date" id="day"></label><label>Khối lượng cân (kg)<input type="number" min="0.001" step="0.001" inputmode="decimal" placeholder="Ví dụ: 25.5" id="weightInput"></label></div>
+<div class="row" style="margin-top:12px"><button id="addWeight">+ Lưu lần cân, tiếp tục nhập</button><button class="secondary advanced-only" id="refresh">Tải lại số liệu</button></div>
+<p id="saveMessage" role="status"></p><p id="pendingSync" role="status"></p>
+<div id="weighDetail"><h2>3. Chi tiết và tổng hợp</h2>
 <div class="row"><div>Loại: <b id="selectedType"></b></div><div>Lượt cân: <b id="count">0</b></div><div>Tổng cân: <strong id="gross" class="total">0 kg</strong></div></div>
 <div class="row" style="margin-top:12px"><label>Khối lượng bao bì cần trừ (kg, tổng cho loại/ngày)<input type="number" id="tare" min="0" step="0.001" inputmode="decimal" value="0"></label><div>Khối lượng ròng<br><strong id="net" class="total">0 kg</strong></div></div>
 <button id="saveTare">Lưu khối lượng bao bì</button>
 <p>Trạng thái: <b id="state">Chưa nhập</b>. Chỉ số liệu được Admin duyệt mới xuất hiện trong Nhật ký EHS và thống kê ngày.</p>
-<div style="overflow:auto"><table><thead><tr><th>STT</th><th>Thời gian</th><th>Khối lượng (kg)</th></tr></thead><tbody id="entries"></tbody></table></div>
+<div style="overflow:auto"><table><thead><tr><th>STT</th><th>Thời gian</th><th>Khối lượng (kg)</th></tr></thead><tbody id="entries"></tbody></table></div></div>
 </section>
 <section id="admin" hidden><h2>4. Duyệt cân và thiết lập danh mục (Admin)</h2>
 <p class="muted">Danh mục cần đối chiếu đúng với tệp Google Sheets nguồn trước khi sử dụng chính thức.</p>
@@ -45,5 +62,5 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:9px;bord
 </section>
 </main>
 <dialog id="typeDialog"><h2>Đổi loại rác</h2><label>Chọn loại<select id="dialogCategory"></select></label><div class="row" style="margin-top:16px"><button id="applyType">OK · Chuyển loại</button><button id="cancelType" class="secondary">Hủy</button></div></dialog>
-<script type="module" src="./weighing.js?v=20261119weigh1"></script>
+<script type="module" src="./weighing.js?v=20261119kiosk2"></script>
 </body></html>
