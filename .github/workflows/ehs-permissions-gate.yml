@@ -38,6 +38,7 @@ jobs:
         run: |
           node --test tests/ehs-permissions.test.mjs
           node --test tests/firestore-rules.test.mjs
+          node --test tests/ehs-weighing-contract.test.mjs
           node --test tests/ehs-qr-finance.test.mjs
           node --test tests/ehs-ui.test.mjs
           node --test tests/ehs-journal-filters.test.mjs
