@@ -287,7 +287,6 @@ service cloud.firestore {
         && request.resource.data.green.size() <= 1200));
     allow delete: if admin();
   }
-  // QR waste weighing: immutable individual readings, locked daily totals after approval.
   match /waste_weigh_entries/{entryId} {
     allow read: if canReadEhs();
     allow create: if allowed('waste_weigh')
@@ -296,23 +295,9 @@ service cloud.firestore {
       && request.resource.data.batchId is string
       && request.resource.data.batchId == request.resource.data.date + '_' + request.resource.data.code
       && request.resource.data.date is string
-      && request.resource.data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}
-    allow read: if activeMember();
-    allow write: if admin();
-  }
-  match /{document=**} { allow read, write: if false; }
- }
-}
-)
+      && request.resource.data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
       && request.resource.data.code is string
-      && request.resource.data.code.matches('^[a-z0-9-]{2,60}
-    allow read: if activeMember();
-    allow write: if admin();
-  }
-  match /{document=**} { allow read, write: if false; }
- }
-}
-)
+      && request.resource.data.code.matches('^[a-z0-9-]{2,60}$')
       && request.resource.data.value is number
       && request.resource.data.value > 0
       && request.resource.data.value <= 100000
@@ -328,31 +313,17 @@ service cloud.firestore {
     allow read: if canReadEhs();
     allow create: if allowed('waste_weigh')
       && request.resource.data.keys().hasOnly([
-        'date','code','name','group','gross','count','tare','status','lastEntryId','lastEntryId',
+        'date','code','name','group','gross','count','tare','status','lastEntryId',
         'createdBy','createdAt','updatedAt'
       ])
       && request.resource.data.keys().hasAll([
-        'date','code','name','group','gross','count','tare','status',
+        'date','code','name','group','gross','count','tare','status','lastEntryId',
         'createdBy','createdAt','updatedAt'
       ])
       && request.resource.data.date is string
-      && request.resource.data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}
-    allow read: if activeMember();
-    allow write: if admin();
-  }
-  match /{document=**} { allow read, write: if false; }
- }
-}
-)
+      && request.resource.data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
       && request.resource.data.code is string
-      && request.resource.data.code.matches('^[a-z0-9-]{2,60}
-    allow read: if activeMember();
-    allow write: if admin();
-  }
-  match /{document=**} { allow read, write: if false; }
- }
-}
-)
+      && request.resource.data.code.matches('^[a-z0-9-]{2,60}$')
       && batchId == request.resource.data.date + '_' + request.resource.data.code
       && request.resource.data.name is string
       && request.resource.data.name.size() > 0
