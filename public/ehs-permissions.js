@@ -11,6 +11,7 @@ const actions=[
  ['wwtp_design','XLNT • Thiết kế bố cục P&ID','admin'],
  ['dashboard','Xem Tổng quan','view'],
  ['journal','Xem Nhật ký','view'],
+ ['waste_weigh','Nhập cân rác bằng QR và lưu bao bì','write'],
  ['qr_in','Nhập vật tư bằng QR','write'],
  ['qr_out','Xuất/sử dụng vật tư bằng QR','write'],
  ['excel_import','Nhập dữ liệu Excel','write'],
