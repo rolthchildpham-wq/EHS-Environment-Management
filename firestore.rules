@@ -382,6 +382,13 @@ service cloud.firestore {
     );
     allow delete: if false;
   }
+  match /operation_monthly_metrics/{month} {
+    allow read: if canReadEhs();
+    allow write: if false;
+  }
+  match /aggregate_events/{eventId} {
+    allow read, write: if false;
+  }
   match /settings/{id} {
     allow read: if activeMember();
     allow write: if admin();
