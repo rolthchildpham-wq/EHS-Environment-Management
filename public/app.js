@@ -200,8 +200,14 @@ function parseSheet(rows,sheetName='Sheet1'){
  if(errors.length)throw Error('File Excel có '+errors.length+' dòng lỗi. '+errors.slice(0,8).join(' | ')+(errors.length>8?' | ...':''));
  return result;
 }
+let reloadInFlight=null;
 async function reload(){
  if(!db||!role)return;
+ if(reloadInFlight)return reloadInFlight;
+ reloadInFlight=reloadEhsData();
+ try{return await reloadInFlight}finally{reloadInFlight=null}
+}
+async function reloadEhsData(){
  const snap=await getDocs(query(collection(db,'records'),limit(5000)));
  console.info('[EHS Firestore reads] records:',snap.size,'documents');
  data=snap.docs.map(d=>norm(d.data())).filter(valid);
