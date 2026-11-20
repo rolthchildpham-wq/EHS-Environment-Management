@@ -161,6 +161,7 @@ function render(){
  refreshRecordChoices();
  refreshJournalPeriods();
  const filtered=selectedRecords().sort((a,b)=>b.date.localeCompare(a.date));
+ if(el('recordActionHead'))el('recordActionHead').hidden=role!=='admin';
  el('recordRows').innerHTML=filtered.slice(0,1500).map(x=>{
   const target=x._id&&x._source?x._source+'/'+x._id:'';
   const canEdit=role==='admin'&&target;
