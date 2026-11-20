@@ -357,6 +357,7 @@ export async function loadOperations({force=false}={}){
  })();
  try{return await operationsLoadPromise}finally{operationsLoadPromise=null}
 }
+export function invalidateOperationsCache(){operationsLoadedAt=0}
 export function getAllOperations(){return operations.slice()}
 export function getOperationalRecords(){
  const calc=reconcile(operations,'1900-01-01','2100-12-31');
