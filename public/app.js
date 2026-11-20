@@ -9,6 +9,7 @@ import {installI18n,t} from './i18n.js?v=20261112f';
 import {mountDataReset} from './data-reset.js?v=20261112f';
 import {mountOperations,unmountOperations,loadOperations,getOperationalRecords,getAllOperations,renderOperationsReport} from './ehs-operations.js?v=20261116stockqr2';
 import {resolveMember,mountMemberAdmin} from './member-admin.js?v=20261112f';
+import {installAppCheck} from './app-check.js';
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js';
 import {getAuth,GoogleAuthProvider,signInWithPopup,onAuthStateChanged,signOut,setPersistence,browserLocalPersistence} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js';
 import {getFirestore,collection,doc,getDoc,addDoc,getDocs,query,limit,serverTimestamp,updateDoc} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
@@ -372,6 +373,7 @@ el('login').onclick=async()=>{
 };
 el('logout').onclick=()=>auth&&signOut(auth);
 if(window.EHS_FIREBASE_CONFIG){
- const app=initializeApp(window.EHS_FIREBASE_CONFIG);auth=getAuth(app);db=getFirestore(app);
+ const app=initializeApp(window.EHS_FIREBASE_CONFIG);installAppCheck(app);
+ auth=getAuth(app);db=getFirestore(app);
  onAuthStateChanged(auth,async u=>{const revision=++authRevision;user=u;role=null;authPending=!!u;syncEhsHub();el('login').classList.toggle('hide',!!u);el('logout').classList.toggle('hide',!u);if(!u){authPending=false;syncEhsHub();await loadEhsPermissions(null,null,null);el('mode').textContent='Chưa đăng nhập';unmountQrStock();mountMemberAdmin(db,null,null);mountPublicPublisher(db,null,null,()=>[]);mountDataReset(db,null,null,null);unmountOperations();setCostExplorerRecords([]);await configureCostExplorer(null,null);await mountFactoryMap(db,null,null);await mountCompliance(db,null,null,getAllOperations);data=[];reviewData=[];render();return}try{const membership=await resolveMember(db,u);if(revision!==authRevision)return;role=membership?.role||null;await loadEhsPermissions(db,u,role);if(revision!==authRevision)return;authPending=false;syncEhsHub();mountMemberAdmin(db,u,role);mountPublicPublisher(db,u,role,()=>({operations:getAllOperations(),costs:getCostReportRows(String(el('publicPublishYear')?.value||new Date().getFullYear()))}));mountDataReset(db,u,role,reload);if(role){mountOperations(db,u,role,reload);try{mountQrStock(db,u,role,getAllOperations,reload)}catch(error){console.error('QR initialization failed',error)}}else{unmountOperations();unmountQrStock();}await mountFactoryMap(db,u,role);await mountCompliance(db,u,role,getAllOperations);el('mode').textContent=u.email+' · '+(role||'chưa cấp quyền');if(role){await reload();await configureCostExplorer(db,role);applyRights();}else notice('Chưa được cấp quyền; tạo members/'+u.uid+' trong Firestore Console.')}catch(e){if(revision!==authRevision)return;authPending=false;syncEhsHub();el('hubNotice').textContent='Không xác minh được quyền EHS: '+e.message;notice(e.message)}});
 }else{el('mode').textContent='Chưa cấu hình Firebase';el('login').classList.add('hide');render();notice('Chưa kết nối Firebase Web App. Thêm cấu hình từ Project settings để kích hoạt.')}
