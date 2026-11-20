@@ -86,7 +86,7 @@ body.qr-entry #session>.row,body.qr-entry #kioskHeader,body.qr-entry #saveMessag
 <div id="kioskNotices"><p id="saveMessage" role="status"></p><p id="pendingSync" role="status"></p></div>
 <div id="kioskHistory" aria-label="Lịch sử lượt cân trên thiết bị"><h3>Lượt cân vừa nhập (thiết bị này)</h3><div class="history-scroll" tabindex="0"><table><thead><tr><th>STT</th><th>Giờ</th><th>Nhóm / Loại rác</th><th>Khối lượng (kg)</th></tr></thead><tbody id="kioskHistoryRows"><tr><td colspan="4">Chưa có lượt cân</td></tr></tbody></table></div></div>
 <div id="weighDetail"><h2>3. Chi tiết và tổng hợp</h2>
-<div class="row"><div>Loại: <b id="selectedType"></b></div><div>Lượt cân: <b id="count">0</b></div><div>Tổng cân: <strong id="gross" class="total">0 kg</strong></div></div>
+<div class="row"><div>Loại: <b id="selectedType"></b> <button type="button" id="selectDetailType" class="secondary" style="width:auto;min-width:130px;margin-left:8px">Chọn nhóm / loại</button></div><div>Lượt cân: <b id="count">0</b></div><div>Tổng cân: <strong id="gross" class="total">0 kg</strong></div></div>
 <div class="row" style="margin-top:12px"><div><label><input type="checkbox" id="hasTare"> Có trừ khối lượng bao bì cho loại này</label><label id="tareField" hidden>Khối lượng bao bì cần trừ (kg, tổng cho loại/ngày)<input type="number" id="tare" min="0" step="0.001" inputmode="decimal" value="0"></label></div><div>Khối lượng ròng<br><strong id="net" class="total">0 kg</strong></div></div>
 <button id="saveTare" hidden>Lưu khối lượng bao bì · Chờ duyệt</button>
 <p>Trạng thái: <b id="state">Chưa nhập</b>. Chỉ số liệu được Admin duyệt mới xuất hiện trong Nhật ký EHS và thống kê ngày.</p>
