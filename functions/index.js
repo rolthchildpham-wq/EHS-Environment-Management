@@ -41,3 +41,40 @@ exports.approveReview=onCall(async(req)=>{
   return {count:entries.length};
  });
 });
+
+// Raw monthly metrics only. Financial reconciliation (A.TK/A.3/C) must not use
+// these totals until a verified historical backfill and reconciliation exist.
+const {onDocumentWritten}=require('firebase-functions/v2/firestore');
+function operationContribution(data){
+ if(!data||typeof data.date!=='string'||!/^\\d{4}-\\d{2}-\\d{2}$/.test(data.date))return null;
+ const kind=String(data.kind||'');
+ if(!['waste','water_in','water_out'].includes(kind))return null;
+ const quantity=Number(data.quantity);
+ if(!Number.isFinite(quantity)||quantity<0)return null;
+ return {month:data.date.slice(0,7),kind,quantity};
+}
+exports.aggregateOperationMonth=onDocumentWritten({document:'operations/{id}',maxInstances:5},async event=>{
+ const before=operationContribution(event.data?.before?.data());
+ const after=operationContribution(event.data?.after?.data());
+ if(!before&&!after)return;
+ const db=admin.firestore();
+ const marker=db.doc('aggregate_events/'+event.id);
+ await db.runTransaction(async tx=>{
+  if((await tx.get(marker)).exists)return;
+  const changes=new Map();
+  for(const [item,sign] of [[before,-1],[after,1]]){
+   if(!item)continue;
+   const key=item.month,field=item.kind==='waste'?'wasteKg':item.kind==='water_in'?'waterInM3':'waterOutM3';
+   if(!changes.has(key))changes.set(key,{});
+   changes.get(key)[field]=(changes.get(key)[field]||0)+sign*item.quantity;
+   changes.get(key).recordCount=(changes.get(key).recordCount||0)+sign;
+  }
+  for(const [month,delta] of changes){
+   const ref=db.doc('operation_monthly_metrics/'+month);
+   const patch={updatedAt:admin.firestore.FieldValue.serverTimestamp()};
+   for(const [key,value] of Object.entries(delta))patch[key]=admin.firestore.FieldValue.increment(value);
+   tx.set(ref,patch,{merge:true});
+  }
+  tx.create(marker,{month:after?.month||before?.month,createdAt:admin.firestore.FieldValue.serverTimestamp()});
+ });
+});
