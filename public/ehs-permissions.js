@@ -41,7 +41,10 @@ export function applyRights(){
  const active=document.querySelector('[data-tab].active');
  if(active?.hidden){const next=[...document.querySelectorAll('[data-tab]')].find(x=>!x.hidden);next?.click()}
  const block=(id,key)=>{const el=$(id);if(el)el.hidden=!may(key)};
- block('qrStockMount','journal');block('publicPublisherMount','public_publish');
+ const qrStock=$('qrStockMount');if(qrStock)qrStock.hidden=!(may('qr_in')||may('qr_out'));
+ const wasteQr=$('wasteWeighQrCard');if(wasteQr)wasteQr.hidden=!may('waste_weigh');
+ const hubWasteQr=$('hubWasteWeighQr');if(hubWasteQr)hubWasteQr.hidden=!may('waste_weigh');
+ block('publicPublisherMount','public_publish');
  block('memberAdminMount','users_manage');block('resetDataMount','data_reset');
  block('exportExcel','report_export');block('reportExcel','report_export');
  for(const id of ['costDashboardExport','simpleFinanceExport','opsExportAll','opsExportMonth'])block(id,'report_export');
