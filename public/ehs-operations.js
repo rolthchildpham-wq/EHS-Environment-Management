@@ -1,6 +1,6 @@
 import {reconcile} from './ehs-financial-reconcile.js?v=20261112f';
 import {mountOCR} from './ehs-ocr.js?v=20261112f';
-import {collection,doc,getDoc,getDocs,query,limit,orderBy,writeBatch,serverTimestamp}
+import {collection,doc,getDoc,getDocs,query,limit,orderBy,startAfter,where,writeBatch,serverTimestamp}
 from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
 import {parseWorkbook,asDay,validateOperation} from './ehs-excel-adapters.js?v=20261116qr';
 const el=id=>document.getElementById(id);
@@ -309,6 +309,21 @@ function report(){
  setupReportTableFilters();
  el('opsDataCount').textContent='Đã tải '+operations.length+' bản ghi. '+(calc.legacyCount?'Cảnh báo: '+calc.legacyCount+' dòng A.TK cũ bị lệch chỉ tiêu đã được loại khỏi báo cáo. Cần nhập lại file Excel gốc để khôi phục số liệu. ':'')+'Báo cáo dùng A.TK đã kiểm tra nhãn dòng, A.3 và C. Tối đa 5.000 bản ghi.';
 }
+// Cursor-based list access: never use this page as the source of report totals.
+// Each call reads at most 50 operation documents; cursor is a DocumentSnapshot.
+export async function getOperationsPage({cursor=null,pageSize=50,kind=null}={}){
+ if(!db||!role)return {rows:[],cursor:null,hasMore:false};
+ const size=Math.max(1,Math.min(50,Number(pageSize)||50));
+ const constraints=[];
+ if(kind)constraints.push(where('kind','==',kind));
+ constraints.push(orderBy('__name__'));
+ if(cursor)constraints.push(startAfter(cursor));
+ constraints.push(limit(size));
+ const snap=await getDocs(query(collection(db,'operations'),...constraints));
+ console.info('[EHS Firestore reads] operations page:',snap.size,'documents');
+ return {rows:snap.docs.map(d=>({...d.data(),id:d.id})),cursor:snap.docs.at(-1)||null,hasMore:snap.size===size};
+}
+
 export async function loadOperations({force=false}={}){
  if(!db||!role)return [];
  if(!force&&operationsLoadedAt&&Date.now()-operationsLoadedAt<READ_CACHE_MS)return operations;
