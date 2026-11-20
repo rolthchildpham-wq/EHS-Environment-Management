@@ -6,15 +6,15 @@ const {doc,collection,setDoc,serverTimestamp,runTransaction,getDoc}=require('fir
 const batchId='2026-11-19_ctnh-metal-packaging';
 const batchPath='waste_weigh_batches/'+batchId;
 const read=async(db)=>getDoc(doc(db,batchPath));
-async function addReading(db,uid,value){
+async function addReading(db,uid,value,tare=0){
  const b=doc(db,batchPath),e=doc(collection(db,'waste_weigh_entries'));
  await runTransaction(db,async tx=>{
   const old=await tx.get(b),gross=Math.round(((old.exists()?old.data().gross:0)+value)*1000)/1000;
-  if(old.exists())tx.update(b,{gross,count:old.data().count+1,lastEntryId:e.id,updatedAt:serverTimestamp()});
+  if(old.exists())tx.update(b,{gross,count:old.data().count+1,tare:Math.round((old.data().tare+tare)*1000)/1000,lastEntryId:e.id,updatedAt:serverTimestamp()});
   else tx.set(b,{date:'2026-11-19',code:'ctnh-metal-packaging',name:'Bao bì kim loại thải',
-   group:'CTNH',gross,count:1,tare:0,lastEntryId:e.id,status:'pending',
+   group:'CTNH',gross,count:1,tare,lastEntryId:e.id,status:'pending',
    createdBy:uid,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
-  tx.set(e,{batchId,date:'2026-11-19',code:'ctnh-metal-packaging',value,createdBy:uid,createdAt:serverTimestamp()});
+  tx.set(e,{batchId,date:'2026-11-19',code:'ctnh-metal-packaging',value,tare,createdBy:uid,createdAt:serverTimestamp()});
  });
 }
 (async()=>{
@@ -30,11 +30,12 @@ async function addReading(db,uid,value){
   const editor=env.authenticatedContext('editor').firestore();
   const admin=env.authenticatedContext('admin').firestore();
   const viewer=env.authenticatedContext('viewer').firestore();
-  await assertSucceeds(addReading(editor,'editor',38.7));
-  await assertSucceeds(addReading(editor,'editor',25.4));
+  await assertSucceeds(addReading(editor,'editor',38.7,1.2));
+  await assertSucceeds(addReading(editor,'editor',25.4,0.8));
   let b=(await read(editor)).data();
-  assert.equal(b.gross,64.1);assert.equal(b.count,2);
+  assert.equal(b.gross,64.1);assert.equal(b.count,2);assert.equal(b.tare,2);
   await assertFails(addReading(viewer,'viewer',3));
+  await assertFails(addReading(editor,'editor',3,4));
   await assertSucceeds(runTransaction(editor,async tx=>{
    const ref=doc(editor,batchPath),snap=await tx.get(ref);
    if(snap.data().status!=='pending')throw Error('not pending');
