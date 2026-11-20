@@ -1,0 +1,35 @@
+name: EHS audit and backup emulator gate
+on:
+  push:
+    branches:
+      - feat/ehs-audit-backup-20261120
+  pull_request:
+    paths:
+      - 'firestore.rules'
+      - 'public/ehs-audit.js'
+      - 'public/data-reset.js'
+      - 'public/app.js'
+      - 'tests/ehs-audit-emulator.cjs'
+permissions:
+  contents: read
+jobs:
+  audit_gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax and regression checks
+        run: |
+          node --check public/ehs-audit.js
+          node --check public/data-reset.js
+          node --check public/app.js
+          node --check tests/ehs-audit-emulator.cjs
+          node --test tests/firestore-rules.test.mjs
+          node --test tests/ehs-ui.test.mjs
+      - name: Firestore Emulator rules gate
+        run: |
+          npm install --no-audit --no-fund -g firebase-tools@14
+          npm install --no-save --no-audit --no-fund @firebase/rules-unit-testing@4 firebase@11
+          firebase emulators:exec --project demo-ehs-permission-gate --only firestore "node tests/ehs-audit-emulator.cjs && node tests/ehs-permissions-emulator.cjs && node tests/ehs-waste-weighing-emulator.cjs" --config .ehs-permissions-emulator.json

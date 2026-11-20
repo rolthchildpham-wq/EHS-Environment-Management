@@ -116,6 +116,48 @@ service cloud.firestore {
   }
 
 
+  function deletionBackup(target, id) {
+    let auditId = target + '_' + id;
+    let path = /databases/$(database)/documents/business_audit/$(auditId);
+    return !exists(path) && existsAfter(path)
+      && getAfter(path).data.target == target + '/' + id
+      && getAfter(path).data.action == 'delete'
+      && getAfter(path).data.actorUid == request.auth.uid
+      && getAfter(path).data.occurredAt == request.time
+      && getAfter(path).data.before == resource.data
+      && getAfter(path).data.after == null;
+  }
+  function reviewAudit(id) {
+    let auditId = request.resource.data.lastAuditId;
+    let path = /databases/$(database)/documents/business_audit/$(auditId);
+    return !exists(path) && existsAfter(path)
+      && getAfter(path).data.target == 'reviews/' + id
+      && getAfter(path).data.action == 'review_status'
+      && getAfter(path).data.actorUid == request.auth.uid
+      && getAfter(path).data.occurredAt == request.time
+      && getAfter(path).data.field == 'status'
+      && getAfter(path).data.before == resource.data.status
+      && getAfter(path).data.after == request.resource.data.status;
+  }
+  match /business_audit/{auditId} {
+    allow read: if admin();
+    allow create: if admin()
+      && request.resource.data.keys().hasOnly(['target','action','actorUid','actorEmail','occurredAt','field','before','after'])
+      && request.resource.data.actorUid == request.auth.uid
+      && request.resource.data.occurredAt == request.time
+      && request.resource.data.target is string
+      && request.resource.data.target.matches('^(operations|records|reviews)/[^/]+$')
+      && ((request.resource.data.action == 'delete'
+        && request.resource.data.field == 'document'
+        && request.resource.data.after == null)
+       || (request.resource.data.action == 'review_status'
+        && request.resource.data.target.matches('^reviews/[^/]+$')
+        && request.resource.data.field == 'status'
+        && request.resource.data.before == 'pending'
+        && request.resource.data.after in ['approved','rejected']));
+    allow update, delete: if false;
+  }
+
   match /operations/{id} {
     allow read: if canReadEhs();
     allow create: if (
@@ -182,7 +224,7 @@ service cloud.firestore {
       && request.resource.data.unit is string
       && request.resource.data.unit.size() <= 50
       && request.resource.data.importId is string;
-    allow delete: if admin();
+    allow delete: if admin() && deletionBackup('operations', id);
   }
 
   match /records/{id} {
@@ -191,7 +233,7 @@ service cloud.firestore {
       && request.resource.data.keys().hasOnly(['date','kind','value','unit','name','note','source','createdBy','createdAt'])
       && validEntry(request.resource.data);
     allow update: if false;
-    allow delete: if admin();
+    allow delete: if admin() && deletionBackup('records', id);
   }
   match /reviews/{id} {
     allow read: if canReadEhs();
@@ -201,11 +243,14 @@ service cloud.firestore {
       && validEntry(request.resource.data);
     allow update: if admin()
       && resource.data.status == 'pending'
-      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','reviewedBy','reviewedAt'])
+      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','reviewedBy','reviewedAt','lastAuditId'])
+      && request.resource.data.lastAuditId is string
+      && request.resource.data.lastAuditId != resource.data.get('lastAuditId','')
+      && reviewAudit(id)
       && request.resource.data.status in ['approved','rejected']
       && request.resource.data.reviewedBy == request.auth.uid
       && request.resource.data.reviewedAt == request.time;
-    allow delete: if admin();
+    allow delete: if admin() && deletionBackup('reviews', id);
   }
   match /data_reset_audit/{id} {
     allow read: if admin();

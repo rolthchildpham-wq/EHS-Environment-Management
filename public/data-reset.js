@@ -48,7 +48,7 @@ async function resetData(){
   }
   downloadBackup(entries);
   const summary=Object.fromEntries(BUSINESS_COLLECTIONS.map(name=>[name,entries.filter(e=>e.collectionName===name).length]));
-  if(!confirm('Đã tạo tệp sao lưu '+entries.length+' bản ghi. Hãy kiểm tra trình duyệt đã tải tệp JSON. Xóa '+JSON.stringify(summary)+'?'))return;
+  if(!confirm('Đã yêu cầu tải JSON '+entries.length+' bản ghi. XÁC NHẬN bạn đã kiểm tra và lưu được tệp JSON trước khi tiếp tục xóa '+JSON.stringify(summary)+'?'))return;
   auditRef=doc(collection(db,'data_reset_audit'));
   await setDoc(auditRef,{
    action:'reset_start',actorUid:owner.uid,actorEmail:owner.email||'',
@@ -56,8 +56,14 @@ async function resetData(){
    status:'started'
   });
   for(let i=0;i<entries.length;i+=200){
-   const chunk=entries.slice(i,i+200),batch=writeBatch(db);
-   for(const e of chunk)batch.delete(e.snapshot.ref);
+   const chunk=entries.slice(i,i+180),batch=writeBatch(db);
+   for(const e of chunk){
+    const backupRef=doc(db,'business_audit',e.collectionName+'_'+e.snapshot.id);
+    batch.set(backupRef,{target:e.collectionName+'/'+e.snapshot.id,action:'delete',actorUid:owner.uid,
+     actorEmail:owner.email||'',occurredAt:serverTimestamp(),field:'document',
+     before:e.snapshot.data(),after:null});
+    batch.delete(e.snapshot.ref);
+   }
    await batch.commit();removed+=chunk.length;
    notify('Đã xóa '+removed+'/'+entries.length+' bản ghi. Không tắt trang.');
   }
