@@ -367,7 +367,7 @@ export function getOperationalRecords(){
   if(!['waste','water_in','water_out','stock_in','stock_out'].includes(x.kind))continue;
   // For dashboard monthly totals prefer management A.TK over daily A.2 when provided.
   if(['water_in','water_out'].includes(x.kind)&&master.has(x.date.slice(0,7)+'/'+x.kind))continue;
-  records.push({date:x.date,kind:x.kind,value:x.quantity,unit:x.unit,name:x.name||'',note:x.note||'',source:'operations'});
+  records.push({date:x.date,kind:x.kind,value:x.quantity,unit:x.unit,name:x.name||'',note:x.note||'',source:'operations',_source:'operations',_id:x.id});
  }
  for(const x of calc.months){
   const date=x.month+'-01';
