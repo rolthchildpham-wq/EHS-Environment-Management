@@ -487,7 +487,7 @@ service cloud.firestore {
       && request.resource.data.reviewedBy == request.auth.uid
       && request.resource.data.reviewedAt == request.time
       && request.resource.data.updatedAt == request.time
-    || (admin() && resource.data.status == 'approved'
+    ) || (admin() && resource.data.status == 'approved'
       && request.resource.data.status == 'void'
       && request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['status','updatedAt','updatedBy','lastAuditId'])
