@@ -11,6 +11,8 @@ const signedWaste=x=>x===null||x===undefined?'—':(x>0?'+':'')+money(x);
 const cashFlow=r=>r.kind==='monthly_master'&&Object.hasOwn(flowKeys,r.name)?(r.name==='scrap_revenue'?Math.abs(r.quantity):-Math.abs(r.quantity)):null;
 const kinds={waste:'Rác thải (A.1)',water_in:'Nước xử lý (A.2)',water_out:'Nước xả (A.2)',stock_in:'Nhập kho (入库)',stock_out:'Xuất kho (出库)',stock_opening:'Tồn đầu kỳ (收发存)',water_cost_month:'Chi tiết chi phí XLNT (A.3)',water_cost_total:'Tổng chi phí XLNT (A.3)',green_cost_detail:'Chi tiết cây xanh (C)',green_cost_total:'Tổng chi phí cây xanh (C)',water_cost_reference:'Chi phí phụ biểu tham chiếu',waste_finance_month:'Thu chi rác tháng',monthly_reference:'Tham chiếu báo cáo tháng',waste_detail_reference:'Chi tiết rác tham chiếu',scrap_detail_reference:'Phế liệu tham chiếu'};
 let db=null,user=null,role=null,pending=[],operations=[],refreshFn=null,lastWarning=[],lastFound=[],selected=0,lastFinancial=null;
+let operationsLoadedAt=0,operationsLoadPromise=null;
+const READ_CACHE_MS=120000;
 const notify=s=>{if(el('opsMessage'))el('opsMessage').textContent=s};
 const fields=[
  ['date','Ngày','date'],['kind','Nghiệp vụ','kind'],['name','Tên rác / vật tư / chỉ tiêu','text'],
@@ -158,6 +160,7 @@ async function save(){
    notify('Đã lưu '+saved+'/'+pending.length+' dòng; cập nhật '+updated+' dòng; giữ nguyên '+duplicates+' dòng.');
   }
   pending=[];lastWarning=[];paint();
+  operationsLoadedAt=0;
   if(refreshFn)await refreshFn();else await loadOperations();
   notify('Hoàn tất: '+saved+' dòng ghi, trong đó '+updated+' dòng cập nhật, '+duplicates+' dòng không đổi. Các số liệu đã đồng bộ.');
  }catch(e){notify('Lưu chưa hoàn tất: '+e.message+'. Những lô đã lưu trước đó vẫn giữ nguyên; hãy nhập lại file để bỏ qua bản ghi trùng.')}
@@ -306,13 +309,19 @@ function report(){
  setupReportTableFilters();
  el('opsDataCount').textContent='Đã tải '+operations.length+' bản ghi. '+(calc.legacyCount?'Cảnh báo: '+calc.legacyCount+' dòng A.TK cũ bị lệch chỉ tiêu đã được loại khỏi báo cáo. Cần nhập lại file Excel gốc để khôi phục số liệu. ':'')+'Báo cáo dùng A.TK đã kiểm tra nhãn dòng, A.3 và C. Tối đa 5.000 bản ghi.';
 }
-export async function loadOperations(){
+export async function loadOperations({force=false}={}){
  if(!db||!role)return [];
- try{
-  const snap=await getDocs(query(collection(db,'operations'),limit(5000)));
-  operations=snap.docs.map(d=>({...d.data(),id:d.id})).filter(x=>!validateOperation(x));
-  report();return operations;
- }catch(e){notify('Không tải được dữ liệu nghiệp vụ: '+e.message);return []}
+ if(!force&&operationsLoadedAt&&Date.now()-operationsLoadedAt<READ_CACHE_MS)return operations;
+ if(operationsLoadPromise)return operationsLoadPromise;
+ operationsLoadPromise=(async()=>{
+  try{
+   const snap=await getDocs(query(collection(db,'operations'),limit(5000)));
+   console.info('[EHS Firestore reads] operations:',snap.size,'documents');
+   operations=snap.docs.map(d=>({...d.data(),id:d.id})).filter(x=>!validateOperation(x));
+   operationsLoadedAt=Date.now();report();return operations;
+  }catch(e){notify('Không tải được dữ liệu nghiệp vụ: '+e.message);return []}
+ })();
+ try{return await operationsLoadPromise}finally{operationsLoadPromise=null}
 }
 export function getAllOperations(){return operations.slice()}
 export function getOperationalRecords(){
@@ -451,4 +460,4 @@ export function mountOperations(database,actor,actorRole,onUpdate){
 }
 
 export function renderOperationsReport(){if(el('opsMonthlyRows')&&el('opsReport')&&operations.length)report();}
-export function unmountOperations(){db=null;user=null;role=null;refreshFn=null;pending=[];operations=[];selected=0;lastWarning=[];if(el('opsMount'))el('opsMount').innerHTML='';if(el('opsOcrMount'))el('opsOcrMount').remove();if(el('opsReport'))el('opsReport').innerHTML='';}
+export function unmountOperations(){operationsLoadedAt=0;operationsLoadPromise=null;db=null;user=null;role=null;refreshFn=null;pending=[];operations=[];selected=0;lastWarning=[];if(el('opsMount'))el('opsMount').innerHTML='';if(el('opsOcrMount'))el('opsOcrMount').remove();if(el('opsReport'))el('opsReport').innerHTML='';}
