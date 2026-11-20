@@ -424,6 +424,7 @@ function showTypeSuggestions(){
 $('typeSearch').oninput=showTypeSuggestions;
 $('changeType').onclick=()=>{$('dialogCategory').value=category;$('typeSearch').value='';showTypeSuggestions();$('typeDialog').showModal();$('typeSearch').focus()};
 $('kioskChangeType').onclick=()=>$('changeType').click();
+$('selectDetailType').onclick=()=>$('changeType').click();
 $('cancelType').onclick=()=>$('typeDialog').close();
 $('applyType').onclick=async()=>{
  const raw=$('dialogHasTare').checked?$('dialogTare').value.trim():'';
