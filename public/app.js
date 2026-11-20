@@ -7,8 +7,8 @@ import {initFactoryMap,mountFactoryMap} from './factory-map.js?v=20261112f';
 import {initCompliance,mountCompliance,refreshCompliance} from './ehs-compliance.js?v=20261112f';
 import {installI18n,t} from './i18n.js?v=20261112f';
 import {mountDataReset} from './data-reset.js?v=20261112f';
-import {mountBusinessAudit,auditReviewStatus} from './ehs-audit.js?v=20261120a';
-import {mountOperations,unmountOperations,loadOperations,getOperationalRecords,getAllOperations,renderOperationsReport} from './ehs-operations.js?v=20261116stockqr2';
+import {mountBusinessAudit,auditReviewStatus,editJournalSource,deleteJournalSource,voidApprovedWeighing} from './ehs-audit.js?v=20261120edit1';
+import {mountOperations,unmountOperations,loadOperations,invalidateOperationsCache,getOperationalRecords,getAllOperations,renderOperationsReport} from './ehs-operations.js?v=20261116stockqr2';
 import {resolveMember,mountMemberAdmin} from './member-admin.js?v=20261112f';
 import {installAppCheck} from './app-check.js';
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js';
@@ -161,7 +161,16 @@ function render(){
  refreshRecordChoices();
  refreshJournalPeriods();
  const filtered=selectedRecords().sort((a,b)=>b.date.localeCompare(a.date));
- el('recordRows').innerHTML=filtered.slice(0,1500).map(x=>'<tr><td>'+esc(x.date)+'</td><td>'+esc(x.date.slice(5,7))+'</td><td>'+esc(x.date.slice(0,4))+'</td><td>'+esc(names[x.kind])+'</td><td>'+esc(x.name)+'</td><td>'+fmt(x.value)+'</td><td>'+esc(x.unit)+'</td><td>'+esc(x.source)+'</td></tr>').join('');
+ el('recordRows').innerHTML=filtered.slice(0,1500).map(x=>{
+  const target=x._id&&x._source?x._source+'/'+x._id:'';
+  const canEdit=role==='admin'&&target;
+  const actions=canEdit?(x._source==='waste_weigh_batches'
+    ?'<button type="button" data-record-target="'+esc(target)+'" data-record-action="void">Hủy số liệu</button>'
+    :'<button type="button" data-record-target="'+esc(target)+'" data-record-action="edit">Sửa</button> '+
+     '<button type="button" class="danger" data-record-target="'+esc(target)+'" data-record-action="delete">Xóa</button>')
+    :'<span class="muted" title="Dòng tổng hợp tự tính; chỉnh sửa tại nguồn dữ liệu">Tổng hợp</span>';
+  return '<tr><td>'+esc(x.date)+'</td><td>'+esc(x.date.slice(5,7))+'</td><td>'+esc(x.date.slice(0,4))+'</td><td>'+esc(names[x.kind])+'</td><td>'+esc(x.name)+'</td><td>'+fmt(x.value)+'</td><td>'+esc(x.unit)+'</td><td>'+esc(x.source)+'</td>'+(role==='admin'?'<td>'+actions+'</td>':'')+'</tr>';
+ }).join('');
  if(el('recordCount'))el('recordCount').textContent='Hiển thị '+Math.min(filtered.length,1500)+'/'+filtered.length+' dòng';
  const totals=new Map();
  for(const x of filtered){const unit=String(x.unit||'').trim()||'không có ĐVT';totals.set(unit,(totals.get(unit)||0)+Number(x.value||0))}
@@ -211,7 +220,7 @@ async function reload(){
 async function reloadEhsData(){
  const snap=await getDocs(query(collection(db,'records'),limit(5000)));
  console.info('[EHS Firestore reads] records:',snap.size,'documents');
- data=snap.docs.map(d=>norm(d.data())).filter(valid);
+ data=snap.docs.map(d=>({...norm(d.data()),_source:'records',_id:d.id})).filter(valid);
  await loadOperations();await loadApprovedWasteWeighing();setCostExplorerRecords(getAllOperations());setSimpleFinanceRecords(getAllOperations());if(role&&['admin','editor'].includes(role)){try{mountQrStock(db,user,role,getAllOperations,reload)}catch(error){console.error('QR refresh failed',error)}}data.push(...getOperationalRecords());
  await reviews();updateYearOptions();render();refreshCompliance();notice('Đã tải '+data.length+' bản ghi dữ liệu gốc/nghiệp vụ và '+reviewData.length+' chứng từ đã duyệt. Bảng báo cáo nghiệp vụ hiển thị chi tiết theo sheet Excel.');
 }
@@ -219,19 +228,19 @@ async function reloadEhsData(){
 async function loadApprovedWasteWeighing(){
  const snap=await getDocs(query(collection(db,'waste_weigh_batches'),where('status','==','approved'),limit(5000)));
  console.info('[EHS Firestore reads] approved waste batches:',snap.size,'documents');
- const approved=snap.docs.map(x=>x.data());
- data.push(...approved.map(x=>norm({
+ const approved=snap.docs.map(x=>({id:x.id,...x.data()}));
+ data.push(...approved.map(x=>({...norm({
   date:x.date,kind:'waste',value:x.net,unit:'kg',name:x.name,
   note:'QR cân rác • '+x.group+' • '+x.count+' lượt • cân '+x.gross+' kg • bao bì '+x.tare+' kg',
   source:'qr-weigh-approved'
- })).filter(valid));
+ }),_source:'waste_weigh_batches',_id:x.id})).filter(valid));
 }
 
 async function reviews(){
  if(!db||!role)return;
  const snap=await getDocs(query(collection(db,'reviews'),limit(1000)));
  console.info('[EHS Firestore reads] reviews:',snap.size,'documents');
- reviewData=snap.docs.filter(d=>d.data().status==='approved').map(d=>norm(d.data())).filter(valid);
+ reviewData=snap.docs.filter(d=>d.data().status==='approved').map(d=>({...norm(d.data()),_source:'reviews',_id:d.id})).filter(valid);
  el('reviews').innerHTML=snap.docs.map(d=>{
   const x=d.data();
   return '<tr><td>'+esc(d.id)+'</td><td>'+esc(x.status)+'</td><td>1</td><td>'+(
@@ -307,6 +316,36 @@ const syncYear=()=>{
 };
 el('from').onchange=syncYear;el('to').onchange=syncYear;
 document.addEventListener('ehs-language-change',()=>{render();renderOperationsReport()});
+el('recordRows').addEventListener('click',async event=>{
+ const button=event.target.closest('button[data-record-action]');
+ if(!button||role!=='admin'||!user||!db)return;
+ const target=button.dataset.recordTarget,action=button.dataset.recordAction;
+ const [source,id]=target.split('/');
+ const row=[...data,...reviewData].find(x=>x._source===source&&x._id===id);
+ if(!row)return alert('Không tìm thấy bản ghi nguồn. Hãy tải lại.');
+ button.disabled=true;
+ try{
+  if(action==='edit'){
+   const fieldMap={quantity:'Số lượng',value:'Số lượng',date:'Ngày',name:'Tên',unit:'Đơn vị',note:'Ghi chú'};
+   const defaultField=source==='operations'?'quantity':'value';
+   const field=(prompt('Chọn trường sửa: '+Object.entries(fieldMap).filter(([k])=>k!=='quantity'&&k!=='value'||k===defaultField).map(([k,v])=>k+' = '+v).join(', '),defaultField)||'').trim();
+   if(!Object.hasOwn(fieldMap,field)||!((source==='operations'?['quantity','date','name','unit','note']:['value','date','name','unit','note']).includes(field)))return;
+   const existing=field===defaultField?row.value:row[field];
+   const input=prompt('Nhập giá trị mới cho '+fieldMap[field],String(existing??''));
+   if(input===null)return;
+   if(!confirm('Xác nhận sửa '+row.name+' · '+fieldMap[field]+': '+String(existing??'')+' → '+input+'?'))return;
+   await editJournalSource(db,user,target,field,input);
+  }else if(action==='delete'){
+   if(!confirm('Bạn chuẩn bị xóa '+row.name+' ('+target+'). Hệ thống sẽ tải JSON sao lưu trước khi xóa.'))return;
+   if(!await deleteJournalSource(db,user,target))return;
+  }else if(action==='void'){
+   if(!confirm('Hủy lô cân đã duyệt '+row.name+'? Dữ liệu gốc vẫn lưu, chỉ loại khỏi báo cáo.'))return;
+   await voidApprovedWeighing(db,user,id);
+  }
+  invalidateOperationsCache();await reload();
+ }catch(e){alert('Không thể '+action+' bản ghi: '+e.message)}
+ finally{button.disabled=false}
+});
 el('refresh').onclick=async()=>{await reload();};el('recordYear').onchange=()=>{el('recordMonth').value='all';render()};el('recordMonth').onchange=render;el('kind').onchange=render;el('recordItem').onchange=render;el('recordUnit').onchange=render;el('exportExcel').onclick=()=>{if(!may('report_export'))return alert('Không có quyền xuất báo cáo.');xlsxExport('EHS_du_lieu.xlsx')};el('reportExcel').onclick=()=>{if(!may('report_export'))return alert('Không có quyền xuất báo cáo.');xlsxExport('EHS_bao_cao.xlsx')};
 el('printReport').onclick=()=>{const w=window.open('','_blank');if(!w)return alert('Bật popup để in');w.document.write('<html><head><meta charset="utf-8"><style>body{font-family:Arial;padding:30px;font-size:12px}table{width:100%;border-collapse:collapse;page-break-inside:auto}tr{page-break-inside:avoid}td,th{border:1px solid #ddd;padding:6px}button,.controls{display:none}</style></head><body><h1>BÁO CÁO EHS</h1>'+el('reportBody').innerHTML+el('opsReport').innerHTML+'</body></html>');w.document.close();w.print()};
 el('reportPpt').onclick=()=>{if(!window.pptxgen)return alert('Không tải được PowerPoint');const p=new window.pptxgen();p.layout='LAYOUT_WIDE';const s=p.addSlide();s.addText('BÁO CÁO MÔI TRƯỜNG EHS',{x:.6,y:.6,w:11,h:.7,fontSize:27,bold:true});s.addText(el('from').value+' – '+el('to').value,{x:.6,y:1.5,w:10,h:.5,fontSize:18});['waste','water_in','water_out','cost','revenue'].forEach((k,i)=>s.addText(names[k]+': '+fmt(sum(current(),k)),{x:.7,y:2.2+i*.7,w:10,h:.5,fontSize:18}));p.writeFile({fileName:'EHS_bao_cao.pptx'})};
