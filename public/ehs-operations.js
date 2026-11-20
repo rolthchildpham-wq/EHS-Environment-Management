@@ -324,6 +324,25 @@ export async function getOperationsPage({cursor=null,pageSize=50,kind=null}={}){
  return {rows:snap.docs.map(d=>({...d.data(),id:d.id})),cursor:snap.docs.at(-1)||null,hasMore:snap.size===size};
 }
 
+// Independent paginated browser; do not use pages as financial report totals.
+let opsPageCursor=null,opsPageNumber=1;
+async function browseOperationsPage(reset=false){
+ if(!db||!role||!el('opsBrowseRows'))return;
+ if(reset){opsPageCursor=null;opsPageNumber=1}
+ const kind=el('opsBrowseKind')?.value||'';
+ const constraints=[];
+ if(kind)constraints.push(where('kind','==',kind));
+ constraints.push(orderBy('__name__'));
+ if(opsPageCursor)constraints.push(startAfter(opsPageCursor));
+ constraints.push(limit(50));
+ const snap=await getDocs(query(collection(db,'operations'),...constraints));
+ console.info('[EHS Firestore reads] operations browser:',snap.size,'documents');
+ el('opsBrowseRows').innerHTML=snap.docs.map(d=>{const x=d.data();return '<tr><td>'+safe(x.date||'')+'</td><td>'+safe(kinds[x.kind]||x.kind||'')+'</td><td>'+safe(x.name||x.code||'')+'</td><td>'+safe(x.quantity??'')+'</td><td>'+safe(x.unit||'')+'</td></tr>'}).join('')||'<tr><td colspan="5">Không có dữ liệu</td></tr>';
+ const next=el('opsBrowseNext');next.disabled=snap.size<50;
+ next.onclick=()=>{opsPageCursor=snap.docs.at(-1);opsPageNumber++;void browseOperationsPage().catch(e=>notify('Lỗi tra cứu: '+e.message))};
+ el('opsBrowseStatus').textContent='Trang '+opsPageNumber+' · '+snap.size+' dòng';
+}
+
 export async function loadOperations({force=false}={}){
  if(!db||!role)return [];
  if(!force&&operationsLoadedAt&&Date.now()-operationsLoadedAt<READ_CACHE_MS)return operations;
@@ -383,10 +402,13 @@ export function mountOperations(database,actor,actorRole,onUpdate){
   '<div id="opsCashflowPreview" class="notice" style="margin:10px 0"></div>'+ 
   '<div class="scroll"><table><thead><tr><th>Bỏ</th><th>Nguồn</th><th>Ngày</th><th>Nghiệp vụ</th><th>Tên</th><th>Số lượng gốc</th><th>Đơn vị</th><th>Mã</th><th>Thu/chi (+/−)</th><th>Kiểm tra</th></tr></thead><tbody id="opsPreviewRows"></tbody></table></div>'+
   '<div class="controls" style="margin-top:12px"><button id="opsPrev">100 dòng trước</button><button id="opsNext">100 dòng tiếp</button><button class="primary" id="opsSave">Lưu hàng loạt vào Firestore</button></div>'+
+  '<hr><h3>Tra cứu dữ liệu đã lưu (50 dòng/trang)</h3><div class="controls"><label>Loại dữ liệu<select id="opsBrowseKind"><option value="">Tất cả</option>'+Object.entries(kinds).map(([k,v])=>'<option value="'+k+'">'+safe(v)+'</option>').join('')+'</select></label><button id="opsBrowseLoad">Tải 50 dòng</button><button id="opsBrowseNext" disabled>Trang tiếp</button></div><p id="opsBrowseStatus" class="muted"></p><div class="scroll"><table><thead><tr><th>Ngày</th><th>Loại</th><th>Tên</th><th>Số lượng</th><th>Đơn vị</th></tr></thead><tbody id="opsBrowseRows"></tbody></table></div>'+ 
   '<p class="notice" id="opsMessage" role="status" aria-live="polite">Chưa có file Excel nào được đọc.</p><dialog id="opsEditor" aria-label="Sửa dòng Excel"></dialog></div>';
  if(el('opsOcrMount'))el('opsOcrMount').remove();
  host.insertAdjacentHTML('afterend','<div id="opsOcrMount"></div>');
  mountOCR();
+ el('opsBrowseLoad').onclick=()=>{void browseOperationsPage(true).catch(e=>notify('Lỗi tra cứu: '+e.message))};
+ el('opsBrowseKind').onchange=()=>{void browseOperationsPage(true).catch(e=>notify('Lỗi tra cứu: '+e.message))};
  const reportHost=el('opsReport');
  if(reportHost)reportHost.innerHTML='<div class="panel" style="margin-top:18px"><h2>Đối chiếu báo cáo EHS theo Excel chính thức</h2>'+
   '<p class="muted">A.TK là nguồn chuẩn cho chi phí rác, khối lượng theo nhóm, doanh thu phế liệu; A.3 là nguồn chuẩn cho tổng chi phí nước thải; C là nguồn chuẩn cho tổng chi phí cây xanh. Dòng chi tiết giữ nguyên để đối chiếu; không cộng lặp lại tổng.</p><p id="opsDataCount"></p>'+
@@ -475,4 +497,4 @@ export function mountOperations(database,actor,actorRole,onUpdate){
 }
 
 export function renderOperationsReport(){if(el('opsMonthlyRows')&&el('opsReport')&&operations.length)report();}
-export function unmountOperations(){operationsLoadedAt=0;operationsLoadPromise=null;db=null;user=null;role=null;refreshFn=null;pending=[];operations=[];selected=0;lastWarning=[];if(el('opsMount'))el('opsMount').innerHTML='';if(el('opsOcrMount'))el('opsOcrMount').remove();if(el('opsReport'))el('opsReport').innerHTML='';}
+export function unmountOperations(){opsPageCursor=null;opsPageStack=[];operationsLoadedAt=0;operationsLoadPromise=null;db=null;user=null;role=null;refreshFn=null;pending=[];operations=[];selected=0;lastWarning=[];if(el('opsMount'))el('opsMount').innerHTML='';if(el('opsOcrMount'))el('opsOcrMount').remove();if(el('opsReport'))el('opsReport').innerHTML='';}
