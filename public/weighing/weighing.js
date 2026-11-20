@@ -1,7 +1,7 @@
 import {installI18n,translateDOM,t} from '../i18n.js?v=20261119waste2';
 import {initializeApp,getApps,getApp} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js';
 import {getAuth,GoogleAuthProvider,signInWithPopup,onAuthStateChanged,signOut,setPersistence,browserLocalPersistence} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js';
-import {getFirestore,collection,doc,getDoc,getDocs,query,where,runTransaction,setDoc,serverTimestamp} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
+import {getFirestore,collection,doc,getDoc,getDocs,query,where,orderBy,startAfter,limit,runTransaction,setDoc,serverTimestamp} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
 import {resolveMember} from '../member-admin.js';
 import {loadEhsPermissions,may} from '../ehs-permissions.js?v=20261119weigh1';
 
@@ -235,10 +235,15 @@ async function saveTare(){
   await loadCurrent();
  }catch(e){toast('Không lưu được bao bì: '+e.message,true)}
 }
-async function loadPending(){
+let pendingCursor=null;
+async function loadPending(nextPage=false){
  if(role!=='admin')return;
- const q=await getDocs(query(collection(db,'waste_weigh_batches'),where('status','==','pending')));
- batches=q.docs.map(x=>({id:x.id,...x.data()})).sort((a,b)=>b.date.localeCompare(a.date));
+ const clauses=[where('status','==','pending'),orderBy('date','desc'),orderBy('__name__','desc')];
+ if(nextPage&&pendingCursor)clauses.push(startAfter(pendingCursor));
+ clauses.push(limit(100));
+ const q=await getDocs(query(collection(db,'waste_weigh_batches'),...clauses));
+ pendingCursor=q.docs.length===100?q.docs[q.docs.length-1]:null;
+ batches=q.docs.map(x=>({id:x.id,...x.data()}));
  $('pending').replaceChildren();
  for(const b of batches){
   const item=document.createElement('div');item.className='row';item.style.padding='10px 0';item.style.borderBottom='1px solid #dce8ec';
