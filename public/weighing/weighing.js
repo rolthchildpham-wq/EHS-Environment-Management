@@ -1,4 +1,5 @@
 import {installI18n,translateDOM,t} from '../i18n.js?v=20261119waste2';
+import {installAppCheck} from '../app-check.js';
 import {initializeApp,getApps,getApp} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js';
 import {getAuth,GoogleAuthProvider,signInWithPopup,onAuthStateChanged,signOut,setPersistence,browserLocalPersistence} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js';
 import {getFirestore,collection,doc,getDoc,getDocs,query,where,orderBy,startAfter,limit,runTransaction,setDoc,serverTimestamp} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
@@ -388,6 +389,7 @@ $('logout').onclick=()=>signOut(auth);
 if(!window.EHS_FIREBASE_CONFIG){feedback('Thiếu cấu hình Firebase EHS.',true)}
 else{
  const app=getApps().length?getApp():initializeApp(window.EHS_FIREBASE_CONFIG);
+ installAppCheck(app);
  auth=getAuth(app);db=getFirestore(app);
  onAuthStateChanged(auth,async u=>{
   const now=++revision;user=u;role=null;refreshVisibility();
