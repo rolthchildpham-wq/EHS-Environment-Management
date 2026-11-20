@@ -1,7 +1,8 @@
 'use strict';
 const fs=require('node:fs');
+const assert=require('node:assert/strict');
 const {initializeTestEnvironment,assertSucceeds,assertFails}=require('@firebase/rules-unit-testing');
-const {doc,setDoc,deleteDoc,writeBatch,serverTimestamp,getDocs,collection}=require('firebase/firestore');
+const {doc,setDoc,deleteDoc,writeBatch,serverTimestamp,getDocs,collection,runTransaction}=require('firebase/firestore');
 (async()=>{
  const env=await initializeTestEnvironment({
   projectId:'demo-ehs-permission-gate',
@@ -39,6 +40,44 @@ const {doc,setDoc,deleteDoc,writeBatch,serverTimestamp,getDocs,collection}=requi
    occurredAt:serverTimestamp(),field:'status',before:'pending',after:'approved'
   });
   await assertSucceeds(review.commit());
-  console.log('PASS audit rules: admin-only read, deletion backup, atomic review transition');
+  await env.withSecurityRulesDisabled(async ctx=>{
+   const d=ctx.firestore();
+   await setDoc(doc(d,'records/quantity-edit'),{date:'2026-11-20',kind:'waste',value:10,
+    unit:'kg',name:'Test',note:'',source:'excel',createdBy:'editor',createdAt:new Date()});
+   await setDoc(doc(d,'waste_weigh_batches/2026-11-20_test'),{
+    date:'2026-11-20',code:'test',name:'Test',group:'CTNH',gross:10,count:1,
+    tare:0,status:'approved',net:10,createdBy:'editor',createdAt:new Date()
+   });
+  });
+  await assertFails(runTransaction(editor,async tx=>{
+   const ref=doc(editor,'records/quantity-edit');await tx.get(ref);
+   tx.update(ref,{value:11,updatedBy:'editor',updatedAt:serverTimestamp(),lastAuditId:'fake'});
+  }));
+  const editRef=doc(db,'records/quantity-edit'),editLog=doc(db,'business_audit/test_record_edit');
+  await assertSucceeds(runTransaction(db,async tx=>{
+   const snap=await tx.get(editRef);
+   tx.update(editRef,{value:11,updatedBy:'admin',updatedAt:serverTimestamp(),lastAuditId:editLog.id});
+   tx.set(editLog,{target:'records/quantity-edit',action:'edit',actorUid:'admin',
+    actorEmail:'admin@example.com',occurredAt:serverTimestamp(),field:'value',
+    before:snap.data().value,after:11});
+  }));
+  await assertFails(runTransaction(db,async tx=>{
+   const ref=doc(db,'records/quantity-edit');await tx.get(ref);
+   tx.update(ref,{value:12,updatedBy:'admin',updatedAt:serverTimestamp(),lastAuditId:'no_audit'});
+  }));
+  const weighRef=doc(db,'waste_weigh_batches/2026-11-20_test'),voidLog=doc(db,'business_audit/void_test');
+  await assertSucceeds(runTransaction(db,async tx=>{
+   const snap=await tx.get(weighRef);
+   assert.equal(snap.data().status,'approved');
+   tx.update(weighRef,{status:'void',updatedBy:'admin',updatedAt:serverTimestamp(),lastAuditId:voidLog.id});
+   tx.set(voidLog,{target:'waste_weigh_batches/2026-11-20_test',action:'void',
+    actorUid:'admin',actorEmail:'admin@example.com',occurredAt:serverTimestamp(),
+    field:'status',before:'approved',after:'void'});
+  }));
+  await assertFails(runTransaction(db,async tx=>{
+   const ref=doc(db,'waste_weigh_batches/2026-11-20_test');await tx.get(ref);
+   tx.update(ref,{status:'approved',updatedBy:'admin',updatedAt:serverTimestamp(),lastAuditId:'reapprove'});
+  }));
+  console.log('PASS audit rules: admin-only access, atomic change, delete backup and QR void');
  }finally{await env.cleanup()}
 })().catch(e=>{console.error(e);process.exitCode=1});
