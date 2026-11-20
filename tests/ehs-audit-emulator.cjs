@@ -1,5 +1,6 @@
 'use strict';
 const fs=require('node:fs');
+const assert=require('node:assert/strict');
 const {initializeTestEnvironment,assertSucceeds,assertFails}=require('@firebase/rules-unit-testing');
 const {doc,setDoc,deleteDoc,writeBatch,serverTimestamp,getDocs,collection,runTransaction}=require('firebase/firestore');
 (async()=>{
