@@ -12,6 +12,7 @@ const params=new URLSearchParams(location.search);
 const fmt=n=>Number(n||0).toLocaleString('vi-VN',{maximumFractionDigits:3});
 const today=()=>{const dt=new Date();return new Date(dt.getTime()-dt.getTimezoneOffset()*60000).toISOString().slice(0,10)};
 let auth,db,user=null,role=null,category='',catalog=DEFAULT,batches=[],entries=[],batch=null,revision=0;
+let summaryBatches=[];
 const kiosk=params.has('type');
 const recentWeights=[];
 function renderKioskHistory(){
@@ -129,10 +130,11 @@ async function flushQueue(force=false){
     const old=existing.exists()?existing.data():null;
     const next=round(Number(old?.gross||0)+x.value);
     const count=Number(old?.count||0)+1;
-    if(existing.exists())tx.update(batchRef,{gross:next,count,lastEntryId:entryRef.id,updatedAt:serverTimestamp()});
-    else tx.set(batchRef,{date:x.date,code:x.code,name:x.name,group:x.group,gross:next,count:1,tare:0,lastEntryId:entryRef.id,status:'pending',createdBy:user.uid,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
-    tx.set(entryRef,{batchId:x.batchId,date:x.date,code:x.code,value:x.value,createdBy:user.uid,createdAt:serverTimestamp()});
-    return {batch:{...(old||{}),gross:next,count,tare:old?.tare||0,status:'pending'}};
+    const nextTare=round(Number(old?.tare||0)+Number(x.tare||0));
+    if(existing.exists())tx.update(batchRef,{gross:next,count,tare:nextTare,lastEntryId:entryRef.id,updatedAt:serverTimestamp()});
+    else tx.set(batchRef,{date:x.date,code:x.code,name:x.name,group:x.group,gross:next,count:1,tare:nextTare,lastEntryId:entryRef.id,status:'pending',createdBy:user.uid,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
+    tx.set(entryRef,{batchId:x.batchId,date:x.date,code:x.code,value:x.value,tare:Number(x.tare||0),createdBy:user.uid,createdAt:serverTimestamp()});
+    return {batch:{...(old||{}),gross:next,count,tare:nextTare,status:'pending'}};
    });
    if(x.batchId===batchId()&&result.batch){batch={id:x.batchId,...result.batch};renderTotals()}
    // Preserve entries appended while the asynchronous Firebase transaction was running.
@@ -198,25 +200,34 @@ async function addWeight(){
  if(kiosk&&$('day').value!==today()){
 $('day').value=today();await loadCurrent()}
  const raw=$('weightInput').value.trim(),value=Number(raw),item=byCategory(),date=$('day').value;
+ const tareRaw=$('qrHasTare').checked?$('qrTare').value.trim():'';
+ const tare=tareRaw===''?0:Number(tareRaw);
  if(!raw||!dateOK(date)||!item||!Number.isFinite(value)||value<=0||value>100000)return toast('Nhập khối lượng từ 0,001 đến 100.000 kg',true);
+ if(!Number.isFinite(tare)||tare<0||tare>value)return toast('Trừ bì phải từ 0 đến khối lượng lượt cân.',true);
  if(batch?.status&&batch.status!=='pending')return toast('Lô cân đã khóa, cần chọn ngày hoặc loại khác.',true);
  submitting=true;$('addWeight').disabled=true;
  try{
   const current=readQueue();
   if(current.length>=300)throw Error('Bộ nhớ tạm đã có 300 lượt. Phải đồng bộ trước khi nhập thêm.');
   const entryRef=doc(collection(db,'waste_weigh_entries'));
-  const record={id:entryRef.id,batchId:date+'_'+item.code,date,code:item.code,name:item.name,group:item.group,value:round(value)};
+  const record={id:entryRef.id,batchId:date+'_'+item.code,date,code:item.code,name:item.name,group:item.group,value:round(value),tare:round(tare)};
   writeQueue([...current,record]);
   recentWeights.unshift({time:new Date().toLocaleTimeString('vi-VN'),name:item.name,group:item.group,value:record.value});
   if(recentWeights.length>100)recentWeights.length=100;
   renderKioskHistory();
-  $('weightInput').value='';
+  $('weightInput').value='';$('qrTare').value='';
   toast('Đã ghi tạm '+fmt(value)+' kg. '+(Date.now()<nextRetryAt?'Firebase còn vượt quota, CHƯA đồng bộ.':'Đang đồng bộ…'),Date.now()<nextRetryAt);
   showQueue();$('weightInput').focus();
   void flushQueue();
  }catch(e){toast('Không ghi được lượt cân: '+e.message+'. Số đang nhập được giữ nguyên.',true)}
  finally{submitting=false;$('addWeight').disabled=batch?.status==='approved';$('weightInput').focus()}
 }
+function updateQrTareVisibility(){
+ $('qrTareField').hidden=!$('qrHasTare').checked;
+ $('dialogTareField').hidden=!$('dialogHasTare').checked;
+}
+$('qrHasTare').onchange=updateQrTareVisibility;
+$('dialogHasTare').onchange=updateQrTareVisibility;
 function updateTareVisibility(){
  const enabled=$('hasTare').checked;
  $('tareField').hidden=!enabled;
@@ -379,7 +390,12 @@ $('typeSearch').oninput=showTypeSuggestions;
 $('changeType').onclick=()=>{$('dialogCategory').value=category;$('typeSearch').value='';showTypeSuggestions();$('typeDialog').showModal();$('typeSearch').focus()};
 $('kioskChangeType').onclick=()=>$('changeType').click();
 $('cancelType').onclick=()=>$('typeDialog').close();
-$('applyType').onclick=async()=>{category=$('dialogCategory').value;$('category').value=category;params.set('type',category);history.replaceState(null,'','?'+params.toString());$('typeDialog').close();showQr();await loadCurrent()};
+$('applyType').onclick=async()=>{
+ const raw=$('dialogHasTare').checked?$('dialogTare').value.trim():'';
+ const tare=raw===''?0:Number(raw);
+ if(!Number.isFinite(tare)||tare<0||tare>100000)return toast('Khối lượng trừ bì không hợp lệ.',true);
+ $('qrHasTare').checked=$('dialogHasTare').checked;$('qrTare').value=raw;updateQrTareVisibility();
+ category=$('dialogCategory').value;$('category').value=category;params.set('type',category);history.replaceState(null,'','?'+params.toString());$('typeDialog').close();showQr();await loadCurrent()};
 $('day').onchange=loadCurrent;$('refresh').onclick=async()=>{await flushQueue(true);await loadCurrent();if(!kiosk)await loadPending()};
 window.addEventListener('online',()=>flushQueue());
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)flushQueue()});
