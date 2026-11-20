@@ -325,10 +325,10 @@ export async function getOperationsPage({cursor=null,pageSize=50,kind=null}={}){
 }
 
 // Independent paginated browser; do not use pages as financial report totals.
-let opsPageCursor=null,opsPageStack=[];
+let opsPageCursor=null,opsPageNumber=1;
 async function browseOperationsPage(reset=false){
  if(!db||!role||!el('opsBrowseRows'))return;
- if(reset){opsPageCursor=null;opsPageStack=[]}
+ if(reset){opsPageCursor=null;opsPageNumber=1}
  const kind=el('opsBrowseKind')?.value||'';
  const constraints=[];
  if(kind)constraints.push(where('kind','==',kind));
@@ -339,8 +339,8 @@ async function browseOperationsPage(reset=false){
  console.info('[EHS Firestore reads] operations browser:',snap.size,'documents');
  el('opsBrowseRows').innerHTML=snap.docs.map(d=>{const x=d.data();return '<tr><td>'+safe(x.date||'')+'</td><td>'+safe(kinds[x.kind]||x.kind||'')+'</td><td>'+safe(x.name||x.code||'')+'</td><td>'+safe(x.quantity??'')+'</td><td>'+safe(x.unit||'')+'</td></tr>'}).join('')||'<tr><td colspan="5">Không có dữ liệu</td></tr>';
  const next=el('opsBrowseNext');next.disabled=snap.size<50;
- next.onclick=()=>{opsPageCursor=snap.docs.at(-1);void browseOperationsPage()};
- el('opsBrowseStatus').textContent='Trang '+(opsPageStack.length+1)+' · '+snap.size+' dòng';
+ next.onclick=()=>{opsPageCursor=snap.docs.at(-1);opsPageNumber++;void browseOperationsPage().catch(e=>notify('Lỗi tra cứu: '+e.message))};
+ el('opsBrowseStatus').textContent='Trang '+opsPageNumber+' · '+snap.size+' dòng';
 }
 
 export async function loadOperations({force=false}={}){
