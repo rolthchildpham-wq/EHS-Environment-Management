@@ -177,7 +177,7 @@ function rows(){return selectedRecords().map(x=>({'Ngày':x.date,'Loại':names[
 function xlsxExport(filename){if(!window.XLSX)return alert('Không tải được XLSX');const book=XLSX.utils.book_new();XLSX.utils.book_append_sheet(book,XLSX.utils.json_to_sheet(rows()),'Du lieu');XLSX.writeFile(book,filename)}
 function parseSheet(rows,sheetName='Sheet1'){
  const dict={'rac':'waste','rac thai':'waste','nuoc vao':'water_in','nuoc ra':'water_out','nhap vat tu':'stock_in','xuat vat tu':'stock_out','chi phi':'cost','doanh thu':'revenue'};
- const normalizeKey=k=>String(k).toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/đ/g,'d').trim();
+ const normalizeKey=k=>String(k).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').trim();
  const result=[],errors=[];
  for(let i=0;i<rows.length;i++){
   const row=rows[i],line=i+2;
@@ -186,7 +186,7 @@ function parseSheet(rows,sheetName='Sheet1'){
   let d=obj.ngay??obj.date;
   if(typeof d==='number'){const z=XLSX.SSF.parse_date_code(d);d=z?z.y+'-'+String(z.m).padStart(2,'0')+'-'+String(z.d).padStart(2,'0'):''}
   if(d instanceof Date)d=Number.isNaN(d.getTime())?'':d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-  const match=String(d??'').match(/^(\\d{4})-(\\d{2})-(\\d{2})$/);
+  const match=String(d??'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
   const parsed=match?new Date(Number(match[1]),Number(match[2])-1,Number(match[3])):null;
   if(!parsed||parsed.getFullYear()!==Number(match[1])||parsed.getMonth()+1!==Number(match[2])||parsed.getDate()!==Number(match[3])){errors.push(sheetName+': cột Ngày dòng '+line+' không đúng định dạng YYYY-MM-DD');continue}
   let k=normalizeKey(obj.loai??obj.kind??'');k=dict[k]||k;
