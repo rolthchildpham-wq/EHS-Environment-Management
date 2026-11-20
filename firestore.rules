@@ -335,7 +335,7 @@ service cloud.firestore {
   match /waste_weigh_entries/{entryId} {
     allow read: if canReadEhs();
     allow create: if allowed('waste_weigh')
-      && request.resource.data.keys().hasOnly(['batchId','date','code','value','createdBy','createdAt'])
+      && request.resource.data.keys().hasOnly(['batchId','date','code','value','tare','createdBy','createdAt'])
       && request.resource.data.keys().hasAll(['batchId','date','code','value','createdBy','createdAt'])
       && request.resource.data.batchId is string
       && request.resource.data.batchId == request.resource.data.date + '_' + request.resource.data.code
@@ -346,6 +346,9 @@ service cloud.firestore {
       && request.resource.data.value is number
       && request.resource.data.value > 0
       && request.resource.data.value <= 100000
+      && request.resource.data.get('tare', 0) is number
+      && request.resource.data.get('tare', 0) >= 0
+      && request.resource.data.get('tare', 0) <= request.resource.data.value
       && request.resource.data.createdBy == request.auth.uid
       && request.resource.data.createdAt == request.time
       && existsAfter(/databases/$(database)/documents/waste_weigh_batches/$(request.resource.data.batchId))
@@ -383,7 +386,8 @@ service cloud.firestore {
       && existsAfter(/databases/$(database)/documents/waste_weigh_entries/$(request.resource.data.lastEntryId))
       && getAfter(/databases/$(database)/documents/waste_weigh_entries/$(request.resource.data.lastEntryId)).data.batchId == batchId
       && getAfter(/databases/$(database)/documents/waste_weigh_entries/$(request.resource.data.lastEntryId)).data.value == request.resource.data.gross
-      && request.resource.data.tare == 0
+      && request.resource.data.tare == getAfter(/databases/$(database)/documents/waste_weigh_entries/$(request.resource.data.lastEntryId)).data.get('tare', 0)
+      && request.resource.data.tare <= request.resource.data.gross
       && request.resource.data.status == 'pending'
       && request.resource.data.createdBy == request.auth.uid
       && request.resource.data.createdAt == request.time
@@ -394,9 +398,12 @@ service cloud.firestore {
       && request.resource.data.status == 'pending'
       && request.resource.data.updatedAt == request.time
       && (
-        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['gross','count','lastEntryId','updatedAt'])
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['gross','count','tare','lastEntryId','updatedAt'])
           && request.resource.data.gross is number
           && request.resource.data.gross > resource.data.gross
+          && request.resource.data.tare is number
+          && request.resource.data.tare == resource.data.tare + getAfter(/databases/$(database)/documents/waste_weigh_entries/$(request.resource.data.lastEntryId)).data.get('tare', 0)
+          && request.resource.data.tare <= request.resource.data.gross
           && request.resource.data.count == resource.data.count + 1
           && request.resource.data.lastEntryId is string
           && request.resource.data.lastEntryId != resource.data.lastEntryId

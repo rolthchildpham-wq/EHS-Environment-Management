@@ -12,6 +12,7 @@ const params=new URLSearchParams(location.search);
 const fmt=n=>Number(n||0).toLocaleString('vi-VN',{maximumFractionDigits:3});
 const today=()=>{const dt=new Date();return new Date(dt.getTime()-dt.getTimezoneOffset()*60000).toISOString().slice(0,10)};
 let auth,db,user=null,role=null,category='',catalog=DEFAULT,batches=[],entries=[],batch=null,revision=0;
+let summaryBatches=[];
 const kiosk=params.has('type');
 const recentWeights=[];
 function renderKioskHistory(){
@@ -129,10 +130,11 @@ async function flushQueue(force=false){
     const old=existing.exists()?existing.data():null;
     const next=round(Number(old?.gross||0)+x.value);
     const count=Number(old?.count||0)+1;
-    if(existing.exists())tx.update(batchRef,{gross:next,count,lastEntryId:entryRef.id,updatedAt:serverTimestamp()});
-    else tx.set(batchRef,{date:x.date,code:x.code,name:x.name,group:x.group,gross:next,count:1,tare:0,lastEntryId:entryRef.id,status:'pending',createdBy:user.uid,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
-    tx.set(entryRef,{batchId:x.batchId,date:x.date,code:x.code,value:x.value,createdBy:user.uid,createdAt:serverTimestamp()});
-    return {batch:{...(old||{}),gross:next,count,tare:old?.tare||0,status:'pending'}};
+    const nextTare=round(Number(old?.tare||0)+Number(x.tare||0));
+    if(existing.exists())tx.update(batchRef,{gross:next,count,tare:nextTare,lastEntryId:entryRef.id,updatedAt:serverTimestamp()});
+    else tx.set(batchRef,{date:x.date,code:x.code,name:x.name,group:x.group,gross:next,count:1,tare:nextTare,lastEntryId:entryRef.id,status:'pending',createdBy:user.uid,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});
+    tx.set(entryRef,{batchId:x.batchId,date:x.date,code:x.code,value:x.value,tare:Number(x.tare||0),createdBy:user.uid,createdAt:serverTimestamp()});
+    return {batch:{...(old||{}),gross:next,count,tare:nextTare,status:'pending'}};
    });
    if(x.batchId===batchId()&&result.batch){batch={id:x.batchId,...result.batch};renderTotals()}
    // Preserve entries appended while the asynchronous Firebase transaction was running.
@@ -162,6 +164,37 @@ function summaryRange(){
  const exclusive=next.getFullYear()+'-'+String(next.getMonth()+1).padStart(2,'0')+'-'+String(next.getDate()).padStart(2,'0');
  return {start,exclusive};
 }
+function selectSummaryType(code){
+ const matching=summaryBatches.filter(b=>b.code===code&&b.status==='pending');
+ const panel=$('summaryTareEditor');panel.hidden=false;panel.dataset.code=code;
+ const selected=summaryBatches.find(b=>b.code===code);
+ $('summaryTareName').textContent=(selected?.group||'')+' / '+(selected?.name||code);
+ $('summaryTareBatch').innerHTML=matching.map(b=>'<option value="'+escape(b.id)+'">'+escape(b.date)+' · '+fmt(b.gross)+' kg · '+b.count+' lượt</option>').join('')||'<option value="">Không có lô đang chờ duyệt</option>';
+ $('summaryTareSave').disabled=!matching.length;
+ updateSummaryTareDetail();
+}
+function updateSummaryTareDetail(){
+ const b=summaryBatches.find(x=>x.id===$('summaryTareBatch').value);
+ $('summaryTareValue').value=String(b?.tare??0);
+ $('summaryTareDetail').textContent=b?'Tổng cân: '+fmt(b.gross)+' kg · Trừ bì hiện tại: '+fmt(b.tare||0)+' kg · Ròng: '+fmt(round(b.gross-(b.tare||0)))+' kg · Chờ duyệt':'Chỉ được bổ sung trừ bì cho lô chưa duyệt.';
+}
+$('summaryTareBatch').onchange=updateSummaryTareDetail;
+$('summaryTareSave').onclick=async()=>{
+ const id=$('summaryTareBatch').value,b=summaryBatches.find(x=>x.id===id),raw=$('summaryTareValue').value.trim(),tare=Number(raw);
+ if(!b||b.status!=='pending'||!raw||!Number.isFinite(tare)||tare<0||tare>b.gross)return toast('Chọn lô chưa duyệt và nhập trừ bì hợp lệ.',true);
+ if(!confirm('Xác nhận trừ bì '+fmt(tare)+' kg cho '+b.name+' ngày '+b.date+'?'))return;
+ $('summaryTareSave').disabled=true;
+ try{
+  await runTransaction(db,async tx=>{
+   const ref=doc(db,'waste_weigh_batches',id),snap=await tx.get(ref);
+   if(!snap.exists()||snap.data().status!=='pending'||tare>snap.data().gross)throw Error('Lô đã thay đổi hoặc đã duyệt');
+   tx.update(ref,{tare,updatedAt:serverTimestamp()});
+  });
+  toast('Đã lưu trừ bì '+fmt(tare)+' kg cho '+b.name+'.');
+  await loadSummary();if(id===batchId())await loadCurrent();if(role==='admin')await loadPending();
+ }catch(e){toast('Không lưu được trừ bì: '+e.message,true)}
+ finally{$('summaryTareSave').disabled=false}
+};
 async function loadSummary(){
  if(!isStaff()||kiosk)return;
  const status=$('summaryStatus'),button=$('summaryLoad');button.disabled=true;
@@ -171,19 +204,23 @@ async function loadSummary(){
   const result=await getDocs(query(collection(db,'waste_weigh_batches'),where('date','>=',start),where('date','<',exclusive)));
   const term=$('summarySearch').value.trim().toLocaleLowerCase('vi');
   const groups=new Map();
+  summaryBatches=[];
   for(const snap of result.docs){
    const x=snap.data(),name=String(x.name||''),group=String(x.group||''),code=String(x.code||'');
    if(term&&!(name+' '+group+' '+code).toLocaleLowerCase('vi').includes(term))continue;
+   summaryBatches.push({id:snap.id,...x});
    const key=group+'|'+code;
-   const row=groups.get(key)||{group,name,count:0,gross:0,tare:0};
+   const row=groups.get(key)||{group,name,code,count:0,gross:0,tare:0};
    row.count+=Number(x.count)||0;row.gross+=Number(x.gross)||0;row.tare+=Number(x.tare)||0;
    groups.set(key,row);
   }
   const rows=[...groups.values()].sort((a,b)=>a.group.localeCompare(b.group,'vi')||a.name.localeCompare(b.name,'vi'));
-  $('summaryRows').innerHTML=rows.map(x=>'<tr><td>'+escape(x.group)+'</td><td>'+escape(x.name)+'</td><td>'+fmt(x.count)+'</td><td>'+fmt(x.gross)+'</td><td>'+fmt(x.tare)+'</td><td>'+fmt(Math.max(0,round(x.gross-x.tare)))+'</td></tr>').join('')||'<tr><td colspan="6">Không có dữ liệu phù hợp.</td></tr>';
+  $('summaryRows').innerHTML=rows.map(x=>'<tr><td>'+escape(x.group)+'</td><td>'+escape(x.name)+'</td><td>'+fmt(x.count)+'</td><td>'+fmt(x.gross)+'</td><td>'+fmt(x.tare)+'</td><td>'+fmt(Math.max(0,round(x.gross-x.tare)))+'</td><td><button type="button" class="secondary" data-summary-code="'+escape(x.code)+'">Chọn / trừ bì</button></td></tr>').join('')||'<tr><td colspan="7">Không có dữ liệu phù hợp.</td></tr>';
+  document.querySelectorAll('[data-summary-code]').forEach(button=>button.onclick=()=>selectSummaryType(button.dataset.summaryCode));
   const gross=rows.reduce((a,x)=>a+x.gross,0),tare=rows.reduce((a,x)=>a+x.tare,0);
   $('summaryTotal').textContent='Tổng cân: '+fmt(gross)+' kg · Trừ bao bì: '+fmt(tare)+' kg · Ròng: '+fmt(Math.max(0,round(gross-tare)))+' kg';
   status.textContent='Đã thống kê '+result.size+' lô trong kỳ; '+rows.length+' loại/nhóm phù hợp. Bao gồm lô chưa duyệt.';
+  if($('summaryTareEditor').hidden===false){const code=$('summaryTareEditor').dataset.code;selectSummaryType(code)}
  }catch(e){status.textContent='Không tải được thống kê: '+e.message;}
  finally{button.disabled=false}
 }
@@ -198,25 +235,34 @@ async function addWeight(){
  if(kiosk&&$('day').value!==today()){
 $('day').value=today();await loadCurrent()}
  const raw=$('weightInput').value.trim(),value=Number(raw),item=byCategory(),date=$('day').value;
+ const tareRaw=$('qrHasTare').checked?$('qrTare').value.trim():'';
+ const tare=tareRaw===''?0:Number(tareRaw);
  if(!raw||!dateOK(date)||!item||!Number.isFinite(value)||value<=0||value>100000)return toast('Nhập khối lượng từ 0,001 đến 100.000 kg',true);
+ if(!Number.isFinite(tare)||tare<0||tare>value)return toast('Trừ bì phải từ 0 đến khối lượng lượt cân.',true);
  if(batch?.status&&batch.status!=='pending')return toast('Lô cân đã khóa, cần chọn ngày hoặc loại khác.',true);
  submitting=true;$('addWeight').disabled=true;
  try{
   const current=readQueue();
   if(current.length>=300)throw Error('Bộ nhớ tạm đã có 300 lượt. Phải đồng bộ trước khi nhập thêm.');
   const entryRef=doc(collection(db,'waste_weigh_entries'));
-  const record={id:entryRef.id,batchId:date+'_'+item.code,date,code:item.code,name:item.name,group:item.group,value:round(value)};
+  const record={id:entryRef.id,batchId:date+'_'+item.code,date,code:item.code,name:item.name,group:item.group,value:round(value),tare:round(tare)};
   writeQueue([...current,record]);
   recentWeights.unshift({time:new Date().toLocaleTimeString('vi-VN'),name:item.name,group:item.group,value:record.value});
   if(recentWeights.length>100)recentWeights.length=100;
   renderKioskHistory();
-  $('weightInput').value='';
+  $('weightInput').value='';$('qrTare').value='';
   toast('Đã ghi tạm '+fmt(value)+' kg. '+(Date.now()<nextRetryAt?'Firebase còn vượt quota, CHƯA đồng bộ.':'Đang đồng bộ…'),Date.now()<nextRetryAt);
   showQueue();$('weightInput').focus();
   void flushQueue();
  }catch(e){toast('Không ghi được lượt cân: '+e.message+'. Số đang nhập được giữ nguyên.',true)}
  finally{submitting=false;$('addWeight').disabled=batch?.status==='approved';$('weightInput').focus()}
 }
+function updateQrTareVisibility(){
+ $('qrTareField').hidden=!$('qrHasTare').checked;
+ $('dialogTareField').hidden=!$('dialogHasTare').checked;
+}
+$('qrHasTare').onchange=updateQrTareVisibility;
+$('dialogHasTare').onchange=updateQrTareVisibility;
 function updateTareVisibility(){
  const enabled=$('hasTare').checked;
  $('tareField').hidden=!enabled;
@@ -378,8 +424,14 @@ function showTypeSuggestions(){
 $('typeSearch').oninput=showTypeSuggestions;
 $('changeType').onclick=()=>{$('dialogCategory').value=category;$('typeSearch').value='';showTypeSuggestions();$('typeDialog').showModal();$('typeSearch').focus()};
 $('kioskChangeType').onclick=()=>$('changeType').click();
+$('selectDetailType').onclick=()=>$('changeType').click();
 $('cancelType').onclick=()=>$('typeDialog').close();
-$('applyType').onclick=async()=>{category=$('dialogCategory').value;$('category').value=category;params.set('type',category);history.replaceState(null,'','?'+params.toString());$('typeDialog').close();showQr();await loadCurrent()};
+$('applyType').onclick=async()=>{
+ const raw=$('dialogHasTare').checked?$('dialogTare').value.trim():'';
+ const tare=raw===''?0:Number(raw);
+ if(!Number.isFinite(tare)||tare<0||tare>100000)return toast('Khối lượng trừ bì không hợp lệ.',true);
+ $('qrHasTare').checked=$('dialogHasTare').checked;$('qrTare').value=raw;updateQrTareVisibility();
+ category=$('dialogCategory').value;$('category').value=category;params.set('type',category);history.replaceState(null,'','?'+params.toString());$('typeDialog').close();showQr();await loadCurrent()};
 $('day').onchange=loadCurrent;$('refresh').onclick=async()=>{await flushQueue(true);await loadCurrent();if(!kiosk)await loadPending()};
 window.addEventListener('online',()=>flushQueue());
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)flushQueue()});
