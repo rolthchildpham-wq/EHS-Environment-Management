@@ -27,7 +27,7 @@ function renderKioskHistory(){
 }
 document.body.classList.toggle('qr-entry',kiosk);
 installI18n();
-let syncing=false,nextRetryAt=0,submitting=false,retryHandle=null;
+let syncing=false,nextRetryAt=0,submitting=false,retryHandle=null,quotaFailures=0;
 const storageKey=()=>user?'ehs-weigh-pending-v1:'+user.uid:null;
 const readQueue=()=>{try{const rows=JSON.parse(localStorage.getItem(storageKey())||'[]');return Array.isArray(rows)?rows:[]}catch{return []}};
 function writeQueue(items){localStorage.setItem(storageKey(),JSON.stringify(items))}
@@ -139,14 +139,16 @@ async function flushQueue(force=false){
    writeQueue(readQueue().filter(p=>p.id!==x.id));
    queue=readQueue();
   }
-  nextRetryAt=0;
+  nextRetryAt=0;quotaFailures=0;
   toast('Đã đồng bộ tất cả lượt cân lên Firebase.');
  }catch(e){
   if(quotaError(e)){
-   nextRetryAt=Date.now()+60000;
+   quotaFailures=Math.min(quotaFailures+1,6);
+   const waitMs=Math.min(3600000,60000*Math.pow(2,quotaFailures-1));
+   nextRetryAt=Date.now()+waitMs;
    if(retryHandle)clearTimeout(retryHandle);
-   retryHandle=setTimeout(()=>{retryHandle=null;void flushQueue(true)},60000);
-   toast('Firebase đã vượt hạn mức (quota exceeded). Lượt cân được GIỮ TẠM trên máy, chưa lên hệ thống. Thử đồng bộ lại sau khi quota được cấp lại hoặc nâng hạn mức.',true);
+   retryHandle=setTimeout(()=>{retryHandle=null;void flushQueue()},waitMs);
+   toast('Firebase hết hạn mức. Lượt cân vẫn lưu trên thiết bị, chưa đồng bộ. Hệ thống sẽ thử lại sau '+Math.ceil(waitMs/60000)+' phút. Không xóa dữ liệu trình duyệt.',true);
   }else toast('Chưa đồng bộ: '+e.message+' — dữ liệu tạm vẫn nằm trên máy.',true);
  }finally{syncing=false;showQueue()}
 }
@@ -379,8 +381,8 @@ $('kioskChangeType').onclick=()=>$('changeType').click();
 $('cancelType').onclick=()=>$('typeDialog').close();
 $('applyType').onclick=async()=>{category=$('dialogCategory').value;$('category').value=category;params.set('type',category);history.replaceState(null,'','?'+params.toString());$('typeDialog').close();showQr();await loadCurrent()};
 $('day').onchange=loadCurrent;$('refresh').onclick=async()=>{await flushQueue(true);await loadCurrent();if(!kiosk)await loadPending()};
-window.addEventListener('online',()=>flushQueue(true));
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)flushQueue(true)});
+window.addEventListener('online',()=>flushQueue());
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)flushQueue()});
 $('copyUrl').onclick=async()=>{try{await navigator.clipboard.writeText(qrUrl());toast('Đã sao chép liên kết QR.')}catch{toast(qrUrl())}};
 $('addWeight').onclick=addWeight;$('weightInput').onkeydown=e=>{if(e.key==='Enter')addWeight()};
 $('saveTare').onclick=saveTare;$('saveCatalog').onclick=saveCatalog;
