@@ -164,6 +164,37 @@ function summaryRange(){
  const exclusive=next.getFullYear()+'-'+String(next.getMonth()+1).padStart(2,'0')+'-'+String(next.getDate()).padStart(2,'0');
  return {start,exclusive};
 }
+function selectSummaryType(code){
+ const matching=summaryBatches.filter(b=>b.code===code&&b.status==='pending');
+ const panel=$('summaryTareEditor');panel.hidden=false;panel.dataset.code=code;
+ const selected=summaryBatches.find(b=>b.code===code);
+ $('summaryTareName').textContent=(selected?.group||'')+' / '+(selected?.name||code);
+ $('summaryTareBatch').innerHTML=matching.map(b=>'<option value="'+escape(b.id)+'">'+escape(b.date)+' · '+fmt(b.gross)+' kg · '+b.count+' lượt</option>').join('')||'<option value="">Không có lô đang chờ duyệt</option>';
+ $('summaryTareSave').disabled=!matching.length;
+ updateSummaryTareDetail();
+}
+function updateSummaryTareDetail(){
+ const b=summaryBatches.find(x=>x.id===$('summaryTareBatch').value);
+ $('summaryTareValue').value=String(b?.tare??0);
+ $('summaryTareDetail').textContent=b?'Tổng cân: '+fmt(b.gross)+' kg · Trừ bì hiện tại: '+fmt(b.tare||0)+' kg · Ròng: '+fmt(round(b.gross-(b.tare||0)))+' kg · Chờ duyệt':'Chỉ được bổ sung trừ bì cho lô chưa duyệt.';
+}
+$('summaryTareBatch').onchange=updateSummaryTareDetail;
+$('summaryTareSave').onclick=async()=>{
+ const id=$('summaryTareBatch').value,b=summaryBatches.find(x=>x.id===id),raw=$('summaryTareValue').value.trim(),tare=Number(raw);
+ if(!b||b.status!=='pending'||!raw||!Number.isFinite(tare)||tare<0||tare>b.gross)return toast('Chọn lô chưa duyệt và nhập trừ bì hợp lệ.',true);
+ if(!confirm('Xác nhận trừ bì '+fmt(tare)+' kg cho '+b.name+' ngày '+b.date+'?'))return;
+ $('summaryTareSave').disabled=true;
+ try{
+  await runTransaction(db,async tx=>{
+   const ref=doc(db,'waste_weigh_batches',id),snap=await tx.get(ref);
+   if(!snap.exists()||snap.data().status!=='pending'||tare>snap.data().gross)throw Error('Lô đã thay đổi hoặc đã duyệt');
+   tx.update(ref,{tare,updatedAt:serverTimestamp()});
+  });
+  toast('Đã lưu trừ bì '+fmt(tare)+' kg cho '+b.name+'.');
+  await loadSummary();if(id===batchId())await loadCurrent();if(role==='admin')await loadPending();
+ }catch(e){toast('Không lưu được trừ bì: '+e.message,true)}
+ finally{$('summaryTareSave').disabled=false}
+};
 async function loadSummary(){
  if(!isStaff()||kiosk)return;
  const status=$('summaryStatus'),button=$('summaryLoad');button.disabled=true;
@@ -173,19 +204,23 @@ async function loadSummary(){
   const result=await getDocs(query(collection(db,'waste_weigh_batches'),where('date','>=',start),where('date','<',exclusive)));
   const term=$('summarySearch').value.trim().toLocaleLowerCase('vi');
   const groups=new Map();
+  summaryBatches=[];
   for(const snap of result.docs){
    const x=snap.data(),name=String(x.name||''),group=String(x.group||''),code=String(x.code||'');
    if(term&&!(name+' '+group+' '+code).toLocaleLowerCase('vi').includes(term))continue;
+   summaryBatches.push({id:snap.id,...x});
    const key=group+'|'+code;
-   const row=groups.get(key)||{group,name,count:0,gross:0,tare:0};
+   const row=groups.get(key)||{group,name,code,count:0,gross:0,tare:0};
    row.count+=Number(x.count)||0;row.gross+=Number(x.gross)||0;row.tare+=Number(x.tare)||0;
    groups.set(key,row);
   }
   const rows=[...groups.values()].sort((a,b)=>a.group.localeCompare(b.group,'vi')||a.name.localeCompare(b.name,'vi'));
-  $('summaryRows').innerHTML=rows.map(x=>'<tr><td>'+escape(x.group)+'</td><td>'+escape(x.name)+'</td><td>'+fmt(x.count)+'</td><td>'+fmt(x.gross)+'</td><td>'+fmt(x.tare)+'</td><td>'+fmt(Math.max(0,round(x.gross-x.tare)))+'</td></tr>').join('')||'<tr><td colspan="6">Không có dữ liệu phù hợp.</td></tr>';
+  $('summaryRows').innerHTML=rows.map(x=>'<tr><td>'+escape(x.group)+'</td><td>'+escape(x.name)+'</td><td>'+fmt(x.count)+'</td><td>'+fmt(x.gross)+'</td><td>'+fmt(x.tare)+'</td><td>'+fmt(Math.max(0,round(x.gross-x.tare)))+'</td><td><button type="button" class="secondary" data-summary-code="'+escape(x.code)+'">Chọn / trừ bì</button></td></tr>').join('')||'<tr><td colspan="7">Không có dữ liệu phù hợp.</td></tr>';
+  document.querySelectorAll('[data-summary-code]').forEach(button=>button.onclick=()=>selectSummaryType(button.dataset.summaryCode));
   const gross=rows.reduce((a,x)=>a+x.gross,0),tare=rows.reduce((a,x)=>a+x.tare,0);
   $('summaryTotal').textContent='Tổng cân: '+fmt(gross)+' kg · Trừ bao bì: '+fmt(tare)+' kg · Ròng: '+fmt(Math.max(0,round(gross-tare)))+' kg';
   status.textContent='Đã thống kê '+result.size+' lô trong kỳ; '+rows.length+' loại/nhóm phù hợp. Bao gồm lô chưa duyệt.';
+  if($('summaryTareEditor').hidden===false){const code=$('summaryTareEditor').dataset.code;selectSummaryType(code)}
  }catch(e){status.textContent='Không tải được thống kê: '+e.message;}
  finally{button.disabled=false}
 }
