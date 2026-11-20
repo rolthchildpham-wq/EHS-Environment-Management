@@ -12,7 +12,7 @@ test('QR weighing workflow has persistent login, repeated weights, category swit
 });
 test('Approved waste batch totals flow into journal only after approval',()=>{
  assert.match(ehs,/loadApprovedWasteWeighing\(\)/);
- assert.match(ehs,/x\.status===\x27approved\x27/);
+ assert.match(ehs,/where\('status','==','approved'\)/);
  assert.match(ehs,/source:\x27qr-weigh-approved\x27/);
  assert.match(hub,/href="weighing\/"/);
 });
@@ -41,7 +41,8 @@ test('Local queued readings are idempotent and never represented as committed wh
  assert.match(app,/readQueue\(\)\.filter\(p=>p\.id!==x\.id\)/);
  assert.match(app,/e\?\.code==='resource-exhausted'/);
  assert.match(app,/CHƯA đồng bộ Firebase/);
- assert.match(app,/Firebase đã vượt hạn mức/);
+ assert.match(app,/Firebase hết hạn mức/);
+ assert.match(app,/quotaFailures=Math\.min\(quotaFailures\+1,6\)/);
  assert.doesNotMatch(app,/await loadCurrent\(\);\$\('weightInput'\)\.focus\(\)/);
 });
 
