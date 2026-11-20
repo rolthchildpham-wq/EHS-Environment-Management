@@ -50,6 +50,10 @@ body.qr-entry #weightInput{font-size:clamp(40px,12vw,84px);height:clamp(75px,17v
 body.qr-entry #addWeight{font-size:clamp(24px,7vw,38px);min-height:clamp(56px,10vh,78px)}
 body.qr-entry #saveMessage:not(.warn){display:none!important}
 body.qr-entry #pendingSync:empty{display:none!important}
+body.qr-entry #kioskNotices{order:10;flex:0 0 auto;max-height:min(23dvh,180px);overflow-y:auto;overscroll-behavior:contain;border-top:1px solid #d1e3e7;padding-top:6px}
+body.qr-entry #kioskNotices:has(#saveMessage:empty):has(#pendingSync:empty){display:none}
+body.qr-entry #saveMessage,body.qr-entry #pendingSync{margin:0 0 4px;font-size:clamp(13px,3.5vw,17px);line-height:1.35;overflow-wrap:anywhere}
+body.qr-entry #kioskHistory{order:5}
 #kioskHistory{display:none}
 body.qr-entry #kioskHistory{display:flex;flex:1;min-height:0;flex-direction:column;border-top:1px solid #d1e3e7;padding-top:6px}
 #kioskHistory h3{font-size:clamp(16px,2vw,22px);margin:0 0 8px}
@@ -78,7 +82,7 @@ body.qr-entry #session>.row,body.qr-entry #kioskHeader,body.qr-entry #saveMessag
 <section id="session" hidden><div id="kioskHeader"><span id="kioskType">Đang tải loại rác…</span><button id="kioskChangeType" type="button" class="secondary">Đổi loại</button></div><h2 class="advanced-only">2. Nhập khối lượng liên tục</h2>
 <div class="row"><label class="advanced-only">Ngày cân<input type="date" id="day"></label><label>Khối lượng cân (kg)<input type="number" min="0.001" step="0.001" inputmode="decimal" placeholder="Ví dụ: 25.5" id="weightInput"></label></div>
 <div class="row" style="margin-top:12px"><button id="addWeight">+ Lưu lần cân, tiếp tục nhập</button><button class="secondary advanced-only" id="refresh">Tải lại số liệu</button></div>
-<p id="saveMessage" role="status"></p><p id="pendingSync" role="status"></p>
+<div id="kioskNotices"><p id="saveMessage" role="status"></p><p id="pendingSync" role="status"></p></div>
 <div id="kioskHistory" aria-label="Lịch sử lượt cân trên thiết bị"><h3>Lượt cân vừa nhập (thiết bị này)</h3><div class="history-scroll" tabindex="0"><table><thead><tr><th>STT</th><th>Giờ</th><th>Nhóm / Loại rác</th><th>Khối lượng (kg)</th></tr></thead><tbody id="kioskHistoryRows"><tr><td colspan="4">Chưa có lượt cân</td></tr></tbody></table></div></div>
 <div id="weighDetail"><h2>3. Chi tiết và tổng hợp</h2>
 <div class="row"><div>Loại: <b id="selectedType"></b></div><div>Lượt cân: <b id="count">0</b></div><div>Tổng cân: <strong id="gross" class="total">0 kg</strong></div></div>
