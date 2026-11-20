@@ -239,12 +239,13 @@ async function saveTare(){
 let pendingCursor=null;
 async function loadPending(nextPage=false){
  if(role!=='admin')return;
- const clauses=[where('status','==','pending'),orderBy('date','desc'),orderBy('__name__','desc')];
+ // Keep the query index-free until the composite index is deployed and READY.
+ const clauses=[where('status','==','pending')];
  if(nextPage&&pendingCursor)clauses.push(startAfter(pendingCursor));
  clauses.push(limit(100));
  const q=await getDocs(query(collection(db,'waste_weigh_batches'),...clauses));
  pendingCursor=q.docs.length===100?q.docs[q.docs.length-1]:null;
- batches=q.docs.map(x=>({id:x.id,...x.data()}));
+ batches=q.docs.map(x=>({id:x.id,...x.data()})).sort((a,b)=>b.date.localeCompare(a.date));
  $('pending').replaceChildren();
  for(const b of batches){
   const item=document.createElement('div');item.className='row';item.style.padding='10px 0';item.style.borderBottom='1px solid #dce8ec';
