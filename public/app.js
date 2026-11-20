@@ -175,16 +175,29 @@ function render(){
 function preview(){el('preview').innerHTML=pending.slice(0,500).map(x=>'<tr><td>'+esc(x.date)+'</td><td>'+esc(names[x.kind])+'</td><td>'+esc(x.name)+'</td><td>'+fmt(x.value)+'</td><td>'+esc(x.unit)+'</td><td>'+esc(x.note)+'</td></tr>').join('')}
 function rows(){return selectedRecords().map(x=>({'Ngày':x.date,'Loại':names[x.kind],'Tên':x.name,'Số lượng':x.value,'Đơn vị':x.unit,'Ghi chú':x.note,'Nguồn':x.source}))}
 function xlsxExport(filename){if(!window.XLSX)return alert('Không tải được XLSX');const book=XLSX.utils.book_new();XLSX.utils.book_append_sheet(book,XLSX.utils.json_to_sheet(rows()),'Du lieu');XLSX.writeFile(book,filename)}
-function parseSheet(rows){
+function parseSheet(rows,sheetName='Sheet1'){
  const dict={'rac':'waste','rac thai':'waste','nuoc vao':'water_in','nuoc ra':'water_out','nhap vat tu':'stock_in','xuat vat tu':'stock_out','chi phi':'cost','doanh thu':'revenue'};
- return rows.map(row=>{const obj=Object.fromEntries(Object.entries(row).map(([k,v])=>[k.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').trim(),v]));
- let d=obj.ngay??obj.date;
- if(typeof d==='number'){const z=XLSX.SSF.parse_date_code(d);d=z?z.y+'-'+String(z.m).padStart(2,'0')+'-'+String(z.d).padStart(2,'0'):''}
- if(d instanceof Date)d=d.toISOString().slice(0,10);
- let k=String(obj.loai??obj.kind??'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
- k=dict[k]||k;
- return norm({date:d,kind:k,value:obj['so luong']??obj['so_luong']??obj.value,unit:obj['don vi']??obj['don_vi'],name:obj.ten??obj.name,note:obj['ghi chu'],source:'excel'});
- }).filter(valid);
+ const normalizeKey=k=>String(k).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').trim();
+ const result=[],errors=[];
+ for(let i=0;i<rows.length;i++){
+  const row=rows[i],line=i+2;
+  if(Object.values(row).every(v=>v===null||v===undefined||String(v).trim()===''))continue;
+  const obj=Object.fromEntries(Object.entries(row).map(([k,v])=>[normalizeKey(k),v]));
+  let d=obj.ngay??obj.date;
+  if(typeof d==='number'){const z=XLSX.SSF.parse_date_code(d);d=z?z.y+'-'+String(z.m).padStart(2,'0')+'-'+String(z.d).padStart(2,'0'):''}
+  if(d instanceof Date)d=Number.isNaN(d.getTime())?'':d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  const match=String(d??'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const parsed=match?new Date(Number(match[1]),Number(match[2])-1,Number(match[3])):null;
+  if(!parsed||parsed.getFullYear()!==Number(match[1])||parsed.getMonth()+1!==Number(match[2])||parsed.getDate()!==Number(match[3])){errors.push(sheetName+': cột Ngày dòng '+line+' không đúng định dạng YYYY-MM-DD');continue}
+  let k=normalizeKey(obj.loai??obj.kind??'');k=dict[k]||k;
+  const value=obj['so luong']??obj['so_luong']??obj.value;
+  if(value===null||value===undefined||String(value).trim()===''||!Number.isFinite(Number(value))){errors.push(sheetName+': cột Số lượng dòng '+line+' phải là số hợp lệ');continue}
+  const record=norm({date:d,kind:k,value,unit:obj['don vi']??obj['don_vi'],name:obj.ten??obj.name,note:obj['ghi chu'],source:'excel'});
+  if(!valid(record)){errors.push(sheetName+': dòng '+line+' có Loại, Tên hoặc Đơn vị không hợp lệ');continue}
+  result.push(record);
+ }
+ if(errors.length)throw Error('File Excel có '+errors.length+' dòng lỗi. '+errors.slice(0,8).join(' | ')+(errors.length>8?' | ...':''));
+ return result;
 }
 async function reload(){
  if(!db||!role)return;
@@ -308,7 +321,7 @@ for(const id of ['simpleFinanceYear','simpleFinanceMonth']){
  el(id).addEventListener('change',syncReportMode);
 }
 syncReportMode();
-el('parseExcel').onclick=async()=>{const f=el('excelFile').files[0];if(!f)return alert('Chọn file Excel');try{if(!window.XLSX)throw Error('Không tải được XLSX');const book=XLSX.read(await f.arrayBuffer(),{type:'array',cellDates:true});pending=book.SheetNames.flatMap(n=>parseSheet(XLSX.utils.sheet_to_json(book.Sheets[n],{defval:null})));preview();el('importStatus').textContent='Đọc được '+pending.length+' dòng hợp lệ. Chỉ hỗ trợ định dạng cột chuẩn.'}catch(e){el('importStatus').textContent=e.message}};
+el('parseExcel').onclick=async()=>{const f=el('excelFile').files[0];if(!f)return alert('Chọn file Excel');try{if(!window.XLSX)throw Error('Không tải được XLSX');const book=XLSX.read(await f.arrayBuffer(),{type:'array',cellDates:true});pending=book.SheetNames.flatMap(n=>parseSheet(XLSX.utils.sheet_to_json(book.Sheets[n],{defval:null}),n));preview();el('importStatus').textContent='Đọc được '+pending.length+' dòng hợp lệ. Chỉ hỗ trợ định dạng cột chuẩn.'}catch(e){el('importStatus').textContent=e.message}};
 el('saveImport').onclick=async()=>{if(!pending.length)return alert('Chưa có dữ liệu');if(!db||!user||!may('excel_import'))return alert('Chưa được cấp quyền nhập Excel.');if(!confirm('Lưu '+pending.length+' dòng?'))return;try{for(const x of pending)await addDoc(collection(db,'records'),{...x,createdBy:user.uid,createdAt:serverTimestamp()});pending=[];preview();await reload()}catch(e){alert(e.message)}};
 el('aiRead').disabled=true;
 el('aiRead').textContent='AI cần backend riêng';
