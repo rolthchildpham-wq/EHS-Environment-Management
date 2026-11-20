@@ -14,14 +14,15 @@ try{
 
   await page.goto(origin+'/',{waitUntil:'domcontentloaded',timeout:30000});
   await page.locator('#hubCards .ehs-hub-card').first().waitFor();
-  assert.equal(await page.locator('#hubCards .ehs-hub-card').count(),2,device+': exactly two Hub tiles');
+  assert.equal(await page.locator('#hubCards .ehs-hub-card:visible').count(),2,device+': exactly two visible Hub tiles');
+  assert.equal(await page.locator('#hubWasteWeighQr').isVisible(),false,device+': QR shortcut remains hidden until authorized');
   assert.equal(await page.locator('body > header').evaluate(el=>getComputedStyle(el).display),'none',device+': no EHS header on Hub');
   assert.equal(await page.locator('#tabs').evaluate(el=>getComputedStyle(el).display),'none',device+': no EHS tabs on Hub');
   assert.equal(await page.locator('#portal').evaluate(el=>getComputedStyle(el).display),'block',device+': Hub is sole section');
   assert.equal(await page.locator('iframe').count(),0,device+': no SCADA iframe');
   assert.match(await page.locator('[data-hub="wwtp"]').getAttribute('href'),/^wwtp\/$/);
   await page.screenshot({path:`tests/artifacts/hub-${device}.png`});
-  console.log('PASS',device,'Hub-only, 2 tiles, no header/tabs/iframe');
+  console.log('PASS',device,'Hub-only, 2 visible tiles, no header/tabs/iframe');
 
   await page.goto(origin+'/?app=environment',{waitUntil:'domcontentloaded',timeout:30000});
   await page.locator('#dashboard').waitFor({state:'visible',timeout:20000});
