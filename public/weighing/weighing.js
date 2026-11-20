@@ -278,7 +278,8 @@ async function loadPending(nextPage=false){
   };
   item.append(label,tareRow,button);$('pending').append(item);
  }
- if(!batches.length)$('pending').textContent='Không có lô đang chờ duyệt.';
+ if(!batches.length)$('pending').textContent=nextPage?'Đã hết lô chờ duyệt.':'Không có lô đang chờ duyệt.';
+ if(pendingCursor){const more=document.createElement('button');more.type='button';more.className='secondary';more.textContent='Xem 100 lô tiếp theo';more.onclick=()=>loadPending(true);$('pending').append(more)}
 }
 const catalogStatus=(message,error=false)=>{
  const node=$('catalogMessage');node.textContent=message;node.classList.toggle('warn',error);
