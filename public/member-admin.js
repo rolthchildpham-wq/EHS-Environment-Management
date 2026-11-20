@@ -36,11 +36,17 @@ async function updateMember(id,change,action,description){
  const existing=state.members.find(x=>x.id===id)?.data;
  if(!existing)return msg('Không tìm thấy thành viên.');
  if(existing.active===undefined)change={active:true,...change};
- try{await commitChange('members/'+id,change,action,description);msg('Đã lưu thay đổi thành viên.')}
+ const fields=Object.keys(change).filter(k=>k==='role'||k==='active');
+ const detail=fields.map(k=>k+': '+String(existing[k]??(k==='active'?true:'—'))+' → '+String(change[k])).join('; ');
+ try{await commitChange('members/'+id,change,action,detail||description);msg('Đã lưu thay đổi thành viên.')}
  catch(e){msg('Lỗi: '+e.message);await loadMembers()}
 }
 async function updateInvite(email,change,action,description){
- try{await commitChange('invites/'+email,change,action,description);msg('Đã lưu thay đổi lời mời.')}
+ const existing=state.invites.find(x=>x.id===email)?.data;
+ if(!existing)return msg('Không tìm thấy lời mời.');
+ const detail=Object.keys(change).filter(k=>k==='role'||k==='active')
+  .map(k=>k+': '+String(existing[k])+' → '+String(change[k])).join('; ');
+ try{await commitChange('invites/'+email,change,action,detail||description);msg('Đã lưu thay đổi lời mời.')}
  catch(e){msg('Lỗi: '+e.message);await loadMembers()}
 }
 function render(){
