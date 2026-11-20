@@ -12,7 +12,7 @@ import {resolveMember,mountMemberAdmin} from './member-admin.js?v=20261112f';
 import {installAppCheck} from './app-check.js';
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js';
 import {getAuth,GoogleAuthProvider,signInWithPopup,onAuthStateChanged,signOut,setPersistence,browserLocalPersistence} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js';
-import {getFirestore,collection,doc,getDoc,addDoc,getDocs,query,limit,serverTimestamp,updateDoc} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
+import {getFirestore,collection,doc,getDoc,addDoc,getDocs,query,where,limit,serverTimestamp,updateDoc} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
 const el=id=>document.getElementById(id);
 const fmt=v=>Number(v||0).toLocaleString('vi-VN',{maximumFractionDigits:2});
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -203,14 +203,16 @@ function parseSheet(rows,sheetName='Sheet1'){
 async function reload(){
  if(!db||!role)return;
  const snap=await getDocs(query(collection(db,'records'),limit(5000)));
+ console.info('[EHS Firestore reads] records:',snap.size,'documents');
  data=snap.docs.map(d=>norm(d.data())).filter(valid);
  await loadOperations();await loadApprovedWasteWeighing();setCostExplorerRecords(getAllOperations());setSimpleFinanceRecords(getAllOperations());if(role&&['admin','editor'].includes(role)){try{mountQrStock(db,user,role,getAllOperations,reload)}catch(error){console.error('QR refresh failed',error)}}data.push(...getOperationalRecords());
  await reviews();updateYearOptions();render();refreshCompliance();notice('Đã tải '+data.length+' bản ghi dữ liệu gốc/nghiệp vụ và '+reviewData.length+' chứng từ đã duyệt. Bảng báo cáo nghiệp vụ hiển thị chi tiết theo sheet Excel.');
 }
 // Approved QR weigh batches are derived journal records, never duplicate editable import rows.
 async function loadApprovedWasteWeighing(){
- const snap=await getDocs(query(collection(db,'waste_weigh_batches'),limit(5000)));
- const approved=snap.docs.map(x=>x.data()).filter(x=>x.status==='approved');
+ const snap=await getDocs(query(collection(db,'waste_weigh_batches'),where('status','==','approved'),limit(5000)));
+ console.info('[EHS Firestore reads] approved waste batches:',snap.size,'documents');
+ const approved=snap.docs.map(x=>x.data());
  data.push(...approved.map(x=>norm({
   date:x.date,kind:'waste',value:x.net,unit:'kg',name:x.name,
   note:'QR cân rác • '+x.group+' • '+x.count+' lượt • cân '+x.gross+' kg • bao bì '+x.tare+' kg',
@@ -221,6 +223,7 @@ async function loadApprovedWasteWeighing(){
 async function reviews(){
  if(!db||!role)return;
  const snap=await getDocs(query(collection(db,'reviews'),limit(1000)));
+ console.info('[EHS Firestore reads] reviews:',snap.size,'documents');
  reviewData=snap.docs.filter(d=>d.data().status==='approved').map(d=>norm(d.data())).filter(valid);
  el('reviews').innerHTML=snap.docs.map(d=>{
   const x=d.data();
